@@ -1,0 +1,10 @@
+<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      >
+
+  <Sound Name="Select"          Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Select" />
+  <Sound Name="Miniselect"      Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Miniselect" />
+  <Sound Name="Focus"           Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Focus" />
+  <Sound Name="Error"           Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Error" />
+  <Sound Name="PageTransition"  Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/PageTransition" />
+  
+</Mcml>

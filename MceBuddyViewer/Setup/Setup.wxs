@@ -1,0 +1,479 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- To troubleshoot installation problems run the MSI -->
+<!-- from a command prompt with Administrator          -->
+<!-- privileges using the following:                   -->
+
+<!--      msiexec /i setup.msi /l*v MyMSILog.txt       -->
+
+<!-- and examine the resulting log file.               -->
+
+<!-- These variables define the Windows Installer product version, product code and upgrade code. They   -->
+<!-- will be used later on in this file.                                                                 -->
+<?define Property_ProductVersion = "1.0.0.0" ?>
+<?define Property_ProductCode = "4e04a84e-d4ee-4555-b5b1-c850889f6ffa" ?>
+<?define Property_UpgradeCode = "b6312c5d-2112-4aa6-afe1-4aeeaf1abc7e" ?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="$(var.Property_ProductCode)"
+           UpgradeCode="$(var.Property_UpgradeCode)"
+           Name="!(loc.Property_ProductName)"
+           Language="!(loc.Property_ProductLanguage)"
+           Version="$(var.Property_ProductVersion)"
+           Manufacturer="!(loc.Property_CompanyName)">
+
+    <Package Description="!(loc.Package_Description)"
+             Comments="!(loc.Package_Comments)"
+             InstallerVersion="200"
+             Compressed="yes" />
+
+    <!-- This information enables Windows Installer major upgrade functionality so users can seamlessly  -->
+    <!-- install a new version of the product and have the old version automatically uninstall behind    -->
+    <!-- the scenes. See the following topic in the MSDN Library for additional information:             -->
+    <!-- http://msdn.microsoft.com/library/default.asp?url=/library/en-us/msi/setup/major_upgrades.asp   -->
+    <Upgrade Id="$(var.Property_UpgradeCode)">
+      <UpgradeVersion Minimum="$(var.Property_ProductVersion)"
+                      OnlyDetect="yes"
+                      Property="NEWERVERSIONDETECTED" />
+      <UpgradeVersion Minimum="0.0.0.0"
+                      IncludeMinimum="yes"
+                      Maximum="$(var.Property_ProductVersion)"
+                      IncludeMaximum="no"
+                      Property="OLDERVERSIONBEINGUPGRADED" />
+    </Upgrade>
+
+    <!-- This is the EULA Windows Media Center will display during setup.  It should be in plain text    -->
+    <!-- format. This file is NOT displayed within the standard setup wizard for mouse and keyboard.     -->
+    <!-- That file (License.rtf) is defined within the <WixVariable> element below.                      -->
+    <Binary Id="License.txt"
+            SourceFile="..\setup\License.txt" />
+    <Binary Id="LicenseAccessible.txt"
+            SourceFile="..\setup\LicenseAccessible.txt" />
+
+    <!-- This custom action prevents users from installing if a newer version of this product is already -->
+    <!-- installed on the system. This is a part of Windows Installer major upgrade functionality.       -->
+    <CustomAction Id="CA_BlockOlderVersionInstall"
+                  Error="!(loc.LaunchCondition_LaterVersion)" />
+
+    <!-- This custom action prevents users from installing this product on unsupported operating system  -->
+    <!-- versions. The conditions that are checked for operating system version are defined below.       -->
+    <CustomAction Id="CA_ErrWrongWindowsVersion"
+                  Error="!(loc.LaunchCondition_WrongOSVersion)" />
+
+    <!-- This condition adds an item to the LaunchCondition table of the MSI to block a user from        -->
+    <!-- installing this product unless they have administrative privileges on the system.               -->
+    <Condition Message="!(loc.LaunchCondition_AdminPrivs)">
+      <![CDATA[Privileged]]>
+    </Condition>
+
+    <!-- This is a list of directories that are used by this product as installation locations or custom -->
+    <!-- action file search locations.                                                                   -->
+    <Directory Id="TARGETDIR"
+               Name="SourceDir">
+      <Directory Id="WindowsFolder"
+                 Name="WINDOWS">
+        <Directory Id="EhomeFolder"
+                   Name="eHome"/>
+      </Directory>
+      <Directory Id="ProgramFilesFolder"
+                 Name="Program Files">
+          <Directory Id="APPROOTDIRECTORY"
+                     Name="MceBuddyViewer"/>        
+      </Directory>
+    </Directory>
+
+    <!-- This is a list of all components installed as a part of this product. A component is the        -->
+    <!-- smallest atomic unit of installation in Windows Installer. Each component must have a unique    -->
+    <!-- GUID. In general, it is recommended that each file be installed by a separate component in      -->
+    <!-- order to avoid reference counting problems and make future servicing of this product easier.    -->
+    <!-- Each component is listed as a child of the DirectoryRef that represents the directory that      -->
+    <!-- the file it contains will install to.                                                           -->
+    <DirectoryRef Id="APPROOTDIRECTORY">
+      <Component Id="MceBuddyViewer.dll"
+                 Guid="f25648cf-00e1-4424-97d5-4a5db2237e35"
+                 DiskId="1">
+        <File Id="MceBuddyViewer.dll"
+              Name="MceBuddyViewer.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MceBuddyViewer.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.VideoProperties.dll"
+     Guid="F5F16444-5C8E-410F-87C5-A8D352BDE575"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.VideoProperties.dll"
+              Name="MCEBuddyMCE.VideoProperties.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.VideoProperties.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.Util.dll"
+     Guid="6EBC0B2D-1D37-4AE0-A294-50BB9C31C7DE"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.Util.dll"
+              Name="MCEBuddyMCE.Util.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.Util.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.Transcode.dll"
+     Guid="CBE5419D-9853-4996-9508-06F87E3155AA"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.Transcode.dll"
+              Name="MCEBuddyMCE.Transcode.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.Transcode.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.TagLib.dll"
+     Guid="9DFB46E4-A14C-41D4-BF15-7678EDDDB187"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.TagLib.dll"
+              Name="MCEBuddyMCE.TagLib.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.TagLib.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.RemuxMediaCenter.dll"
+     Guid="941CAA76-B4B3-44C9-973A-688F988A47E2"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.RemuxMediaCenter.dll"
+              Name="MCEBuddyMCE.RemuxMediaCenter.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.RemuxMediaCenter.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.MetaData.dll"
+     Guid="96298662-63CD-4DE3-8968-D94A9F2BE994"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.MetaData.dll"
+              Name="MCEBuddyMCE.MetaData.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.MetaData.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.Globals.dll"
+     Guid="941518FC-60FB-478E-BBB6-73C126B28EB9"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.Globals.dll"
+              Name="MCEBuddyMCE.Globals.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.Globals.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.Engine.dll"
+     Guid="E848909E-2E22-4FCB-B469-7DEDC6DF81E6"
+     DiskId="1">
+        <File Id="MCEBuddyMCE.Engine.dll"
+              Name="MCEBuddyMCE.Engine.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.Engine.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.DirectShowLib.dll"
+           Guid="46FEC409-B482-44E5-B2D4-3B29EF44887B"
+           DiskId="1">
+        <File Id="MCEBuddyMCE.DirectShowLib.dll"
+              Name="MCEBuddyMCE.DirectShowLib.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.DirectShowLib.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.Configuration.dll"
+           Guid="E85AE898-0A93-4A2F-87BE-D657AD70852D"
+           DiskId="1">
+        <File Id="MCEBuddyMCE.Configuration.dll"
+              Name="MCEBuddyMCE.Configuration.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.Configuration.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.CommercialScan.dll"
+           Guid="39FAFA72-43CB-4DBD-B90B-D2A9FE7170BC"
+           DiskId="1">
+        <File Id="MCEBuddyMCE.CommercialScan.dll"
+              Name="MCEBuddyMCE.CommercialScan.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.CommercialScan.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="MCEBuddyMCE.AppWrapper.dll"
+                 Guid="2C57DFEC-B2F3-45D9-8DA3-3B6637375E90"
+                 DiskId="1">
+        <File Id="MCEBuddyMCE.AppWrapper.dll"
+              Name="MCEBuddyMCE.AppWrapper.dll"
+              KeyPath="yes"
+              Source="..\bin\$(var.BuildType)\MCEBuddyMCE.AppWrapper.dll"
+              Checksum="yes"
+              Vital="yes"
+              Assembly=".net"/>
+      </Component>
+      <Component Id="Registration.xml"
+                 Guid="2aca73f4-df34-48d3-98c8-c026f1641b60"
+                 DiskId="1">
+        <File Id="Registration.xml"
+              Name="Registration.xml"
+              Source="..\Setup\Registration.xml"
+              Checksum="no" />
+      </Component>
+      <Component Id="Application.png"
+                 Guid="18d53d4e-c069-41f2-911c-a08b06c1ab21"
+                 DiskId="1">
+        <File Id="Application.png"
+              Name="Application.png"
+              Source="..\Images\Application.png"
+              Checksum="no" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- This is a list of features that are installed as a part of this product. In this case, there is -->
+    <!-- only one feature. Each feature contains a list of components that it will install. Features can -->
+    <!-- can be displayed and allow user selection in setup UI if desired.                               -->
+    <Feature Id="APPROOTFEATURE"
+             Title="MceBuddyViewer"
+             Level="1">
+      <ComponentRef Id="MceBuddyViewer.dll" />
+      <ComponentRef Id="MCEBuddyMCE.Configuration.dll" />
+      <ComponentRef Id="MCEBuddyMCE.CommercialScan.dll" />
+      <ComponentRef Id="MCEBuddyMCE.AppWrapper.dll" />
+      <ComponentRef Id="MCEBuddyMCE.DirectShowLib.dll" />
+      <ComponentRef Id="MCEBuddyMCE.Engine.dll" />
+      <ComponentRef Id="MCEBuddyMCE.Globals.dll" />
+      <ComponentRef Id="MCEBuddyMCE.MetaData.dll" />
+      <ComponentRef Id="MCEBuddyMCE.RemuxMediaCenter.dll" />
+      <ComponentRef Id="MCEBuddyMCE.TagLib.dll" />
+      <ComponentRef Id="MCEBuddyMCE.Transcode.dll" />
+      <ComponentRef Id="MCEBuddyMCE.Util.dll" />
+      <ComponentRef Id="MCEBuddyMCE.VideoProperties.dll" />
+      <ComponentRef Id="Registration.xml" />
+      <ComponentRef Id="Application.png" />
+    </Feature>
+
+    <!-- The media table defines the location that the MSI will look to find source files during         -->
+    <!-- installation or repair scenarios. In this case, the source files are in a cab file that will be -->
+    <!-- embedded directly into the MSI at build time.                                                   -->
+    <Media Id="1"
+           Cabinet="Application.cab"
+           EmbedCab="yes" />
+
+    <!-- These custom actions are used to register the application with Media Center using the utility   -->
+    <!-- RegisterMceApp.exe that is installed as a part of the Windows Media Center feature. Each custom -->
+    <!-- action is defined as a pair in order to leverage the WiX QtExec custom action to suppress the   -->
+    <!-- pop-up UI that would ordinarily appear when running RegisterMceApp.exe. Registering a Windows   -->
+    <!-- Media Center application will fail if it is already registered, so this setup will first        -->
+    <!-- unregister the application and then attempt to re-register it. This setup ignores the return    -->
+    <!-- code from the unregistration custom action but checks the return code of the registration       -->
+    <!-- action. If registration fails, setup will fail and roll back. These custom actions use the      -->
+    <!-- REGISTERMCEAPP property that is defined below in order to find the exact location of the file   -->
+    <!-- RegisterMceApp.exe on the system.                                                               -->
+    <CustomAction Id="CA_RegisterMceApp_Unregister_Install_Cmd"
+                  Property="CA_RegisterMceApp_Unregister_Install"
+                  Value="&quot;[REGISTERMCEAPP]&quot; /u /allusers &quot;[#Registration.xml]&quot;"/>
+    <CustomAction Id="CA_RegisterMceApp_Unregister_Uninstall_Cmd"
+                  Property="CA_RegisterMceApp_Unregister_Uninstall"
+                  Value="&quot;[REGISTERMCEAPP]&quot; /u /allusers &quot;[#Registration.xml]&quot;"/>
+    <CustomAction Id="CA_RegisterMceApp_Register_Cmd"
+                  Property="CA_RegisterMceApp_Register"
+                  Value="&quot;[REGISTERMCEAPP]&quot; /allusers &quot;[#Registration.xml]&quot;"/>
+    <CustomAction Id="CA_RegisterMceApp_Rollback_Cmd"
+                  Property="CA_RegisterMceApp_Rollback"
+                  Value="&quot;[REGISTERMCEAPP]&quot; /u /allusers &quot;[#Registration.xml]&quot;"/>
+
+    <CustomAction Id="CA_RegisterMceApp_Unregister_Install"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec"
+                  Execute="deferred"
+                  Return="ignore"
+                  Impersonate="no"/>
+    <CustomAction Id="CA_RegisterMceApp_Unregister_Uninstall"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec"
+                  Execute="deferred"
+                  Return="ignore"
+                  Impersonate="no"/>
+    <CustomAction Id="CA_RegisterMceApp_Register"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec"
+                  Execute="deferred"
+                  Return="check"
+                  Impersonate="no"/>
+    <CustomAction Id="CA_RegisterMceApp_Rollback"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec"
+                  Execute="rollback"
+                  Return="ignore"
+                  Impersonate="no"/>
+
+    <!-- The InstallExecuteSequence table describes the order that actions will be executed during       -->
+    <!-- installation, repair and uninstall of this product.                                             -->
+    <InstallExecuteSequence>
+      <Custom Action="CA_BlockOlderVersionInstall"
+              After="FindRelatedProducts">
+        <![CDATA[NEWERVERSIONDETECTED]]>
+      </Custom>
+      <RemoveExistingProducts After="InstallFinalize" />
+      <LaunchConditions After="AppSearch"/>
+
+      <!-- The following custom action must match that used in the       -->
+      <!-- <InstallUISequence> section below.                            -->
+
+      <!-- This custom action restricts the install to specific versions -->
+      <!-- of Windows and Windows Media Center. If you wish to have less -->
+      <!-- restrictive requirements comment this line and uncomment the  -->
+      <!-- next custom action.                                           -->
+      <!--<Custom Action="CA_ErrWrongWindowsVersion"
+              Before="CostInitialize"><![CDATA[(NOT VersionNT = 601 OR NOT MCEINSTALLVERSION = "6.0" OR NOT REGISTERMCEAPP) AND NOT Installed]]></Custom>-->
+
+      <!-- This custom action searches for a version of Windows equal to or greater than        -->
+      <!-- specified and the presence of RegisterMceApp.exe. If all of these conditions are met -->
+      <!-- the system is a valid operating system and the product will be allowed to install.   -->
+      <Custom Action="CA_ErrWrongWindowsVersion"
+              Before="CostInitialize"><![CDATA[(NOT VersionNT >= 601 OR NOT REGISTERMCEAPP) AND NOT Installed]]></Custom>
+
+      <Custom Action="CA_RegisterMceApp_Unregister_Install_Cmd"
+              After="CostFinalize">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+      <Custom Action="CA_RegisterMceApp_Unregister_Uninstall_Cmd"
+              After="CA_RegisterMceApp_Unregister_Install_Cmd">
+        <![CDATA[REMOVE AND ($Registration.xml = 2)]]>
+      </Custom>
+      <Custom Action="CA_RegisterMceApp_Register_Cmd"
+              After="CA_RegisterMceApp_Unregister_Uninstall_Cmd">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+      <Custom Action="CA_RegisterMceApp_Rollback_Cmd"
+              After="CA_RegisterMceApp_Register_Cmd">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+
+      <!-- This unregistration custom action must occur before files are removed during uninstall of the -->
+      <!-- product because the custom action requires the registration XML file in order to run          -->
+      <!-- correctly. It is conditioned to only run during uninstall using the REMOVE condition.         -->
+      <Custom Action="CA_RegisterMceApp_Unregister_Uninstall"
+              Before="RemoveFiles">
+        <![CDATA[REMOVE AND ($Registration.xml = 2)]]>
+      </Custom>
+
+      <!-- This sequence of actions is important. In order to allow the roll back custom action to run   -->
+      <!-- at the correct time in case the setup fails, it must be scheduled before the other actions    -->
+      <!-- because Windows Installer pushes each action onto a stack and then pops them off of the stack -->
+      <!-- in case of any failure in order to accomplish the roll back.                                  -->
+      <Custom Action="CA_RegisterMceApp_Rollback"
+              After="InstallFiles">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+      <Custom Action="CA_RegisterMceApp_Unregister_Install"
+              After="CA_RegisterMceApp_Rollback">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+      <Custom Action="CA_RegisterMceApp_Register"
+              After="CA_RegisterMceApp_Unregister_Install">
+        <![CDATA[NOT REMOVE]]>
+      </Custom>
+    </InstallExecuteSequence>
+
+    <!-- The InstallUISequence table describes the order that actions will be executed when the user     -->
+    <!-- runs setup in full UI mode. Some actions must be scheduled in the UI and the execute sequence   -->
+    <!-- tables to ensure that they will run regardless of whether the user runs setup in full UI mode   -->
+    <!-- or in reduced UI or silent modes.                                                               -->
+    <InstallUISequence>
+      <Custom Action="CA_BlockOlderVersionInstall"
+              After="FindRelatedProducts">
+        <![CDATA[NEWERVERSIONDETECTED]]>
+      </Custom>
+      <!--<Custom Action="CA_ErrWrongWindowsVersion"
+              Before="CostInitialize"><![CDATA[(NOT VersionNT = 601 OR NOT MCEINSTALLVERSION = "6.0" OR NOT REGISTERMCEAPP) AND NOT Installed]]></Custom>-->
+      <Custom Action="CA_ErrWrongWindowsVersion"
+              Before="CostInitialize"><![CDATA[(NOT VersionNT >= 601 OR NOT REGISTERMCEAPP) AND NOT Installed]]></Custom>
+    </InstallUISequence>
+
+    <!-- These properties define links that will appear in the Add/Remove Programs control panel when    -->
+    <!-- this product is installed on the system.                                                        -->
+    <Property Id="ARPHELPLINK"
+              Value="!(loc.Property_ArpHelpLink)" />
+    <Property Id="ARPURLINFOABOUT"
+              Value="!(loc.Property_ArpUrlInfoAbout)" />
+
+    <!-- This property defines the ALLUSERS property to be 1, which indicates that this product will be  -->
+    <!-- installed per-machine instead of per-user.                                                      -->
+    <Property Id="ALLUSERS">
+      <![CDATA[1]]>
+    </Property>
+
+    <!-- This property uses a registry locator to determine the version of Windows Media Center present  -->
+    <!-- on the system (if any). This registry-based version detection algorithm is documented in the    -->
+    <!-- Windows Media Center SDK for Windows Vista.                                                     -->
+    <Property Id="MCEINSTALLVERSION"
+              Secure="yes">
+      <RegistrySearch Id="MceInstallRegKey"
+                      Root="HKLM"
+                      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Media Center"
+                      Name="Ident"
+                      Type="raw"/>
+    </Property>
+
+    <!-- This property uses an AppSearch to attempt to locate the file %windir\eHome\RegisterMceApp.exe  -->
+    <!-- on the system. If it is found, the property is set to the fully qualified path to this file,    -->
+    <!-- and this path is used to call RegisterMceApp.exe in several custom actions listed above to      -->
+    <!-- register this application with Windows Media Center.                                            -->
+    <Property Id="REGISTERMCEAPP"
+              Secure="yes">
+      <DirectorySearch Id="EhomeDirectory"
+                       Path="[WindowsFolder]\ehome">
+        <FileSearch Id="RegisterMceAppExe"
+                    Name="RegisterMceApp.exe" />
+      </DirectorySearch>
+    </Property>
+
+    <!-- This property is used as the default installation directory, and the user can change this path  -->
+    <!-- during setup. The Id must be set to WIXUI_INSTALLDIR and the value must match the directory Id  -->
+    <!-- defined above that represents the root installation directory.                                  -->
+    <Property Id="WIXUI_INSTALLDIR"
+              Value="APPROOTDIRECTORY"/>
+    
+    <!-- These properties are used by the Windows Media Center InstallApplication Method to determine what  -->
+    <!-- license to display to the end user. The Value attribute should match the <Binary> elements above.  -->
+    <!-- Do NOT change the ID of these properties.-->
+    <Property Id="d4276fcf18d5470b97f3fc6c36408694"
+              Value="License.txt"/>
+    <Property Id="aefe520afb0145c1bc61ca0463a29e3c"
+              Value="LicenseAccessible.txt"/>
+
+    <!-- This UIRef element specifies what WiXUI dialog set to use for the setup UI. This package uses   -->
+    <!-- the WixUI_InstallDir dialog set, which provides a welcome page, a license agreement page, a     -->
+    <!-- page to allow changing the installation path, an installation confirmation page, a progress     -->
+    <!-- page and a completion page. Other dialog sets are available in the WiX toolset and are          -->
+    <!-- described in more detail in the WiX documentation.                                              -->
+    <UIRef Id="WixUI_InstallDir"/>
+
+    <!-- In WiX v3.0, this variable is used to override the default license agreement text that is       -->
+    <!-- included in the WixUIExtension with a custom file.                                              -->
+    <WixVariable Id="WixUILicenseRtf"
+                 Value="License.rtf" />
+  </Product>
+</Wix>

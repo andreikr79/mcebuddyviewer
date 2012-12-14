@@ -1,0 +1,269 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{F7EBD1A3-A617-419B-B0ED-260AA59A0C2B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MceBuddyViewer</RootNamespace>
+    <AssemblyName>MceBuddyViewer</AssemblyName>
+    <SignAssembly>true</SignAssembly>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <TargetFrameworkProfile />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <FullyQualifiedOutputPath>$(MSBuildProjectDirectory)\bin\Debug</FullyQualifiedOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <FullyQualifiedOutputPath>$(MSBuildProjectDirectory)\bin\Release</FullyQualifiedOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <StartWorkingDirectory>$(windir)\eHome</StartWorkingDirectory>
+    <StartArguments>-load:"resx://MceBuddyViewer/MceBuddyViewer.Resources/Test" -assemblyredirect:"$(FullyQualifiedOutputPath)" -markupredirect:"resx://MceBuddyViewer/MceBuddyViewer.Resources/,file://$(MSBuildProjectDirectory)\Markup\,.mcml"</StartArguments>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(windir)\eHome\McmlPad.exe</StartProgram>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>mcebuddyviewer.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\MceBuddyViewer.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\MceBuddyViewer.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.MediaCenter" />
+    <Reference Include="Microsoft.MediaCenter.UI" />
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.ServiceModel" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Code\BuddyViewer.cs" />
+    <Compile Include="Code\Launch.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>Клиентский профиль .NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Установщик Windows 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DevInstall.cmd" />
+    <None Include="mcebuddyviewer.snk" />
+    <None Include="Setup\Build.cmd" />
+    <None Include="Setup\License.rtf" />
+    <None Include="Setup\License.txt" />
+    <None Include="Setup\LicenseAccessible.txt" />
+    <None Include="Setup\Setup-en-us.wxl" />
+    <None Include="Setup\Setup.wxs" />
+    <None Include="Readme.htm" />
+    <None Include="Setup\Registration.xml" />
+    <Content Include="Images\Application.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Markup\Base\Animations.mcml" />
+    <Content Include="Markup\Base\Base.mcml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Markup\Base\Colors.mcml" />
+    <Content Include="Markup\Base\FontNames.mcml" />
+    <Content Include="Markup\Base\Images.mcml" />
+    <Content Include="Markup\Base\Sounds.mcml" />
+    <Content Include="Images\AppIcon.png" />
+    <Content Include="Images\ButtonDisabled.png" />
+    <Content Include="Images\ButtonDormant.png" />
+    <Content Include="Images\ButtonLeftFocus.png" />
+    <Content Include="Images\ButtonLeftFocusOverlay.png" />
+    <Content Include="Images\ButtonNoFocus.png" />
+    <Content Include="Images\ButtonPressedAfterGlow.png" />
+    <Content Include="Images\ButtonPressedHighlight.png" />
+    <Content Include="Images\ButtonRightFocus.png" />
+    <Content Include="Images\ButtonRightFocusOverlay.png" />
+    <Content Include="Images\OverlaysButtonNoFocus.png" />
+    <Content Include="Markup\Controls\Controls.mcml" />
+    <Content Include="Markup\Controls\HeaderText.mcml" />
+    <Content Include="Markup\Controls\SimpleButton.mcml" />
+    <Content Include="Markup\MainForm.mcml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Sounds\Select.wav" />
+    <Content Include="Sounds\PageTransition.wav" />
+    <Content Include="Sounds\MiniSelect.wav" />
+    <Content Include="Sounds\Focus.wav" />
+    <Content Include="Sounds\Error.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
+      <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
+      <Name>MCEBuddyMCE.AppWrapper</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.CommercialScan\MCEBuddyMCE.CommercialScan.csproj">
+      <Project>{298B38E2-57D4-459D-8EB9-529E95F41DC7}</Project>
+      <Name>MCEBuddyMCE.CommercialScan</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
+      <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
+      <Name>MCEBuddyMCE.Configuration</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.DirectShowLib\MCEBuddyMCE.DirectShowLib.csproj">
+      <Project>{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}</Project>
+      <Name>MCEBuddyMCE.DirectShowLib</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Engine\MCEBuddyMCE.Engine.csproj">
+      <Project>{BAD042C9-4BF3-4906-ACED-FFCA708C3157}</Project>
+      <Name>MCEBuddyMCE.Engine</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
+      <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
+      <Name>MCEBuddyMCE.Globals</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.MetaData\MCEBuddyMCE.MetaData.csproj">
+      <Project>{A3AA78D8-F912-41EC-844B-48C84E5032BB}</Project>
+      <Name>MCEBuddyMCE.MetaData</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.RemuxMediaCenter\MCEBuddyMCE.RemuxMediaCenter.csproj">
+      <Project>{0DF6FB06-4CD2-47BD-89D8-36BE8338673C}</Project>
+      <Name>MCEBuddyMCE.RemuxMediaCenter</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Taglib\MCEBuddyMCE.TagLib.csproj">
+      <Project>{4CC18776-125E-4318-9D24-D60110AD9697}</Project>
+      <Name>MCEBuddyMCE.TagLib</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Transcode\MCEBuddyMCE.Transcode.csproj">
+      <Project>{B8799D33-24DB-4E36-8113-05BEBB7FC88B}</Project>
+      <Name>MCEBuddyMCE.Transcode</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
+      <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
+      <Name>MCEBuddyMCE.Util</Name>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
+      <Project>{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}</Project>
+      <Name>MCEBuddyMCE.VideoProperties</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>%25windir%25\eHome\McmlVerifier.exe -verbose -assemblyredirect:"$(FullyQualifiedOutputPath)" -directory:"$(ProjectDir)Markup"
+"$(ProjectDir)Setup\Build.cmd" $(ConfigurationName)
+rem "$(ProjectDir)Install.bat" "$(TargetPath)" "$(ProjectDir)Setup\Registration.xml"
+rem "$(ProjectDir)install_dll.bat" $(TargetDir)
+</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>rem "$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
+rem "$(ProjectDir)uninstall_dll.bat"</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
