@@ -1,0 +1,135 @@
+<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
+      xmlns:cor="assembly://MScorLib/System"
+      xmlns:addin="assembly://Microsoft.MediaCenter/Microsoft.MediaCenter.Hosting"
+      xmlns:me="Me">
+
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Controls" />
+
+
+  <UI Name="MainForm">
+
+    <Properties>
+      <a:BuddyViewer Name="BuddyViewer" BuddyViewer="$Required" />
+    </Properties>
+
+    <Locals>
+      <addin:AddInHost Name="AddInHost" />
+      <Color Name="TextColor" Color="White" />
+      <Font Name="TextFont" Font="Arial,18" />
+    </Locals>
+
+    <Rules>
+      <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="true">
+        <Actions>
+          <Set Target="[EngineStatus.Content]" Value="Running" />
+          <Set Target="[EngineStatus.Color]" Value="LightGreen" />
+        </Actions>
+      </Condition>
+      <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="false">
+        <Actions>
+          <Set Target="[EngineStatus.Content]" Value="Stopped" />
+          <Set Target="[EngineStatus.Color]" Value="Red" />
+        </Actions>
+      </Condition>
+      <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
+      <Binding Source="[BuddyViewer.CurrentWorkName]" Target="[CurrentWorkName.Content]" />
+      <Binding Source="[BuddyViewer.CurrentWorkStatus]" Target="[CurrentWorkStatus.Content]" />
+      <Binding Source="[BuddyViewer.ProcentComplete.ToString]" Target="[ProcentComplete.Content]" />
+    </Rules>
+    
+    <Content>
+
+      <Panel Layout="Form">
+        <Children>
+
+          <me:HeaderText Name="Header" Text="Mce Buddy Viewer">
+            <LayoutInput>
+              <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
+            </LayoutInput>
+          </me:HeaderText>          
+
+          <Panel Layout="HorizontalFlow">
+
+            <LayoutInput>
+              <FormLayoutInput Top="Header,1,80" Left="Parent,0,20"/>
+            </LayoutInput>
+
+            <Layout>
+              <FlowLayout Orientation="Horizontal" Spacing="20,0" />
+            </Layout>
+
+            <Children>
+              <Panel>
+                <Layout>
+                  <FlowLayout Orientation="Vertical" Spacing="20,0" />
+                </Layout>
+                <Children>
+                  <me:SimpleButton Text="Rescan" Size="235,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.Rescan]" />
+                    </Command>
+                  </me:SimpleButton>
+                  <me:SimpleButton Text="Clear History" Size="235,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.RemoveHistory]" />
+                    </Command>
+                  </me:SimpleButton>
+                  <me:SimpleButton Text="Exit" Size="235,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.ExitApp]" />
+                    </Command>
+                  </me:SimpleButton>                  
+                </Children>
+              </Panel>
+              <Panel>
+
+                <Layout>
+                  <FlowLayout Orientation="Vertical" Spacing="5,0" />
+                </Layout>
+
+                <Children>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Service status: " Color="White" Font="[TextFont]" />
+                      <Text Name="EngineStatus" Color="LightGreen" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Jobs count: " Color="White" Font="[TextFont]" />
+                      <Text Name="NumWorks" Color="LightGreen" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Current job: " Color="White" Font="[TextFont]" />
+                      <Text Name="CurrentWorkName" Color="White" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Job status: " Color="White" Font="[TextFont]" />
+                      <Text Name="CurrentWorkStatus" Color="LightGreen" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Percent complete: " Color="White" Font="[TextFont]" />
+                      <Text Name="ProcentComplete" Color="LightGreen" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                </Children>
+              </Panel>
+            </Children>
+          </Panel>
+
+        </Children>
+      </Panel>
+
+    </Content>
+
+  </UI>
+
+</Mcml>

@@ -1,0 +1,388 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WINDOWS</DefineConstants>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <FileAlignment>512</FileAlignment>
+    <DebugType>Full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;WINDOWS</DefineConstants>
+    <Optimize>true</Optimize>
+    <FileAlignment>512</FileAlignment>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <ErrorReport>prompt</ErrorReport>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WINDOWS</DefineConstants>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <FileAlignment>512</FileAlignment>
+    <DebugType>Full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE;WINDOWS</DefineConstants>
+    <Optimize>true</Optimize>
+    <FileAlignment>512</FileAlignment>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <ErrorReport>prompt</ErrorReport>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>MCEBuddy.TagLib</RootNamespace>
+    <ProjectGuid>{4CC18776-125E-4318-9D24-D60110AD9697}</ProjectGuid>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>MCEBuddy2-HP.pfx</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WINDOWS</DefineConstants>
+    <DebugType>Full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;WINDOWS</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\MCEBuddy.TagLib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\TagLib\Aac\AudioHeader.cs" />
+    <Compile Include="src\TagLib\Aac\BitStream.cs" />
+    <Compile Include="src\TagLib\Aac\File.cs" />
+    <Compile Include="src\TagLib\Aiff\File.cs" />
+    <Compile Include="src\TagLib\Aiff\StreamHeader.cs" />
+    <Compile Include="src\TagLib\Ape\File.cs" />
+    <Compile Include="src\TagLib\Ape\Footer.cs" />
+    <Compile Include="src\TagLib\Ape\Item.cs" />
+    <Compile Include="src\TagLib\Ape\StreamHeader.cs" />
+    <Compile Include="src\TagLib\Ape\Tag.cs" />
+    <Compile Include="src\TagLib\Asf\ContentDescriptionObject.cs" />
+    <Compile Include="src\TagLib\Asf\ContentDescriptor.cs" />
+    <Compile Include="src\TagLib\Asf\DescriptionRecord.cs" />
+    <Compile Include="src\TagLib\Asf\ExtendedContentDescriptionObject.cs" />
+    <Compile Include="src\TagLib\Asf\File.cs" />
+    <Compile Include="src\TagLib\Asf\FilePropertiesObject.cs" />
+    <Compile Include="src\TagLib\Asf\Guid.cs" />
+    <Compile Include="src\TagLib\Asf\HeaderExtensionObject.cs" />
+    <Compile Include="src\TagLib\Asf\HeaderObject.cs" />
+    <Compile Include="src\TagLib\Asf\MetadataLibraryObject.cs" />
+    <Compile Include="src\TagLib\Asf\Object.cs" />
+    <Compile Include="src\TagLib\Asf\PaddingObject.cs" />
+    <Compile Include="src\TagLib\Asf\StreamPropertiesObject.cs" />
+    <Compile Include="src\TagLib\Asf\Tag.cs" />
+    <Compile Include="src\TagLib\Asf\UnknownObject.cs" />
+    <Compile Include="src\TagLib\ByteVector.cs" />
+    <Compile Include="src\TagLib\ByteVectorList.cs" />
+    <Compile Include="src\TagLib\CombinedTag.cs" />
+    <Compile Include="src\TagLib\CorruptFileException.cs" />
+    <Compile Include="src\TagLib\File.cs" />
+    <Compile Include="src\TagLib\FileTypes.cs" />
+    <Compile Include="src\TagLib\Flac\Block.cs" />
+    <Compile Include="src\TagLib\Flac\BlockHeader.cs" />
+    <Compile Include="src\TagLib\Flac\File.cs" />
+    <Compile Include="src\TagLib\Flac\Picture.cs" />
+    <Compile Include="src\TagLib\Flac\StreamHeader.cs" />
+    <Compile Include="src\TagLib\Genres.cs" />
+    <Compile Include="src\TagLib\Gif\Codec.cs" />
+    <Compile Include="src\TagLib\Gif\File.cs" />
+    <Compile Include="src\TagLib\Gif\GifCommentTag.cs" />
+    <Compile Include="src\TagLib\ICodec.cs" />
+    <Compile Include="src\TagLib\Id3v1\StringHandler.cs" />
+    <Compile Include="src\TagLib\Id3v1\Tag.cs" />
+    <Compile Include="src\TagLib\Id3v2\ExtendedHeader.cs" />
+    <Compile Include="src\TagLib\Id3v2\Footer.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frame.cs" />
+    <Compile Include="src\TagLib\Id3v2\FrameFactory.cs" />
+    <Compile Include="src\TagLib\Id3v2\FrameHeader.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\AttachedPictureFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\CommentsFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\GeneralEncapsulatedObjectFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\MusicCdIdentifierFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\PlayCountFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\PopularimeterFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\PrivateFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\RelativeVolumeFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\SynchronizedLyricsFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\TermsOfUseFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\TextIdentificationFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\UniqueFileIdentifierFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\UnknownFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\Frames\UnsynchronisedLyricsFrame.cs" />
+    <Compile Include="src\TagLib\Id3v2\FrameTypes.cs" />
+    <Compile Include="src\TagLib\Id3v2\Header.cs" />
+    <Compile Include="src\TagLib\Id3v2\SynchData.cs" />
+    <Compile Include="src\TagLib\Id3v2\Tag.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\ByteIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\ByteVectorIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\LongArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\LongIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\MakernoteIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\Rational.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\RationalArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\RationalIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SByteIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\ShortArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\ShortIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SLongArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SLongIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SRational.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SRationalArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SRationalIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SShortArrayIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SShortIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\StringIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\StripOffsetsIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SubIFDArrayEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\SubIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\ThumbnailDataIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\UndefinedIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\Entries\UserCommentIFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\IFDDirectory.cs" />
+    <Compile Include="src\TagLib\IFD\IFDEntry.cs" />
+    <Compile Include="src\TagLib\IFD\IFDEntryType.cs" />
+    <Compile Include="src\TagLib\IFD\IFDReader.cs" />
+    <Compile Include="src\TagLib\IFD\IFDRenderer.cs" />
+    <Compile Include="src\TagLib\IFD\IFDStructure.cs" />
+    <Compile Include="src\TagLib\IFD\IFDTag.cs" />
+    <Compile Include="src\TagLib\IFD\Makernotes\Nikon3MakernoteReader.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\CanonFileInfoEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\CanonMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\CanonPictureInfoEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\ExifEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\GPSEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\IFDEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\IOPEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\Nikon3MakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonIsoInfoEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonLensData3EntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonPictureControlEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonPreviewMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonShotInfoEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonVibrationReductionEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\NikonWorldTimeEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\OlympusMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\PanasonicMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\PentaxMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\IFD\Tags\SonyMakerNoteEntryTag.cs" />
+    <Compile Include="src\TagLib\Image\Codec.cs" />
+    <Compile Include="src\TagLib\Image\CombinedImageTag.cs" />
+    <Compile Include="src\TagLib\Image\File.cs" />
+    <Compile Include="src\TagLib\Image\ImageBlockFile.cs" />
+    <Compile Include="src\TagLib\Image\ImageOrientation.cs" />
+    <Compile Include="src\TagLib\Image\ImageTag.cs" />
+    <Compile Include="src\TagLib\Image\NoMetadata\File.cs" />
+    <Compile Include="src\TagLib\Jpeg\Codec.cs" />
+    <Compile Include="src\TagLib\Jpeg\File.cs" />
+    <Compile Include="src\TagLib\Jpeg\JpegCommentTag.cs" />
+    <Compile Include="src\TagLib\Jpeg\Marker.cs" />
+    <Compile Include="src\TagLib\Jpeg\Table.cs" />
+    <Compile Include="src\TagLib\ListBase.cs" />
+    <Compile Include="src\TagLib\Matroska\AudioTrack.cs" />
+    <Compile Include="src\TagLib\Matroska\EBMLElement.cs" />
+    <Compile Include="src\TagLib\Matroska\EBMLIDs.cs" />
+    <Compile Include="src\TagLib\Matroska\File.cs" />
+    <Compile Include="src\TagLib\Matroska\MatroskaIDs.cs" />
+    <Compile Include="src\TagLib\Matroska\SubtitleTrack.cs" />
+    <Compile Include="src\TagLib\Matroska\Tag.cs" />
+    <Compile Include="src\TagLib\Matroska\Track.cs" />
+    <Compile Include="src\TagLib\Matroska\VideoTrack.cs" />
+    <Compile Include="src\TagLib\Mpc\File.cs" />
+    <Compile Include="src\TagLib\Mpc\StreamHeader.cs" />
+    <Compile Include="src\TagLib\Mpeg4\AppleTag.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Box.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\AppleAdditionalInfoBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\AppleAnnotationBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\AppleDataBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\AppleElementaryStreamDescriptor.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\AppleItemListBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\FullBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoAudioSampleEntry.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoChunkLargeOffsetBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoChunkOffsetBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoFreeSpaceBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoHandlerBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoMetaBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoMovieHeaderBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoSampleDescriptionBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoSampleEntry.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoSampleTableBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoUserDataBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\IsoVisualSampleEntry.cs" />
+    <Compile Include="src\TagLib\Mpeg4\Boxes\UnknownBox.cs" />
+    <Compile Include="src\TagLib\Mpeg4\BoxFactory.cs" />
+    <Compile Include="src\TagLib\Mpeg4\BoxHeader.cs" />
+    <Compile Include="src\TagLib\Mpeg4\BoxTypes.cs" />
+    <Compile Include="src\TagLib\Mpeg4\File.cs" />
+    <Compile Include="src\TagLib\Mpeg4\FileParser.cs" />
+    <Compile Include="src\TagLib\Mpeg\AudioFile.cs" />
+    <Compile Include="src\TagLib\Mpeg\AudioHeader.cs" />
+    <Compile Include="src\TagLib\Mpeg\File.cs" />
+    <Compile Include="src\TagLib\Mpeg\VideoHeader.cs" />
+    <Compile Include="src\TagLib\Mpeg\XingHeader.cs" />
+    <Compile Include="src\TagLib\Mpeg\VBRIHeader.cs" />
+    <Compile Include="src\TagLib\NonContainer\EndTag.cs" />
+    <Compile Include="src\TagLib\NonContainer\File.cs" />
+    <Compile Include="src\TagLib\NonContainer\StartTag.cs" />
+    <Compile Include="src\TagLib\NonContainer\Tag.cs" />
+    <Compile Include="src\TagLib\Ogg\Bitstream.cs" />
+    <Compile Include="src\TagLib\Ogg\Codec.cs" />
+    <Compile Include="src\TagLib\Ogg\Codecs\Theora.cs" />
+    <Compile Include="src\TagLib\Ogg\Codecs\Vorbis.cs" />
+    <Compile Include="src\TagLib\Ogg\File.cs" />
+    <Compile Include="src\TagLib\Ogg\GroupedComment.cs" />
+    <Compile Include="src\TagLib\Ogg\Page.cs" />
+    <Compile Include="src\TagLib\Ogg\PageHeader.cs" />
+    <Compile Include="src\TagLib\Ogg\Paginator.cs" />
+    <Compile Include="src\TagLib\Ogg\XiphComment.cs" />
+    <Compile Include="src\TagLib\Picture.cs" />
+    <Compile Include="src\TagLib\Png\Codec.cs" />
+    <Compile Include="src\TagLib\Png\File.cs" />
+    <Compile Include="src\TagLib\Png\PngTag.cs" />
+    <Compile Include="src\TagLib\Properties.cs" />
+    <Compile Include="src\TagLib\ReadOnlyByteVector.cs" />
+    <Compile Include="src\TagLib\Riff\AviHeaderList.cs" />
+    <Compile Include="src\TagLib\Riff\AviStream.cs" />
+    <Compile Include="src\TagLib\Riff\BitmapInfoHeader.cs" />
+    <Compile Include="src\TagLib\Riff\DivXTag.cs" />
+    <Compile Include="src\TagLib\Riff\File.cs" />
+    <Compile Include="src\TagLib\Riff\InfoTag.cs" />
+    <Compile Include="src\TagLib\Riff\List.cs" />
+    <Compile Include="src\TagLib\Riff\ListTag.cs" />
+    <Compile Include="src\TagLib\Riff\MovieIdTag.cs" />
+    <Compile Include="src\TagLib\Riff\WaveFormatEx.cs" />
+    <Compile Include="src\TagLib\StringList.cs" />
+    <Compile Include="src\TagLib\SupportedMimeType.cs" />
+    <Compile Include="src\TagLib\Tag.cs" />
+    <Compile Include="src\TagLib\Tiff\Arw\File.cs" />
+    <Compile Include="src\TagLib\Tiff\BaseTiffFile.cs" />
+    <Compile Include="src\TagLib\Tiff\Codec.cs" />
+    <Compile Include="src\TagLib\Tiff\Cr2\File.cs" />
+    <Compile Include="src\TagLib\Tiff\Dng\File.cs" />
+    <Compile Include="src\TagLib\Tiff\File.cs" />
+    <Compile Include="src\TagLib\Tiff\Nef\File.cs" />
+    <Compile Include="src\TagLib\Tiff\Pef\File.cs" />
+    <Compile Include="src\TagLib\Tiff\Rw2\File.cs" />
+    <Compile Include="src\TagLib\Tiff\Rw2\IFDReader.cs" />
+    <Compile Include="src\TagLib\Tiff\Rw2\IFDTag.cs" />
+    <Compile Include="src\TagLib\UnsupportedFormatException.cs" />
+    <Compile Include="src\TagLib\WavPack\File.cs" />
+    <Compile Include="src\TagLib\WavPack\StreamHeader.cs" />
+    <Compile Include="src\TagLib\Xmp\XmlNodeExtensions.cs" />
+    <Compile Include="src\TagLib\Xmp\XmpNode.cs" />
+    <Compile Include="src\TagLib\Xmp\XmpNodeType.cs" />
+    <Compile Include="src\TagLib\Xmp\XmpNodeVisitor.cs" />
+    <Compile Include="src\TagLib\Xmp\XmpTag.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MCEBuddy2-HP.pfx" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+</Project>
