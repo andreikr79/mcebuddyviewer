@@ -244,6 +244,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] SimpleListBox {
+            get {
+                object obj = ResourceManager.GetObject("SimpleListBox", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static byte[] Sounds {
             get {
                 object obj = ResourceManager.GetObject("Sounds", resourceCulture);
