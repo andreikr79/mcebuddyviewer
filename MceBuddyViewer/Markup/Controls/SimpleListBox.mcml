@@ -1,0 +1,20 @@
+﻿<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:cor="assembly://MSCorLib/System"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
+      xmlns:me="Me">
+
+  <UI Name="SimpleListBox">
+    <Content>
+      <Graphic Content="image://me:ListboxNoFocus">
+        <Children>
+          <Scroller Orientation="Vertical" FadeSize="10" Padding="15,15,15,15">
+            <Children>
+              
+            </Children>
+          </Scroller>
+        </Children>
+      </Graphic>
+    </Content>
+  </UI>
+
+</Mcml>

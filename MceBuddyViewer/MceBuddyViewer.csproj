@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DevInstall.cmd" />
+    <None Include="Markup\Controls\SimpleListBox.mcml" />
     <None Include="mcebuddyviewer.snk" />
     <None Include="Setup\Build.cmd" />
     <None Include="Setup\License.rtf" />
