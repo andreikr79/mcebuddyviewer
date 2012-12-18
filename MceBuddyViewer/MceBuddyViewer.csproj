@@ -147,6 +147,7 @@
     <Content Include="Images\Application.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Images\ListboxNoFocus.png" />
     <Content Include="Markup\Base\Animations.mcml" />
     <Content Include="Markup\Base\Base.mcml">
       <SubType>Designer</SubType>

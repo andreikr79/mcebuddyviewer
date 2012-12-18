@@ -198,6 +198,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static System.Drawing.Bitmap ListboxNoFocus {
+            get {
+                object obj = ResourceManager.GetObject("ListboxNoFocus", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static byte[] MainForm {
             get {
                 object obj = ResourceManager.GetObject("MainForm", resourceCulture);
