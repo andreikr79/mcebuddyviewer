@@ -4,6 +4,7 @@
       xmlns:me="Me">
   
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ListBoxItem" />
   
   <UI Name="SimpleListBox">
     <Properties>      
@@ -27,7 +28,7 @@
                   <FlowLayout Orientation="Vertical" />
                 </Layout>
                 <Content>
-                  <Text Content="[RepeatedItem!cor:String]" Color="White" Font="[Font]" />
+                  <me:ListBoxItem Text="[RepeatedItem!cor:String]" Font="[Font]" />                  
                 </Content>                
               </Repeater>              
             </Children>

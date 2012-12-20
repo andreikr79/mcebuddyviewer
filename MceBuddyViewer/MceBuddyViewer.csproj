@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DevInstall.cmd" />
+    <Content Include="Markup\Controls\ListBoxItem.mcml" />
     <Content Include="Markup\Controls\SimpleListBox.mcml" />
     <None Include="mcebuddyviewer.snk" />
     <None Include="Setup\Build.cmd" />
@@ -252,13 +253,13 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>%25windir%25\eHome\McmlVerifier.exe -verbose -assemblyredirect:"$(FullyQualifiedOutputPath)" -directory:"$(ProjectDir)Markup"
-rem "$(ProjectDir)Setup\Build.cmd" $(ConfigurationName)
-"$(ProjectDir)Install.bat" "$(TargetPath)" "$(ProjectDir)Setup\Registration.xml" $(TargetDir)
+"$(ProjectDir)Setup\Build.cmd" $(ConfigurationName)
+rem "$(ProjectDir)Install.bat" "$(TargetPath)" "$(ProjectDir)Setup\Registration.xml" $(TargetDir)
 rem "$(ProjectDir)install_dll.bat" $(TargetDir)
 </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>"$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
+    <PreBuildEvent>rem "$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
 rem "$(ProjectDir)uninstall_dll.bat"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
