@@ -120,11 +120,11 @@
                       <Text Name="ProcentComplete" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
+                  <me:SimpleListBox Name="JobsListBox" List="[BuddyViewer.JobsList]" Font="[TextFont]" Size="700,352" />
                 </Children>
               </Panel>
             </Children>
           </Panel>
-
         </Children>
       </Panel>
 

@@ -6,5 +6,6 @@
 
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/HeaderText" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleButton" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleListBox" />
   
 </Mcml>
