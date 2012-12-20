@@ -1,0 +1,33 @@
+<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:cor="assembly://MSCorLib/System"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
+      xmlns:me="Me">
+
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  
+  <UI Name="ListBoxItem">
+    <Properties>
+      <cor:String Name="Text" cor:String="$Required" />
+      <Font Name="Font" Font="font://me:Font" />
+    </Properties>
+    <Locals>
+      <ClickHandler Name="Clicker" />
+    </Locals>
+    <Rules>
+      <Condition Source="[Input.KeyFocus]" SourceValue="false" >
+        <Actions>
+          <Set Target="[TextItem.Alpha]" Value="0.5" />
+        </Actions>
+      </Condition>
+      <Condition Source="[Input.KeyFocus]" SourceValue="true" >
+        <Actions>
+          <Set Target="[TextItem.Alpha]" Value="1.0" />
+        </Actions>
+      </Condition>
+    </Rules>
+    <Content>
+      <Text Name="TextItem" Content="[Text]" Font="[Font]" Color="White" />
+    </Content>
+  </UI>
+  <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
+</Mcml>
