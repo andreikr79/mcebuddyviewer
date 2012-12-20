@@ -39,6 +39,19 @@ namespace MceBuddyViewer
         private string _currentworkname;
         private string _currentworkstatus;
         private int _procentcomplete;
+        private ArrayListDataSet _jobslist = new ArrayListDataSet();
+
+        public ArrayListDataSet JobsList
+        {
+            get
+            {
+                return _jobslist;
+            }
+            set
+            {
+                _jobslist = value;
+            }
+        }
 
         public bool EngineStatus
         {
@@ -395,21 +408,33 @@ namespace MceBuddyViewer
                         ProcentComplete = 0;
                     }
 
+                    if (fileQueue.Count != JobsList.Count)
+                    {
+                        JobsList.Clear();
+                        //int count = 0;
+                        foreach (string[] fn in fileQueue)
+                        {
+                            fn[0] = Path.GetFileName(fn[0]);
+                            JobsList.Add(fn[0]);
+                        }
+
+                    }
+
                     // Set the job status
                     for (int i = 0; i < _numJobs; i++)
                     {
                         JobStatus job = _pipeProxy.GetJobStatus(i);
                         if (job == null)
                         {
-                            // for future code
+                          // for future code
                         }
                         else if (job.Cancelled)
                         {
-                            // for future code
+                          // for future code
                         }
                         else
                         {
-                            // for future code
+                          // for future code
                         }
                     }
                 }

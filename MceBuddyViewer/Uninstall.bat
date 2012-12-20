@@ -28,4 +28,4 @@ echo gac = %gacUtil%
 
 %gacUtil% /u %1
 "%windir%\ehome\RegisterMCEApp.exe" %2 /u /allusers
-rem uninstall_dll.bat
+%~dp0uninstall_dll.bat

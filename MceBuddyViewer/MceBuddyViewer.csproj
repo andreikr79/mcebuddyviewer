@@ -252,13 +252,13 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>%25windir%25\eHome\McmlVerifier.exe -verbose -assemblyredirect:"$(FullyQualifiedOutputPath)" -directory:"$(ProjectDir)Markup"
-"$(ProjectDir)Setup\Build.cmd" $(ConfigurationName)
-rem "$(ProjectDir)Install.bat" "$(TargetPath)" "$(ProjectDir)Setup\Registration.xml"
+rem "$(ProjectDir)Setup\Build.cmd" $(ConfigurationName)
+"$(ProjectDir)Install.bat" "$(TargetPath)" "$(ProjectDir)Setup\Registration.xml" $(TargetDir)
 rem "$(ProjectDir)install_dll.bat" $(TargetDir)
 </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>rem "$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
+    <PreBuildEvent>"$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
 rem "$(ProjectDir)uninstall_dll.bat"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
