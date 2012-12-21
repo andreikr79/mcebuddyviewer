@@ -7,13 +7,25 @@
   
   <UI Name="ListBoxItem">
     <Properties>
-      <cor:String Name="Text" cor:String="$Required" />
+      <ICommand Name="Command" ICommand="$Required" />
+      <cor:Object Name="Item" Object="$Required" />
+      <a:ListSelection Name="SelectionHolder" ListSelection="$Required" />
+      <Index Name="Index" Index="$Required" />
       <Font Name="Font" Font="font://me:Font" />
     </Properties>
     <Locals>
       <ClickHandler Name="Clicker" />
     </Locals>
     <Rules>
+      <Binding Source="[Command]" Target="[Clicker.Command]" />
+      <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />
+      <Default Target="[Input.KeyInteractive]" Value="true" />
+      <Condition Source="[Clicker.Clicking]" SourceValue="true">
+        <Actions>
+          <Set Target="[SelectionHolder.Index]" Value="[Index.Value]" />
+          <Set Target="[SelectionHolder.Item]" Value="[Item]" />
+        </Actions>
+      </Condition>
       <Condition Source="[Input.KeyFocus]" SourceValue="false" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="0.5" />
@@ -26,7 +38,7 @@
       </Condition>
     </Rules>
     <Content>
-      <Text Name="TextItem" Content="[Text]" Font="[Font]" Color="White" />
+      <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
     </Content>
   </UI>
   <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />

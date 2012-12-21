@@ -40,6 +40,20 @@ namespace MceBuddyViewer
         private string _currentworkstatus;
         private int _procentcomplete;
         private ArrayListDataSet _jobslist = new ArrayListDataSet();
+        private int _jobitemselected = -1;
+
+        public int JobItemSelected
+        {
+            get
+            {
+                return _jobitemselected;
+            }
+            set
+            {
+                _jobitemselected = value;
+                //FirePropertyChanged("JobItemSelected");
+            }
+        }
 
         public ArrayListDataSet JobsList
         {
@@ -50,6 +64,7 @@ namespace MceBuddyViewer
             set
             {
                 _jobslist = value;
+                //FirePropertyChanged("JobsList");
             }
         }
 
@@ -380,9 +395,14 @@ namespace MceBuddyViewer
 
                     if (fileQueue.Count > 0)
                     {
-                        string[] fn = fileQueue[0];
+                        int _curindex = 0;
+                        if ((JobItemSelected >= 0) && (JobItemSelected <= _numJobs))
+                        {
+                            _curindex = JobItemSelected;
+                        }
+                        string[] fn = fileQueue[_curindex];
                         fn[0] = Path.GetFileName(fn[0]);
-                        JobStatus job2 = _pipeProxy.GetJobStatus(0);
+                        JobStatus job2 = _pipeProxy.GetJobStatus(_curindex);
                         CurrentWorkName = fn[0];
                         
                         if (job2 == null)
@@ -546,6 +566,10 @@ namespace MceBuddyViewer
             {
                 Debug.WriteLine(e1.ToString());
             }
+        }
+
+        public void ListItemClicked()
+        {
         }
 
         //
