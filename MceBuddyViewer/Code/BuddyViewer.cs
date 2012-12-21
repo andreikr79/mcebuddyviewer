@@ -396,7 +396,7 @@ namespace MceBuddyViewer
                     if (fileQueue.Count > 0)
                     {
                         int _curindex = 0;
-                        if ((JobItemSelected >= 0) && (JobItemSelected <= _numJobs))
+                        if ((JobItemSelected >= 0) && (JobItemSelected <= _numJobs-1))
                         {
                             _curindex = JobItemSelected;
                         }
