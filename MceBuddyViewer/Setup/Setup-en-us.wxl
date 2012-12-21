@@ -8,10 +8,10 @@
 	<String Id="Property_ArpHelpLink">http://msdn.microsoft.com/mce/</String>
 	<String Id="Property_ArpUrlInfoAbout">http://msdn.microsoft.com/mce/</String>
 	<String Id="Property_ProductLanguage">1033</String>
-	<String Id="Property_ProductName">Mce Buddy Viewer</String>
-	<String Id="Property_CompanyName">MceBuddy</String>
+	<String Id="Property_ProductName">MCEBuddy Viewer</String>
+	<String Id="Property_CompanyName">MCEBuddy</String>
 
-	<String Id="Package_Description">Mce Buddy Viewer</String>
-	<String Id="Package_Comments">This Installer database contains the logic and data required to install MceBuddyViewer.</String>
+	<String Id="Package_Description">MCEBuddy Viewer</String>
+	<String Id="Package_Comments">This Installer database contains the logic and data required to install MCEBuddyViewer.</String>
 
 </WixLocalization>
