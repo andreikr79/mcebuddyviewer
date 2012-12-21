@@ -37,6 +37,7 @@
       <Binding Source="[BuddyViewer.CurrentWorkName]" Target="[CurrentWorkName.Content]" />
       <Binding Source="[BuddyViewer.CurrentWorkStatus]" Target="[CurrentWorkStatus.Content]" />
       <Binding Source="[BuddyViewer.ProcentComplete.ToString]" Target="[ProcentComplete.Content]" />
+      <Binding Source="[JobsListBox.SelectedIndex]" Target="[BuddyViewer.JobItemSelected]" />
     </Rules>
     
     <Content>
@@ -120,7 +121,11 @@
                       <Text Name="ProcentComplete" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
-                  <me:SimpleListBox Name="JobsListBox" List="[BuddyViewer.JobsList]" Font="[TextFont]" Size="700,352" />
+                  <me:SimpleListBox Name="JobsListBox" List="[BuddyViewer.JobsList]" Font="[TextFont]" Size="700,352">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.ListItemClicked]" />
+                    </Command>
+                  </me:SimpleListBox>
                 </Children>
               </Panel>
             </Children>
