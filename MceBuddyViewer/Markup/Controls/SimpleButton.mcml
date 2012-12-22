@@ -5,128 +5,212 @@
 
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
 
+
+  <!--general purpose command button in Windows 7 Media Center style-->
   <UI Name="SimpleButton">
-
-    <Properties>
-
-      <ICommand Name="Command" ICommand="$Required" />
-      <cor:Boolean Name="IsNavigatingCommand" Boolean="false" />
-      <cor:String Name="Text" String="" />
-      <Size Name="Size" Size="251,51" />
-      <Font Name="Font" Font="font://me:Font" />
-      <Image Name="ImageFocus" Image="image://me:ButtonLeftFocus" />
-      <Image Name="ImageNoFocus" Image="image://me:ButtonNoFocus" />
-      <Image Name="ImageDormant" Image="image://me:ButtonDormant" />
-
-    </Properties>
 
     <Locals>
 
-      <ClickHandler Name="Clicker" />
+      <!--handles mouse click, remote select and keyboard enter events-->
+      <ClickHandler Name="Clicker"/>
 
     </Locals>
 
+    <Properties>
+
+      <!--required properties-->
+      <ICommand Name="Command" ICommand="$Required"/>
+
+      <cor:String Name="Text" String="" />
+      
+      <!--options-->
+      <cor:Boolean Name="IsNavigatingCommand" Boolean="true"/>
+      <Size Name="Size" Size="250, 51"/>
+
+      <!--fonts-->
+      <Font Name="Font" FontName="Segoe Media Center Semibold" FontSize="20" />
+
+      <!--images-->
+      <Image Name="LabelBackground" Source="res://ehres!Button.Label.Background.png" NineGrid="7, 7, 7, 7"/>
+      <Image Name="LabelBackgroundFocus" Source="res://ehres!Button.Label.Background.Focus.png" NineGrid="7, 7, 7, 7"/>
+      <Image Name="NoFocusImage" Source="res://ehres!Common.Button.NoFocus.Full.png" NineGrid="20,12,20,10"/>
+      <Image Name="FocusImage" Source="res://ehres!Common.Button.Left.Focus.png" NineGrid="20,12,20,10"/>
+      <Image Name="DisabledImage" Source="res://ehres!Common.Button.Disabled.Full.png" NineGrid="20,12,20,10"/>
+      <Image Name="FocusOverlayImage" Source="res://ehres!Common.Button.Left.FocusOverlay.png"/>
+      <Image Name="PressedImage" Source="res://ehres!Common.Button.PressedHighlight.png"/>
+
+      <!--colors-->
+      <Color Name="NoFocusColor" Color="255, 151, 217, 255"/>
+      <Color Name="FocusColor" Color="255, 242, 242, 242"/>
+      <Color Name="DisabledColor" Color="102, 151, 217, 255"/>
+
+      <!--sounds-->
+      <Sound Name="DefaultNavigationSound" Sound="res://ehres!Select_a.wav" />
+      <Sound Name="DefaultNonNavigationSound" Sound="res://ehres!MiniSelect_a.wav" />
+
+    </Properties>
+
     <Rules>
 
-      <Binding Source="[Command]" Target="[Clicker.Command]" />
-      <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />
-      <Binding Source="[Input.KeyFocus]" Target="[imgFocusOverlay.Visible]" />
-      <Binding Source="[Font]" Target="[Label.Font]" />
-      <Binding Source="[Text]" Target="[Label.Content]" />
+      <!--defaults-->
       <Default Target="[Input.KeyInteractive]" Value="true" />
 
+      <!--play navigation sound if button's command causes navigation-->
       <Rule>
         <Conditions>
           <Modified Source="[Clicker.Invoked]"/>
-          <Equality Source="[IsNavigatingCommand]" Value="true" />
+          <Equality Source="[IsNavigatingCommand]" Value="true"/>
         </Conditions>
         <Actions>
-          <PlaySound Sound="sound://me:Select" />
+          <PlaySound Sound="[DefaultNavigationSound]" />
         </Actions>
       </Rule>
 
+      <!--play non-navigation sound if button's command doesn't cause navigation-->
       <Rule>
         <Conditions>
           <Modified Source="[Clicker.Invoked]"/>
           <Equality Source="[IsNavigatingCommand]" Value="false"/>
         </Conditions>
         <Actions>
-          <PlaySound Sound="sound://me:Miniselect" />
+          <PlaySound Sound="[DefaultNonNavigationSound]" />
         </Actions>
       </Rule>
 
-      <Condition Source="[Input.KeyFocus]" SourceValue="true">
+      <!--disable button when command unavailable-->
+      <Binding Source="[Command.Available]" Target="[Input.Enabled]"/>
+
+      <!--change colors and image on disable-->
+      <Condition Source="[Input.Enabled]" SourceValue="false" Target="[Label.Color]" Value="[DisabledColor]"/>
+      <Condition Source="[Input.Enabled]" SourceValue="false" Target="[Background.Content]" Value="[DisabledImage]"/>
+
+      <!--change text color and images on focus-->
+      <Condition Source="[Input.KeyFocus]" SourceValue="true" Target="[Label.Color]" Value="[FocusColor]" />
+      <Condition Source="[Input.KeyFocus]" SourceValue="true" Target="[LabelBackgroundGraphic.Content]" Value="[LabelBackgroundFocus]" />
+      <Condition Source="[Input.KeyFocus]" SourceValue="true" Target="[Background.Content]" Value="[FocusImage]" />
+
+      <!--show focus overlay and play focus sound on focus-->
+      <Rule>
         <Conditions>
-          <Equality Source="[Command.Available]" ConditionOp="Equals" Value="true" />
+          <Equality Source="[Input.KeyFocus]" ConditionOp="ChangedTo" Value="true"/>
         </Conditions>
         <Actions>
-          <Set Target="[imgButton.Content]" Value="[ImageFocus]"/>
-          <PlaySound Sound="sound://me:Focus" />
+          <Set Target="[FocusOverlay.Visible]" Value="true"/>
+          <PlaySound Sound="res://ehres!Focus_a.wav" />
         </Actions>
-      </Condition>
+      </Rule>
 
-      <Condition Source="[Input.MouseFocus]" SourceValue="true">
+      <!--highlight appears while clicking button-->
+      <Binding Source="[Clicker.Clicking]" Target="[Highlight.Visible]"/>
+
+      <!--apply size property-->
+      <Binding Source="[Size]" Target="[Root.MaximumSize]"/>
+      <Binding Source="[Size]" Target="[Background.MinimumSize]"/>
+
+      <!--bind button text to command description-->
+      <Binding Source="[Text]" Target="[Label.Content]" />
+
+      <!--invoke the command when the button is clicked-->
+      <Rule>
         <Conditions>
-          <Equality Source="[Command.Available]" ConditionOp="Equals" Value="true" />
+          <Modified Source="[Clicker.Invoked]"/>
         </Conditions>
         <Actions>
-          <Set Target="[imgButton.Content]" Value="[ImageFocus]"/>
+          <Invoke Target="[Command.Invoke]" InvokePolicy="AsynchronousLowPri"/>
         </Actions>
-      </Condition>
-
-      <Condition Source="[Command.Available]" ConditionOp="Equals" SourceValue="false">
-        <Actions>
-          <Set Target="[imgButton.Content]" Value="[ImageDormant]" />
-        </Actions>
-      </Condition>
+      </Rule>
 
     </Rules>
 
     <Content>
 
-      <Panel>
+      <Panel Name="Root" MouseInteractive="true">
         <Children>
 
-          <Graphic Name="imgButton"
-                   Content="[ImageNoFocus]"
-                   Padding="12,7,12,7"
-                   MouseInteractive="true"
-                   MinimumSize="[Size]"
-                   MaximumSize="[Size]"
-                   SizingPolicy="SizeToContent"
-                   HorizontalAlignment="Fill"
-                   VerticalAlignment="Fill"
-                   >
+          <!--contains the button image and text-->
+          <Panel Name="LabelScalePanel" Layout="Dock">
             <Children>
-              <Text Name="Label" Color="White" Margins="0,0,0,0" Font="[Font]" />
+              <Panel Name="LabelPanel" Layout="Anchor" Margins="16,0,16,0">
+                <LayoutInput>
+                  <DockLayoutInput Position="Left" Alignment="Center"/>
+                </LayoutInput>
+                <Children>
+                  <Text Name="Label" Color="[NoFocusColor]" Font="[Font]">
+                    <LayoutInput>
+                      <AnchorLayoutInput Vertical="Center" Horizontal="Near"/>
+                    </LayoutInput>
+                  </Text>
+                  <Graphic Name="LabelBackgroundGraphic" Content="[LabelBackground]">
+                    <LayoutInput>
+                      <AnchorLayoutInput Left="Label,0,-8" Top="Label,0,-4" Right="Label,1,8" Bottom="Label,1,4" ContributesToWidth="false" ContributesToHeight="false"/>
+                    </LayoutInput>
+                  </Graphic>
+                </Children>
+              </Panel>
             </Children>
-          </Graphic>
+          </Panel>
 
-          <Graphic Name="imgFocusOverlay"
-                   Content="image://me:ButtonLeftFocusOverlay"
-                   MinimumSize="[Size]"
-                   MaximumSize="[Size]"
-                   SizingPolicy="SizeToContent"
-                   HorizontalAlignment="Fill"
-                   VerticalAlignment="Fill"
-                   >
+          <!--contains the (animated) button highlight-->
+          <Clip FadeSize="20" Layout="Fill">
+            <Children>
+              <Graphic Name="Highlight" Content="[PressedImage]">
+                <Animations>
+                  <TransformByAttributeAnimation Filter="Position" Attribute="Width" Magnitude="1.0">
+                    <Source>
+                      <Animation Type="Show">
+                        <Keyframes>
+                          <PositionKeyframe Time="0.00" Value="-1.0,0,0" RelativeTo="Final"/>
+                          <PositionKeyframe Time="0.10" Value="0.00,0,0" RelativeTo="Final"/>
+                          <PositionKeyframe Time="0.18" Value="0.35,0,0" RelativeTo="Final"/>
+                          <PositionKeyframe Time="0.35" Value="0.55,0,0" RelativeTo="Final"/>
+                          <PositionKeyframe Time="0.60" Value="1.25,0,0" RelativeTo="Final"/>
+                          <PositionKeyframe Time="0.70" Value="1.25,0,0" RelativeTo="Final"/>
+                          <AlphaKeyframe Time="0.00" Value="0.00" RelativeTo="Absolute"/>
+                          <AlphaKeyframe Time="0.05" Value="0.75" RelativeTo="Absolute"/>
+                          <AlphaKeyframe Time="0.17" Value="0.75" RelativeTo="Absolute"/>
+                          <AlphaKeyframe Time="0.40" Value="0.00" RelativeTo="Absolute"/>
+                        </Keyframes>
+                      </Animation>
+                    </Source>
+                  </TransformByAttributeAnimation>
+                  <TransformByAttributeAnimation Filter="Position" Attribute="Width" Magnitude="1.0">
+                    <Source>
+                      <Animation Type="Hide">
+                        <Keyframes>
+                          <PositionKeyframe Time="0.00" Value="0.0,0,0" RelativeTo="Current"/>
+                          <PositionKeyframe Time="0.10" Value="1.0,0,0" RelativeTo="Final"/>
+                          <AlphaKeyframe Time="0.00" RelativeTo="Current"/>
+                          <AlphaKeyframe Time="0.10" Value="0.0" RelativeTo="Absolute"/>
+                        </Keyframes>
+                      </Animation>
+                    </Source>
+                  </TransformByAttributeAnimation>
+                </Animations>
+              </Graphic>
+            </Children>
+          </Clip>
+
+          <!--contains the (slowly pulsing) focus overlay-->
+          <Graphic Name="FocusOverlay" Layout="Fill" Content="[FocusOverlayImage]" Visible="false">
             <Animations>
-              <Animation Animation="animation://me:ButtonFocusOverlayIdle"/>
+              <Animation Loop="-1" Type="Idle">
+                <Keyframes>
+                  <AlphaKeyframe Time="0.0" Value="0.0" Interpolation="SCurve" RelativeTo="Absolute"/>
+                  <AlphaKeyframe Time="1.5" Value="0.63" Interpolation="SCurve" RelativeTo="Absolute"/>
+                  <AlphaKeyframe Time="3.0" Value="0.0" RelativeTo="Absolute"/>
+                </Keyframes>
+              </Animation>
             </Animations>
           </Graphic>
 
+          <!--the button background image-->
+          <Graphic Name="Background" Layout="Fill" Content="[NoFocusImage]" />
+
         </Children>
       </Panel>
-    </Content>
-  </UI>
 
-  <Font Name="Font"                     FontName="global://me:RegularFontName"                                    FontSize="20" />
-  <Image Name="ButtonDisabled"          Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonDisabled"          NineGrid="7,7,7,7" />
-  <Image Name="ButtonDormant"           Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonDormant"           NineGrid="7,7,7,7" />
-  <Image Name="ButtonLeftFocus"         Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonLeftFocus"         NineGrid="7,7,7,7" />
-  <Image Name="ButtonLeftFocusOverlay"  Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonLeftFocusOverlay"  NineGrid="7,7,7,7" />
-  <Image Name="ButtonNoFocus"           Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonNoFocus"           NineGrid="7,7,7,7" />
-  <Image Name="ButtonPressedAfterGlow"  Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonPressedAfterGlow"  NineGrid="7,7,7,7" />
-  <Image Name="ButtonPressedHighlight"  Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ButtonPressedHighlight"  NineGrid="7,7,7,7" />
+    </Content>
+
+  </UI>
 
 </Mcml>
