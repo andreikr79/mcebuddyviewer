@@ -39,8 +39,62 @@ namespace MceBuddyViewer
         private string _currentworkname;
         private string _currentworkstatus;
         private int _procentcomplete;
-        private ArrayListDataSet _jobslist = new ArrayListDataSet();
+        private ArrayListDataSet _jobslist;
         private int _jobitemselected = -1;
+
+        private void BackCurrentWorkName(object obj)
+        {
+            if (!IsDisposed)
+            {
+                CurrentWorkName = (string)obj;
+            }
+        }
+
+        private void BackCurrentWorkStatus(object obj)
+        {
+            if (!IsDisposed)
+            {
+                CurrentWorkStatus = (string)obj;
+            }
+        }
+
+        private void BackProcentComplete(object obj)
+        {
+            if (!IsDisposed)
+            {
+                ProcentComplete = (int)obj;
+            }
+        }
+
+        private void BackNumWorks(object obj)
+        {
+            if (!IsDisposed)
+            {
+                NumWorks = (int)obj;
+            }
+        }
+
+        private void BackEngineStatus(object obj)
+        {
+            if (!IsDisposed)
+            {
+                EngineStatus = (bool)obj;
+            }
+        }
+
+        private void BackChangedJobsList(object obj)
+        {
+            if (!IsDisposed)
+            {
+                _jobslist.Clear();
+                List<string[]> fileQueue = (List<string[]>)obj;                
+                foreach (string[] fn in fileQueue)
+                {
+                    fn[0] = Path.GetFileName(fn[0]);
+                    _jobslist.Add(fn[0]);
+                }
+            }
+        }
 
         public int JobItemSelected
         {
@@ -55,16 +109,11 @@ namespace MceBuddyViewer
             }
         }
 
-        public ArrayListDataSet JobsList
+        public IList JobsList
         {
             get
             {
                 return _jobslist;
-            }
-            set
-            {
-                _jobslist = value;
-                //FirePropertyChanged("JobsList");
             }
         }
 
@@ -144,6 +193,7 @@ namespace MceBuddyViewer
             this.session = session;
             this.host = host;
             _status = RunningStatus.Stopped;
+            _jobslist = new ArrayListDataSet(this);
             MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(); // Initialize with default parameters for now, we will get the config file from the server and then re-initialize (don't use null as it keeps accessing win.ini) - this is never written to a file (just a memory object)            
         }
 
@@ -207,6 +257,11 @@ namespace MceBuddyViewer
                 if (_pipeProxy != null)
                 {
                     _pipeProxy = null;
+                }
+                if (_jobslist != null)
+                {
+                    _jobslist.Dispose();
+                    _jobslist = null;
                 }
                 _exit = true;                
             }
@@ -374,12 +429,14 @@ namespace MceBuddyViewer
         {
             if (!_engineConnected)
             {
-                EngineStatus = false;
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, _engineConnected);
+                //EngineStatus = false;
                 return;
             }
             else
             {
-                EngineStatus = true;
+                //EngineStatus = true;
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, _engineConnected);
             }
 
             try
@@ -391,7 +448,7 @@ namespace MceBuddyViewer
 
                     // Display the file Queue
                     List<string[]> fileQueue = _pipeProxy.FileQueue();
-                    NumWorks = fileQueue.Count;
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, fileQueue.Count);                    
 
                     if (fileQueue.Count > 0)
                     {
@@ -403,40 +460,50 @@ namespace MceBuddyViewer
                         string[] fn = fileQueue[_curindex];
                         fn[0] = Path.GetFileName(fn[0]);
                         JobStatus job2 = _pipeProxy.GetJobStatus(_curindex);
-                        CurrentWorkName = fn[0];
+                        //CurrentWorkName = fn[0];
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, fn[0]);
                         
                         if (job2 == null)
                         {
-                            CurrentWorkStatus = "";
-                            ProcentComplete = 0;
+                            //CurrentWorkStatus = "";
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
+                            //ProcentComplete = 0;
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
                         }
                         else if (job2.Cancelled)
                         {
-                            CurrentWorkStatus = job2.CurrentAction;
-                            ProcentComplete = (int)job2.PercentageComplete;
+                            //CurrentWorkStatus = job2.CurrentAction;
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, job2.CurrentAction);
+                            //ProcentComplete = (int)job2.PercentageComplete;
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, (int)job2.PercentageComplete);
                         }
                         else
                         {
-                            CurrentWorkStatus = job2.CurrentAction;
-                            ProcentComplete = (int)job2.PercentageComplete;                          
+                            //CurrentWorkStatus = job2.CurrentAction;
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, job2.CurrentAction);
+                            //ProcentComplete = (int)job2.PercentageComplete;                          
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, (int)job2.PercentageComplete);
                         }
                         //Microsoft.MediaCenter.UI.Application.DeferredInvoke(Property that changed, value);
                     } else
                     {
-                        CurrentWorkName = "";
-                        CurrentWorkStatus = "";
+                        //CurrentWorkName = "";
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, "");
+                        //CurrentWorkStatus = "";
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
                         ProcentComplete = 0;
                     }
 
                     if (fileQueue.Count != JobsList.Count)
                     {
-                        JobsList.Clear();
-                        //int count = 0;
-                        foreach (string[] fn in fileQueue)
-                        {
-                            fn[0] = Path.GetFileName(fn[0]);
-                            JobsList.Add(fn[0]);
-                        }
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, fileQueue);
+                        //JobsList.Clear();
+                        ////int count = 0;
+                        //foreach (string[] fn in fileQueue)
+                        //{
+                        //    fn[0] = Path.GetFileName(fn[0]);
+                        //    JobsList.Add(fn[0]);
+                        //}
 
                     }
 

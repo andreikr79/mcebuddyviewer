@@ -45,7 +45,7 @@
       <Panel Layout="Form">
         <Children>
 
-          <me:HeaderText Name="Header" Text="Mce Buddy Viewer">
+          <me:HeaderText Name="Header" Text="MCE Buddy Viewer">
             <LayoutInput>
               <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
             </LayoutInput>
