@@ -5,8 +5,8 @@
 	<String Id="LaunchCondition_LaterVersion">A later version of [ProductName] is already installed.</String>
 	<String Id="LaunchCondition_WrongOSVersion">[ProductName] was not designed for this version of Windows Media Center or you don't have Windows Media Center.</String>
 
-	<String Id="Property_ArpHelpLink">http://msdn.microsoft.com/mce/</String>
-	<String Id="Property_ArpUrlInfoAbout">http://msdn.microsoft.com/mce/</String>
+	<String Id="Property_ArpHelpLink">http://mcebuddyviewer.codeplex.com/</String>
+	<String Id="Property_ArpUrlInfoAbout">http://mcebuddyviewer.codeplex.com/</String>
 	<String Id="Property_ProductLanguage">1033</String>
 	<String Id="Property_ProductName">MCEBuddy Viewer</String>
 	<String Id="Property_CompanyName">MCEBuddy</String>

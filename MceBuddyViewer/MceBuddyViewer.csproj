@@ -260,8 +260,8 @@ rem "$(ProjectDir)install_dll.bat" $(TargetDir)
 </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>rem "$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
-rem "$(ProjectDir)uninstall_dll.bat"</PreBuildEvent>
+    <PreBuildEvent>"$(ProjectDir)Uninstall.bat" "$(ProjectName)" "$(ProjectDir)Setup\Registration.xml"
+"$(ProjectDir)uninstall_dll.bat"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
