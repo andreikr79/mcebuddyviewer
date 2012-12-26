@@ -372,18 +372,18 @@ namespace MceBuddyViewer
                     // If it's LOCALHOST, we use NAMED PIPE else TCP PIPE
                     if (remoteServerName == GlobalDefs.MCEBUDDY_SERVER_NAME)
                     {
-                        // NAMED PIPE
-                        serverString = GlobalDefs.MCEBUDDY_NAMED_PIPE;
+                        // local NAMED PIPE
+                        serverString = GlobalDefs.MCEBUDDY_LOCAL_NAMED_PIPE;
                         NetNamedPipeBinding npb = new NetNamedPipeBinding();
                         pipeFactory = new ChannelFactory<ICore>(npb, new EndpointAddress(serverString));
                     }
                     else
                     {
-                        // TCP PIPE
-                        serverString = GlobalDefs.MCEBUDDY_TCP_PIPE;
+                        // network SOAP WEB SERVICES
+                        serverString = GlobalDefs.MCEBUDDY_WEB_SOAP_PIPE;
                         serverString = serverString.Replace(GlobalDefs.MCEBUDDY_SERVER_NAME, remoteServerName); // Update the Server Name with that from the config file
                         serverString = serverString.Replace(GlobalDefs.MCEBUDDY_SERVER_PORT, remoteServerPort.ToString(CultureInfo.InvariantCulture)); // Update the Server Port with that from the config file
-                        NetTcpBinding ntb = new NetTcpBinding(GlobalDefs.MCEBUDDY_PIPE_SECURITY, true);
+                        BasicHttpBinding ntb = new BasicHttpBinding(GlobalDefs.MCEBUDDY_PIPE_SECURITY);
                         TimeSpan timeoutPeriod = new TimeSpan(0, 0, GlobalDefs.PIPE_TIMEOUT);
                         ntb.SendTimeout = ntb.ReceiveTimeout = timeoutPeriod;
                         pipeFactory = new ChannelFactory<ICore>(ntb, new EndpointAddress(serverString));
