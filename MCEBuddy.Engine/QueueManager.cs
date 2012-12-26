@@ -292,7 +292,7 @@ namespace MCEBuddy.Engine
         /// <param name="filePath">File name with complete path to scan recursively up the parent chain of directories</param>
         private void DeleteParentDirectoryChainIfEmpty(string filePath)
         {
-            if (String.IsNullOrWhiteSpace(filePath))
+            if (GlobalDefs.IsNullOrWhiteSpace(filePath))
                 return;
 
             if (!Directory.Exists(Path.GetDirectoryName(filePath)))

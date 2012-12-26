@@ -513,7 +513,7 @@ namespace MCEBuddy.RemuxMediaCenter
                     // First try to copy all the streams directly (read parmeters for copy profile)
                     string copyRemuxParams = configProfileIni.ReadString(profile, "CopyRemux"+profileCount.ToString(CultureInfo.InvariantCulture), "");
 
-                    if (String.IsNullOrWhiteSpace(copyRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
+                    if (GlobalDefs.IsNullOrWhiteSpace(copyRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
                         break;
 
                     // Check for auto frame rate and replace with video framerate
@@ -571,7 +571,7 @@ namespace MCEBuddy.RemuxMediaCenter
                     // Now try to copy audio and transcode video (read parameters for Slow Remux profile)
                     string slowRemuxParams = configProfileIni.ReadString(profile, "SlowRemux"+profileCount.ToString(CultureInfo.InvariantCulture), "");
 
-                    if (String.IsNullOrWhiteSpace(slowRemuxParams)) // Have we used up all the SlowRemux profiles, then we're done here
+                    if (GlobalDefs.IsNullOrWhiteSpace(slowRemuxParams)) // Have we used up all the SlowRemux profiles, then we're done here
                         break;
 
                     // Check for auto frame rate and replace with video framerate

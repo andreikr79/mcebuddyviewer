@@ -302,13 +302,29 @@ namespace MCEBuddy.Transcode
             return secondsTime;
         }
 
+        private static string FormatTimeSpan(TimeSpan span, bool showSign)
+        {
+            string sign = String.Empty;
+            if (showSign && (span > TimeSpan.Zero))
+                sign = "+";
+
+            return sign +
+                   span.Hours.ToString("00") + ":" +
+                   span.Minutes.ToString("00") + ":" +
+                   span.Seconds.ToString("00") + "," +
+                   span.Milliseconds.ToString("000");
+        }
+
         private string seconds_to_hhmmss(double seconds)
         {
             TimeSpan st = TimeSpan.FromSeconds(seconds);
             if (seconds < 0)
-                return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
+                //return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
+                return FormatTimeSpan(st, false);
             else
-                return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
+                return FormatTimeSpan(st, false);
+            //return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
         }
+
     }
 }
