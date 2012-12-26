@@ -71,5 +71,10 @@ namespace MCEBuddy.Globals
 
         public static List<string[]> profilesSummary; // A 2 dimensional string List containing the Profile name and Description for all profiles in profiles.conf
         public static bool showAnalyzerInstalled; // Is showanalyzer installed on engine system
+
+        public static bool IsNullOrWhiteSpace(string value)
+        {
+            return String.IsNullOrEmpty(value) || value.Trim().Length == 0;
+        }
     }
 }

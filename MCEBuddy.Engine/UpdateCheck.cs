@@ -163,25 +163,25 @@ namespace MCEBuddy.Engine
             return AnnouncementLink;
         }
 
-        private LatestVersion ParseVersion(string pageOutput)
-        {
-            LatestVersion latestVersion;
+        //private LatestVersion ParseVersion(string pageOutput)
+        //{
+        //    LatestVersion latestVersion;
 
-            if (Environment.Is64BitProcess) // if 64 bit process (not OS) then return x64 version else x86 version
-            {
-                int x64Start = pageOutput.IndexOf("Latest Version:x64");
-                string x64VersionCode = pageOutput.Substring(x64Start, (pageOutput.IndexOf(":EOV", x64Start) - x64Start + 4));
-                latestVersion = new LatestVersion(x64VersionCode);
-            }
-            else
-            {
-                int x86Start = pageOutput.IndexOf("Latest Version:x86");
-                string x86VersionCode = pageOutput.Substring(x86Start, (pageOutput.IndexOf(":EOV", x86Start) - x86Start + 4));
-                latestVersion = new LatestVersion(x86VersionCode);
-            }
+        //    if (Environment.Is64BitProcess) // if 64 bit process (not OS) then return x64 version else x86 version
+        //    {
+        //        int x64Start = pageOutput.IndexOf("Latest Version:x64");
+        //        string x64VersionCode = pageOutput.Substring(x64Start, (pageOutput.IndexOf(":EOV", x64Start) - x64Start + 4));
+        //        latestVersion = new LatestVersion(x64VersionCode);
+        //    }
+        //    else
+        //    {
+        //        int x86Start = pageOutput.IndexOf("Latest Version:x86");
+        //        string x86VersionCode = pageOutput.Substring(x86Start, (pageOutput.IndexOf(":EOV", x86Start) - x86Start + 4));
+        //        latestVersion = new LatestVersion(x86VersionCode);
+        //    }
 
-            return latestVersion;
-        }
+        //    return latestVersion;
+        //}
 
         private string DownloadWebPage(string[] Urls, bool thread)
         {
@@ -270,14 +270,14 @@ namespace MCEBuddy.Engine
         {
             try
             {
-                LatestVersion latestVersion;
+                //LatestVersion latestVersion;
                 string announcement = "";
                 string announcementLink = "";
                 Ini configIni = new Ini(GlobalDefs.TempSettingsFile);
 
                 // Get all the version information
                 string pageOutput = DownloadWebPage(Crypto.Decrypt(GlobalDefs.MCEBUDDY_CHECK_NEW_VERSION), thread);
-                latestVersion = ParseVersion(pageOutput); // Get the latest version
+                //latestVersion = ParseVersion(pageOutput); // Get the latest version
                 announcement = ParseAnnouncement(pageOutput); // Get any critical announcements
                 announcementLink = ParseAnnouncementLink(pageOutput); // Get the link for any critical announcements
 
@@ -286,18 +286,18 @@ namespace MCEBuddy.Engine
                 configIni.Write("Engine", "AnnouncementLink", announcementLink);
 
                 // Check and write the version information
-                if ("" == latestVersion.latestVersionString)
-                {
-                    Log.AppLog.WriteEntry(this, Localise.GetPhrase("Unable to get Latest Version information"), Log.LogEntryType.Warning);
+                //if ("" == latestVersion.latestVersionString)
+                //{
+                //    Log.AppLog.WriteEntry(this, Localise.GetPhrase("Unable to get Latest Version information"), Log.LogEntryType.Warning);
                     return; //didn't get the data we were expecting
-                }
-                else
-                {
-                    Log.AppLog.WriteEntry(this, Localise.GetPhrase("MCEBuddy Latest Version") + " " + latestVersion.latestVersionString, Log.LogEntryType.Debug);
-                    string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-                    Log.AppLog.WriteEntry(this, Localise.GetPhrase("MCEBuddy Current Version") + " " + currentVersion, Log.LogEntryType.Debug);
-                    configIni.Write("Engine", "LatestVersion", latestVersion.latestVersionString);
-                }
+                //}
+                //else
+                //{
+                //    Log.AppLog.WriteEntry(this, Localise.GetPhrase("MCEBuddy Latest Version") + " " + latestVersion.latestVersionString, Log.LogEntryType.Debug);
+                //    string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                //    Log.AppLog.WriteEntry(this, Localise.GetPhrase("MCEBuddy Current Version") + " " + currentVersion, Log.LogEntryType.Debug);
+                //    configIni.Write("Engine", "LatestVersion", latestVersion.latestVersionString);
+                //}
             }
             catch
             {

@@ -575,7 +575,7 @@ namespace MCEBuddy.Engine
                         if (i == 0)
                             break; // skip if the first character is a directory separator
 
-                        if (!string.IsNullOrWhiteSpace(destinationPath)) // First directory should not start with a '\'
+                        if (!GlobalDefs.IsNullOrWhiteSpace(destinationPath)) // First directory should not start with a '\'
                             destinationPath += "\\";
                         destinationPath += Util.FilePaths.RemoveIllegalFilePathChars(newFileName);
                         newFileName = ""; // reset the new filename
@@ -730,8 +730,9 @@ namespace MCEBuddy.Engine
             {
                 LogStatus(Localise.GetPhrase("Moving converted file to destination"), ref jobLog);
 
+                string destpath = Path.Combine(_conversionOptions.destinationPath, subDestinationPath);
                 Util.FilePaths.CreateDir(Path.Combine(_conversionOptions.destinationPath, subDestinationPath)); // Create the destination directory path
-                string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                string _destinationFile = Path.Combine(destpath, Path.GetFileName(_convertedFile));
                 if (_destinationFile != _convertedFile) // If they are the same file, don't delete accidentally (TS to TS conversions in same directory are example)
                     Util.FileIO.TryFileDelete(_destinationFile); // Delete file in destination if it already exists
                 jobLog.WriteEntry(this, Localise.GetPhrase("Moving converted file") + " " + _convertedFile + " " + Localise.GetPhrase("to") + " " + _destinationFile, Log.LogEntryType.Information);
@@ -753,8 +754,9 @@ namespace MCEBuddy.Engine
                         
                         _conversionOptions.destinationPath = Path.GetDirectoryName(_originalFileName); // update the Destination Path to Source Path
 
+                        string destpath = Path.Combine(_conversionOptions.destinationPath, subDestinationPath);
                         Util.FilePaths.CreateDir(Path.Combine(_conversionOptions.destinationPath, subDestinationPath)); // Create the destination directory path
-                        string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                        string _destinationFile = Path.Combine(destpath, Path.GetFileName(_convertedFile));
                         if (_destinationFile != _convertedFile) // If they are the same file, don't delete accidentally (TS to TS conversions in same directory are example)
                             Util.FileIO.TryFileDelete(_destinationFile); // Delete file in destination if it already exists
                         jobLog.WriteEntry(this, Localise.GetPhrase("Moving converted file") + " " + _convertedFile + " " + Localise.GetPhrase("to") + " " + _destinationFile, Log.LogEntryType.Information);
@@ -808,16 +810,16 @@ namespace MCEBuddy.Engine
                 Log.AppLog.WriteEntry(this, "ERROR: Failed to create JobLog for File " + Path.GetFileName(_conversionOptions.sourceVideo), Log.LogEntryType.Error, true);
 
             //Debug, dump all the conversion parameter before starting to help with debugging
-            jobLog.WriteEntry("Starting conversion - DEBUG MESSAGES", Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Windows 64Bit -> " + Environment.Is64BitOperatingSystem.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Starting conversion - DEBUG MESSAGES", Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Windows 64Bit -> " + Environment.Is64BitOperatingSystem.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
             string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            jobLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
-            jobLog.WriteEntry(_conversionOptions.ToString(), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Max Concurrent Jobs -> " + maxConcurrentJobs.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Commercial Skip Cut (profile + task) -> " + commercialSkipCut.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Locale Language -> " + Localise.ThreeLetterISO().ToUpper(), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
+            //jobLog.WriteEntry(_conversionOptions.ToString(), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Max Concurrent Jobs -> " + maxConcurrentJobs.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Commercial Skip Cut (profile + task) -> " + commercialSkipCut.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            //jobLog.WriteEntry("Locale Language -> " + Localise.ThreeLetterISO().ToUpper(), Log.LogEntryType.Debug);
             
             try
             {

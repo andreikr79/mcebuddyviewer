@@ -316,11 +316,11 @@ namespace MCEBuddy.MetaData
                 else // Try to copy as many attributes as possible if the source is not WTV or DVRMS
                 {
                     sourceAttrs = new Hashtable();
-                    if (!String.IsNullOrWhiteSpace(_videoTags.Title)) sourceAttrs.Add("Title", new MetadataItem("Title", _videoTags.Title, DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.SubTitle)) sourceAttrs.Add("WM/SubTitle", new MetadataItem("WM/SubTitle", _videoTags.SubTitle, DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.SubTitleDescription)) sourceAttrs.Add("WM/SubTitleDescription", new MetadataItem("WM/SubTitleDescription", _videoTags.SubTitleDescription, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)) sourceAttrs.Add("Title", new MetadataItem("Title", _videoTags.Title, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) sourceAttrs.Add("WM/SubTitle", new MetadataItem("WM/SubTitle", _videoTags.SubTitle, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitleDescription)) sourceAttrs.Add("WM/SubTitleDescription", new MetadataItem("WM/SubTitleDescription", _videoTags.SubTitleDescription, DirectShowLib.SBE.StreamBufferAttrDataType.String));
                     if (_videoTags.Genres != null) if (_videoTags.Genres.Length > 0) sourceAttrs.Add("WM/Genre", new MetadataItem("WM/Genre", _videoTags.Genres[0], DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.Network)) sourceAttrs.Add("WM/MediaStationName", new MetadataItem("WM/MediaStationName", _videoTags.Network, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network)) sourceAttrs.Add("WM/MediaStationName", new MetadataItem("WM/MediaStationName", _videoTags.Network, DirectShowLib.SBE.StreamBufferAttrDataType.String));
                     if (_videoTags.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) sourceAttrs.Add("WM/MediaOriginalBroadcastDateTime", new MetadataItem("WM/MediaOriginalBroadcastDateTime", _videoTags.OriginalBroadcastDateTime.ToString("s") + "Z", DirectShowLib.SBE.StreamBufferAttrDataType.String)); // It is stored a UTC value, we just need to add "Z" at the end to indicate it
                     if (_videoTags.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) sourceAttrs.Add("WM/WMRVEncodeTime", new MetadataItem("WM/WMRVEncodeTime", _videoTags.RecordedDateTime.Ticks, DirectShowLib.SBE.StreamBufferAttrDataType.QWord));
                     sourceAttrs.Add("WM/MediaIsMovie", new MetadataItem("WM/MediaIsMovie", _videoTags.IsMovie, DirectShowLib.SBE.StreamBufferAttrDataType.Bool));
