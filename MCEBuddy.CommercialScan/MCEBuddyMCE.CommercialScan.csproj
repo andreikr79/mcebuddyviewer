@@ -133,6 +133,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
+      <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
+      <Name>MCEBuddyMCE.AppWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
       <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
       <Name>MCEBuddyMCE.Configuration</Name>

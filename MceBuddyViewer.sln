@@ -35,7 +35,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.Util", "MCEBudd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.VideoProperties", "MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj", "{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddy.AppWrapper", "MCEBuddy.AppWrapper\MCEBuddy.AppWrapper.csproj", "{9DB8E317-C643-4DBC-8EBE-B44570F74428}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.AppWrapper", "MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj", "{9DB8E317-C643-4DBC-8EBE-B44570F74428}"
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
@@ -79,7 +79,7 @@ Global
 		SccProjectUniqueName12 = MCEBuddy.VideoInfo\\MCEBuddyMCE.VideoProperties.csproj
 		SccProjectName12 = MCEBuddy.VideoInfo
 		SccLocalPath12 = MCEBuddy.VideoInfo
-		SccProjectUniqueName13 = MCEBuddy.AppWrapper\\MCEBuddy.AppWrapper.csproj
+		SccProjectUniqueName13 = MCEBuddy.AppWrapper\\MCEBuddyMCE.AppWrapper.csproj
 		SccProjectName13 = MCEBuddy.AppWrapper
 		SccLocalPath13 = MCEBuddy.AppWrapper
 	EndGlobalSection
