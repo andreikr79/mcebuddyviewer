@@ -127,10 +127,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
-      <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddyMCE.AppWrapper</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.DirectShowLib\MCEBuddyMCE.DirectShowLib.csproj">
       <Project>{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}</Project>
       <Name>MCEBuddyMCE.DirectShowLib</Name>

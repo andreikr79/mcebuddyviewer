@@ -190,11 +190,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
-      <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddyMCE.AppWrapper</Name>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.CommercialScan\MCEBuddyMCE.CommercialScan.csproj">
       <Project>{298B38E2-57D4-459D-8EB9-529E95F41DC7}</Project>
       <Name>MCEBuddyMCE.CommercialScan</Name>

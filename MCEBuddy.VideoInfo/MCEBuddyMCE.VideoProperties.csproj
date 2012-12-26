@@ -129,10 +129,6 @@
     <Compile Include="VideoInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
-      <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddyMCE.AppWrapper</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
       <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
       <Name>MCEBuddyMCE.Globals</Name>
