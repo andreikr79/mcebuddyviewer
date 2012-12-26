@@ -189,63 +189,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\MCEBuddy.CommercialScan\MCEBuddyMCE.CommercialScan.csproj">
-      <Project>{298B38E2-57D4-459D-8EB9-529E95F41DC7}</Project>
-      <Name>MCEBuddyMCE.CommercialScan</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
-      <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
-      <Name>MCEBuddyMCE.Configuration</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.DirectShowLib\MCEBuddyMCE.DirectShowLib.csproj">
-      <Project>{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}</Project>
-      <Name>MCEBuddyMCE.DirectShowLib</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Engine\MCEBuddyMCE.Engine.csproj">
-      <Project>{BAD042C9-4BF3-4906-ACED-FFCA708C3157}</Project>
-      <Name>MCEBuddyMCE.Engine</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
-      <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
-      <Name>MCEBuddyMCE.Globals</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.MetaData\MCEBuddyMCE.MetaData.csproj">
-      <Project>{A3AA78D8-F912-41EC-844B-48C84E5032BB}</Project>
-      <Name>MCEBuddyMCE.MetaData</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.RemuxMediaCenter\MCEBuddyMCE.RemuxMediaCenter.csproj">
-      <Project>{0DF6FB06-4CD2-47BD-89D8-36BE8338673C}</Project>
-      <Name>MCEBuddyMCE.RemuxMediaCenter</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Taglib\MCEBuddyMCE.TagLib.csproj">
-      <Project>{4CC18776-125E-4318-9D24-D60110AD9697}</Project>
-      <Name>MCEBuddyMCE.TagLib</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Transcode\MCEBuddyMCE.Transcode.csproj">
-      <Project>{B8799D33-24DB-4E36-8113-05BEBB7FC88B}</Project>
-      <Name>MCEBuddyMCE.Transcode</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
-      <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
-      <Name>MCEBuddyMCE.Util</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
-      <Project>{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}</Project>
-      <Name>MCEBuddyMCE.VideoProperties</Name>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>%25windir%25\eHome\McmlVerifier.exe -verbose -assemblyredirect:"$(FullyQualifiedOutputPath)" -directory:"$(ProjectDir)Markup"

@@ -148,6 +148,9 @@
     <Compile Include="TSMuxer.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="MCEBuddy2-HP.pfx" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
       <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
       <Name>MCEBuddyMCE.Configuration</Name>
@@ -160,9 +163,6 @@
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
       <Name>MCEBuddyMCE.Util</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="MCEBuddy2-HP.pfx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
