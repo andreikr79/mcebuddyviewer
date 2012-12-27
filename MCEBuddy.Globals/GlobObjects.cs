@@ -8,12 +8,47 @@ using System.Reflection;
 using System.Windows.Forms;
 using System.ServiceModel;
 using System.Security.Permissions;
+using Microsoft.Win32;
 
 namespace MCEBuddy.Globals
 {
     public static class GlobalDefs
     {
         public static Random random = new System.Random();
+
+        public static string GetAppPath()
+        {
+            string CurrentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName);
+            try
+            {
+                //try to find in Program Files
+                if (Directory.Exists(Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles), "MCEBuddy2x")))
+                {
+                    // Found standart path in program files
+                    CurrentPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFiles), "MCEBuddy2x");
+                }
+                else
+                {
+                    //standart path not found. Try Found Service Path in registry
+                    RegistryKey buddykey = Registry.LocalMachine;
+                    buddykey = buddykey.OpenSubKey(@"SYSTEM\CurrentControlSet\services\MCEBuddy2x");
+                    if (buddykey.GetValue("ImagePath") != null)
+                    {
+                        // found service in registry. Get Path from service image path
+                        CurrentPath = Path.GetDirectoryName((string)buddykey.GetValue("ImagePath"));
+                    }
+                    else
+                    {
+                        CurrentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                CurrentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName);
+            }
+            return CurrentPath;
+        }
 
         volatile public static bool Shutdown = false;
         volatile public static bool Active = false;
@@ -50,11 +85,17 @@ namespace MCEBuddy.Globals
                                                              @"HBnyuNYWVJ2Z6OTMWsOWo6NaekSaHlPv7kYiEay3twDOIva8QqLoKp916q13XVVlH8456LM/vu153oPwTHVf0A=="
                                                            };
 
-        public static string AppPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName);
-        public static string CachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "cache");
-        public static string ConfigPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "config");
-        public static string LogPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "log");
-        public static string LocalisationPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "localisation");
+        //public static string AppPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName);
+        //public static string CachePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "cache");
+        //public static string ConfigPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "config");
+        //public static string LogPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "log");
+        //public static string LocalisationPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().GetModules()[0].FullyQualifiedName), "localisation");
+
+        public static string AppPath = GetAppPath();
+        public static string CachePath = Path.Combine(GetAppPath(), "cache");
+        public static string ConfigPath = Path.Combine(GetAppPath(), "config");
+        public static string LogPath = Path.Combine(GetAppPath(), "log");
+        public static string LocalisationPath = Path.Combine(GetAppPath(), "localisation");
 
         public static string ConfigFile = Path.Combine(ConfigPath, "mcebuddy.conf"); // Store MCEBuddy settings carried over between upgrades
         public static string ProfileFile = Path.Combine(ConfigPath, "profiles.conf"); // Store the conversion base profiles
