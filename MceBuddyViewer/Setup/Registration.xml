@@ -1,6 +1,6 @@
 ﻿<application title="MceBuddyViewer" id="{6a94cba8-ccf9-4eb1-91b1-2ae41e3230e3}">
 	<entrypoint id="{0d9b57b5-4e39-4250-a152-eb889af7ea65}"
-				addin="MceBuddyViewer.MyAddIn, MceBuddyViewer,Culture=Neutral,Version=1.0.3.0,PublicKeyToken=91c2bc650e1a1946"
+				addin="MceBuddyViewer.MyAddIn, MceBuddyViewer,Culture=Neutral,Version=1.0.4.0,PublicKeyToken=91c2bc650e1a1946"
 				title="MCEBuddy Viewer"
 				description="Viewer for MCEBuddy Converter"
 				ImageUrl=".\Application.png">

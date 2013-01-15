@@ -10,7 +10,7 @@
 
 <!-- These variables define the Windows Installer product version, product code and upgrade code. They   -->
 <!-- will be used later on in this file.                                                                 -->
-<?define Property_ProductVersion = "1.0.3.0" ?>
+<?define Property_ProductVersion = "1.0.4.0" ?>
 <?define Property_ProductCode = "4e04a84e-d4ee-4555-b5b1-c850889f6ffa" ?>
 <?define Property_UpgradeCode = "b6312c5d-2112-4aa6-afe1-4aeeaf1abc7e" ?>
 

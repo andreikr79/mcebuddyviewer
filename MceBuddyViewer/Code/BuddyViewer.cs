@@ -418,20 +418,18 @@ namespace MceBuddyViewer
         {
             if (!_engineConnected)
             {
-                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, _engineConnected);
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, false);
                 //EngineStatus = false;
                 return;
-            }
-            else
-            {
-                //EngineStatus = true;
-                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, _engineConnected);
-            }
+            }            
 
             try
             {
                 if (EngineRunning())
-                {
+                {            
+                    //EngineStatus = true;
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, true);            
+
                     _numJobs = _pipeProxy.NumConversionJobs(); // Get the updated number of jobs in the queue
                     //NumWorks = _numJobs;
 
@@ -506,8 +504,8 @@ namespace MceBuddyViewer
                     }
                 }
                 else
-                {
-                    //for future code
+                {                    
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, false);
                 }
 
                 // Process Priority, if it has changed
