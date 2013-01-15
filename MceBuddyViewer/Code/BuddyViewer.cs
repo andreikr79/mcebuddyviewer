@@ -328,14 +328,6 @@ namespace MceBuddyViewer
                 {
                     Monitor.Enter(_configLock);
                     configLockTaken = true;
-                    //if (_pipeProxy.ServiceShutdownBySystem()) // Has the system initated shutdown, if so we need to shutdown the GUI (to avoid uninstall issues)
-                    //{
-                    //    Monitor.Exit(_configLock);
-                    //    configLockTaken = false;
-                    //    _exit = true; // We are done, release all threads and resources
-                    //    //this.Close(); // Close the GUI
-                    //    continue;
-                    //}
                     MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(_pipeProxy.GetConfigParameters()); // Get the parameters from the Engine we are connected to
                     Monitor.Exit(_configLock);
                     configLockTaken = false;
@@ -364,17 +356,13 @@ namespace MceBuddyViewer
                     string remoteServerName = tempIni.ReadString("Engine", "RemoteServerName", GlobalDefs.MCEBUDDY_SERVER_NAME);
                     int remoteServerPort = tempIni.ReadInteger("Engine", "RemoteServerPort", int.Parse(GlobalDefs.MCEBUDDY_SERVER_PORT));
 
-                    //if (serverInfoLbl.InvokeRequired)
-                    //    serverInfoLbl.Invoke(new MethodInvoker(delegate { serverInfoLbl.Text = "Engine: " + remoteServerName + "  Port: " + remoteServerPort.ToString(); }));
-                    //else
-                    //    serverInfoLbl.Text = "Engine: " + remoteServerName + "  Port: " + remoteServerPort.ToString();
-
                     // If it's LOCALHOST, we use NAMED PIPE else TCP PIPE
                     if (remoteServerName == GlobalDefs.MCEBUDDY_SERVER_NAME)
                     {
                         // local NAMED PIPE
                         serverString = GlobalDefs.MCEBUDDY_LOCAL_NAMED_PIPE;
                         NetNamedPipeBinding npb = new NetNamedPipeBinding();
+                        npb.MaxReceivedMessageSize = Int32.MaxValue;
                         pipeFactory = new ChannelFactory<ICore>(npb, new EndpointAddress(serverString));
                     }
                     else
@@ -386,6 +374,7 @@ namespace MceBuddyViewer
                         BasicHttpBinding ntb = new BasicHttpBinding(GlobalDefs.MCEBUDDY_PIPE_SECURITY);
                         TimeSpan timeoutPeriod = new TimeSpan(0, 0, GlobalDefs.PIPE_TIMEOUT);
                         ntb.SendTimeout = ntb.ReceiveTimeout = timeoutPeriod;
+                        ntb.MaxReceivedMessageSize = Int32.MaxValue;
                         pipeFactory = new ChannelFactory<ICore>(ntb, new EndpointAddress(serverString));
                     }
 
@@ -483,8 +472,7 @@ namespace MceBuddyViewer
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, job2.CurrentAction);
                             //ProcentComplete = (int)job2.PercentageComplete;                          
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, (int)job2.PercentageComplete);
-                        }
-                        //Microsoft.MediaCenter.UI.Application.DeferredInvoke(Property that changed, value);
+                        }                        
                     } else
                     {
                         //CurrentWorkName = "";
@@ -497,14 +485,6 @@ namespace MceBuddyViewer
                     if (fileQueue.Count != JobsList.Count)
                     {
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, fileQueue);
-                        //JobsList.Clear();
-                        ////int count = 0;
-                        //foreach (string[] fn in fileQueue)
-                        //{
-                        //    fn[0] = Path.GetFileName(fn[0]);
-                        //    JobsList.Add(fn[0]);
-                        //}
-
                     }
 
                     // Set the job status
