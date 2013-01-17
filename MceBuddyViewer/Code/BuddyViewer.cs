@@ -34,7 +34,7 @@ namespace MceBuddyViewer
         private int _connectPeriod = GlobalDefs.LOCAL_ENGINE_POLL_PERIOD; // Reconnect/get data from remote engine frequency (default is TCP polling period)
         private Object _configLock = new Object(); // Object to lock for configParameters sync
         private volatile RunningStatus _status;
-        private bool _enginestatus;
+        private EngineStatusEnum _enginestatus = EngineStatusEnum.NotAvailable;
         private int _numworks;
         private string _currentworkname;
         private string _currentworkstatus;
@@ -78,7 +78,7 @@ namespace MceBuddyViewer
         {
             if (!IsDisposed)
             {
-                EngineStatus = (bool)obj;
+                EngineStatus = (EngineStatusEnum)obj;
             }
         }
 
@@ -117,7 +117,7 @@ namespace MceBuddyViewer
             }
         }
 
-        public bool EngineStatus
+        public EngineStatusEnum EngineStatus
         {
             get { return _enginestatus; }
             set 
@@ -402,6 +402,7 @@ namespace MceBuddyViewer
                     }
                     _engineConnected = false; // Still broken
                     _pipeProxy = null;
+                    ProgressChanged();
                     Thread.Sleep(_connectPeriod); // Try to connect every x seconds
                 }
             }
@@ -418,7 +419,7 @@ namespace MceBuddyViewer
         {
             if (!_engineConnected)
             {
-                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, false);
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.NotAvailable);
                 //EngineStatus = false;
                 return;
             }            
@@ -428,7 +429,14 @@ namespace MceBuddyViewer
                 if (EngineRunning())
                 {            
                     //EngineStatus = true;
-                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, true);            
+                    if (_pipeProxy.IsSuspended())
+                    {
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.Paused);
+                    }
+                    else
+                    {
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.Started);
+                    }
 
                     _numJobs = _pipeProxy.NumConversionJobs(); // Get the updated number of jobs in the queue
                     //NumWorks = _numJobs;
@@ -505,7 +513,7 @@ namespace MceBuddyViewer
                 }
                 else
                 {                    
-                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, false);
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.Stopped);
                 }
 
                 // Process Priority, if it has changed
@@ -639,5 +647,14 @@ namespace MceBuddyViewer
             PendingStop,
             Stopped
         }
+
+        public enum EngineStatusEnum
+        {
+            Started,
+            Stopped,
+            Paused,
+            NotAvailable
+        }
+
     }
 }
