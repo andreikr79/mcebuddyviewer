@@ -577,16 +577,36 @@ namespace MceBuddyViewer
             }
         }
 
-        //
-        // Called to reset our state - clears our list
-        // of primes, resets our stopwatch, and calculates
-        // a new starting candidate for our next search.
-        //
-        public void Reset()
+        public void StartEngine()
         {
-            if (Status == RunningStatus.Stopped)
+            try
             {
+                if (EngineStatus == EngineStatusEnum.Stopped)
+                {
+                    _pipeProxy.Start();
+                }
+                else if (_pipeProxy.IsSuspended())
+                {
+                    _pipeProxy.SuspendConversion(false);
+                }
+                else
+                {
+                    _pipeProxy.SuspendConversion(true);
+                }
+            }
+            catch
+            {
+            }
+        }
 
+        public void StopEngine()
+        {
+            try
+            {
+                _pipeProxy.Stop(true);
+            }
+            catch
+            {
             }
         }
 
