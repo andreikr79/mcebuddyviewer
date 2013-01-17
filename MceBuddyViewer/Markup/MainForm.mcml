@@ -25,24 +25,28 @@
         <Actions>
           <Set Target="[EngineStatus.Content]" Value="Running" />
           <Set Target="[EngineStatus.Color]" Value="LightGreen" />
+          <Set Target="[StartButton.Text]" Value="Pause" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Stopped">
         <Actions>
           <Set Target="[EngineStatus.Content]" Value="Stopped" />
           <Set Target="[EngineStatus.Color]" Value="Red" />
+          <Set Target="[StartButton.Text]" Value="Start" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Paused">
         <Actions>
           <Set Target="[EngineStatus.Content]" Value="Paused" />
           <Set Target="[EngineStatus.Color]" Value="Yellow" />
+          <Set Target="[StartButton.Text]" Value="Resume" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="NotAvailable">
         <Actions>
           <Set Target="[EngineStatus.Content]" Value="Service Not Available" />
           <Set Target="[EngineStatus.Color]" Value="Red" />
+          <Set Target="[StartButton.Text]" Value="Start" />
         </Actions>
       </Condition>
       <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
@@ -57,7 +61,7 @@
       <Panel Layout="Form">
         <Children>
 
-          <me:HeaderText Name="Header" Text="MCE Buddy Viewer">
+          <me:HeaderText Name="Header" Text="MCEBuddy Viewer">
             <LayoutInput>
               <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
             </LayoutInput>
