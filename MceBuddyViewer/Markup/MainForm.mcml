@@ -26,6 +26,8 @@
           <Set Target="[EngineStatus.Content]" Value="Running" />
           <Set Target="[EngineStatus.Color]" Value="LightGreen" />
           <Set Target="[StartButton.Text]" Value="Pause" />
+          <Set Target="[StartButton.Command.Available]" Value="true" />
+          <Set Target="[StopButton.Command.Available]" Value="true" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Stopped">
@@ -33,6 +35,8 @@
           <Set Target="[EngineStatus.Content]" Value="Stopped" />
           <Set Target="[EngineStatus.Color]" Value="Red" />
           <Set Target="[StartButton.Text]" Value="Start" />
+          <Set Target="[StartButton.Command.Available]" Value="true" />
+          <Set Target="[StopButton.Command.Available]" Value="false" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Paused">
@@ -40,6 +44,8 @@
           <Set Target="[EngineStatus.Content]" Value="Paused" />
           <Set Target="[EngineStatus.Color]" Value="Yellow" />
           <Set Target="[StartButton.Text]" Value="Resume" />
+          <Set Target="[StartButton.Command.Available]" Value="true" />
+          <Set Target="[StopButton.Command.Available]" Value="true" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="NotAvailable">
@@ -47,6 +53,8 @@
           <Set Target="[EngineStatus.Content]" Value="Service Not Available" />
           <Set Target="[EngineStatus.Color]" Value="Red" />
           <Set Target="[StartButton.Text]" Value="Start" />
+          <Set Target="[StartButton.Command.Available]" Value="false" />
+          <Set Target="[StopButton.Command.Available]" Value="false" />
         </Actions>
       </Condition>
       <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
