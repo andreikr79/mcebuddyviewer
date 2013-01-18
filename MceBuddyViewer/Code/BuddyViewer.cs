@@ -87,11 +87,17 @@ namespace MceBuddyViewer
             if (!IsDisposed)
             {
                 _jobslist.Clear();
-                List<string[]> fileQueue = (List<string[]>)obj;                
-                foreach (string[] fn in fileQueue)
+                try
                 {
-                    fn[0] = Path.GetFileName(fn[0]);
-                    _jobslist.Add(fn[0]);
+                    List<string[]> fileQueue = (List<string[]>)obj;
+                    foreach (string[] fn in fileQueue)
+                    {
+                        fn[0] = Path.GetFileName(fn[0]);
+                        _jobslist.Add(fn[0]);
+                    }
+                }
+                catch
+                {                    
                 }
             }
         }
@@ -420,6 +426,11 @@ namespace MceBuddyViewer
             if (!_engineConnected)
             {
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.NotAvailable);
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, 0);
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, "");
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
                 //EngineStatus = false;
                 return;
             }            
@@ -514,6 +525,11 @@ namespace MceBuddyViewer
                 else
                 {                    
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.Stopped);
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, 0);
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, "");
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
                 }
 
                 // Process Priority, if it has changed
