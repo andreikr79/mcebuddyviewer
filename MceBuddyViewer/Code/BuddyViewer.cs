@@ -41,6 +41,15 @@ namespace MceBuddyViewer
         private int _procentcomplete;
         private ArrayListDataSet _jobslist;
         private int _jobitemselected = -1;
+        private string _estimatedtime;
+
+        private void BackEstimatedTime(object obj)
+        {
+            if (!IsDisposed)
+            {
+                EstimatedTime = (string)obj;
+            }
+        }
 
         private void BackCurrentWorkName(object obj)
         {
@@ -99,6 +108,22 @@ namespace MceBuddyViewer
                 catch
                 {                    
                 }
+            }
+        }
+
+        public string EstimatedTime
+        {
+            get
+            {
+                return _estimatedtime;
+            }
+            set
+            {
+                if (_estimatedtime != value)
+                {
+                    _estimatedtime = value;
+                    FirePropertyChanged("EstimatedTime");
+                }                
             }
         }
 
@@ -236,9 +261,8 @@ namespace MceBuddyViewer
                 {
                     File.Delete(GlobalDefs.HistoryFile);
                 }
-                catch (Exception e1)
+                catch
                 {
-
                 }
             }
         }
@@ -431,6 +455,7 @@ namespace MceBuddyViewer
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, "");
                 //EngineStatus = false;
                 return;
             }            
@@ -475,6 +500,7 @@ namespace MceBuddyViewer
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
                             //ProcentComplete = 0;
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, "");
                         }
                         else if (job2.Cancelled)
                         {
@@ -482,6 +508,7 @@ namespace MceBuddyViewer
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, job2.CurrentAction);
                             //ProcentComplete = (int)job2.PercentageComplete;
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, (int)job2.PercentageComplete);
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, job2.ETA);
                         }
                         else
                         {
@@ -489,6 +516,7 @@ namespace MceBuddyViewer
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, job2.CurrentAction);
                             //ProcentComplete = (int)job2.PercentageComplete;                          
                             Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, (int)job2.PercentageComplete);
+                            Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, job2.ETA);
                         }                        
                     } else
                     {
@@ -496,7 +524,8 @@ namespace MceBuddyViewer
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, 0);
                         //CurrentWorkStatus = "";
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
-                        ProcentComplete = 0;
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, "");
                     }
 
                     if (fileQueue.Count != JobsList.Count)
@@ -530,6 +559,7 @@ namespace MceBuddyViewer
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, "");
                 }
 
                 // Process Priority, if it has changed
