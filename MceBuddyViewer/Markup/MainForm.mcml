@@ -62,6 +62,7 @@
       <Binding Source="[BuddyViewer.CurrentWorkStatus]" Target="[CurrentWorkStatus.Content]" />
       <Binding Source="[BuddyViewer.ProcentComplete.ToString]" Target="[ProcentComplete.Content]" />
       <Binding Source="[JobsListBox.SelectedIndex]" Target="[BuddyViewer.JobItemSelected]" />
+      <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />
     </Rules>
     
     <Content>
@@ -78,7 +79,7 @@
           <Panel Layout="HorizontalFlow">
 
             <LayoutInput>
-              <FormLayoutInput Top="Header,1,80" Left="Parent,0,20"/>
+              <FormLayoutInput Top="Header,1,20" Left="Parent,0,20"/>
             </LayoutInput>
 
             <Layout>
@@ -118,12 +119,12 @@
                   </me:SimpleButton>                  
                 </Children>
               </Panel>
-              <Panel>
-
+              
+              <Panel>                
                 <Layout>
                   <FlowLayout Orientation="Vertical" Spacing="5,0" />
                 </Layout>
-
+                
                 <Children>
                   <Panel Layout="HorizontalFlow">
                     <Children>
@@ -153,6 +154,12 @@
                     <Children>
                       <Text Content="Percent complete: " Color="White" Font="[TextFont]" />
                       <Text Name="ProcentComplete" Color="LightGreen" Font="[TextFont]" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="Estimated time: " Color="White" Font="[TextFont]" />
+                      <Text Name="EstimatedTime" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <me:SimpleListBox Name="JobsListBox" List="[BuddyViewer.JobsList]" Font="[TextFont]" Size="700,352">
