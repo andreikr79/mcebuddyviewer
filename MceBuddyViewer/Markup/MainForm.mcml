@@ -17,7 +17,7 @@
     <Locals>
       <addin:AddInHost Name="AddInHost" />
       <Color Name="TextColor" Color="White" />
-      <Font Name="TextFont" Font="Arial,18" />
+      <Font Name="TextFont" Font="Arial,20" />
     </Locals>
 
     <Rules>
