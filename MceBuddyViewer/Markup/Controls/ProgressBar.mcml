@@ -1,0 +1,61 @@
+<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:cor="assembly://MsCorLib/System"
+      xmlns:coll="assembly://MsCorLib/System.Collections"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"  
+      xmlns:me="Me">
+
+  <UI Name="ProgressBar">
+
+    <Properties>
+
+      <!--progress percentage expressed as a number in the range [0..1]-->
+      <cor:Double Name="Value" Double="0" />
+
+      <!--size of the progress bar-->
+      <Size Name="Size" Size="400,50" />
+
+    </Properties>
+
+    <Rules>
+
+      <!--scale the 'full' part of the bar according to the percentage-->
+      <Binding Source="[Value]" Target="[FullBar.Scale]">
+        <Transformer>
+          <a:VectorTransformer Format="{0},1,1" />
+        </Transformer>
+      </Binding>
+
+      <!--indicate the progress as text on the bar-->
+      <Binding Source="[Value]" Target="[ProgressPercent.Content]">
+        <Transformer>
+          <FormatTransformer Format="{0}" ExtendedFormat="P0" />
+        </Transformer>
+      </Binding>
+
+    </Rules>
+
+    <Content>
+      <Panel Layout="Center" MinimumSize="[Size]" MaximumSize="[Size]">
+        <Children>
+
+          <!--percentage text-->
+          <Text Name="ProgressPercent" Font="Segoe Media Center,20" Color="White" />
+
+          <!--empty/full parts of the bar-->
+          <Panel Layout="Fill" MinimumSize="[Size]" MaximumSize="[Size]" Padding="3,3,3,3">
+            <Children>
+              <ColorFill Name="FullBar" Content="Green" />
+              <ColorFill Content="DarkBlue" />
+            </Children>
+          </Panel>
+
+          <!--border-->
+          <ColorFill Content="White" MinimumSize="[Size]" MaximumSize="[Size]" Alpha="0.5" />
+
+        </Children>
+      </Panel>
+    </Content>
+
+  </UI>
+
+</Mcml>

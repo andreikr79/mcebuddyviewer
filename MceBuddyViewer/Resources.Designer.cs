@@ -238,6 +238,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] ProgressBar {
+            get {
+                object obj = ResourceManager.GetObject("ProgressBar", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static System.IO.UnmanagedMemoryStream Select {
             get {
                 return ResourceManager.GetStream("Select", resourceCulture);
