@@ -17,7 +17,7 @@
     <Locals>
       <addin:AddInHost Name="AddInHost" />
       <Color Name="TextColor" Color="White" />
-      <Font Name="TextFont" Font="Arial,20" />
+      <Font Name="TextFont" Font="Arial,20" />      
     </Locals>
 
     <Rules>
@@ -62,7 +62,7 @@
       <Binding Source="[BuddyViewer.CurrentWorkStatus]" Target="[CurrentWorkStatus.Content]" />
       <Binding Source="[BuddyViewer.ProcentComplete.ToString]" Target="[ProcentComplete.Content]" />
       <Binding Source="[JobsListBox.SelectedIndex]" Target="[BuddyViewer.JobItemSelected]" />
-      <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />
+      <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />     
     </Rules>
     
     <Content>

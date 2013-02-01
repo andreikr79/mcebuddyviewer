@@ -4,6 +4,7 @@
       xmlns:me="Me">
 
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ProgressBar" />
   
   <UI Name="ListBoxItem">
     <Properties>
@@ -12,13 +13,15 @@
       <a:ListSelection Name="SelectionHolder" ListSelection="$Required" />
       <Index Name="Index" Index="$Required" />
       <Font Name="Font" Font="font://me:Font" />
+      <cor:Single Name="ProgressPercent" Single="0" /> 
     </Properties>
     <Locals>
       <ClickHandler Name="Clicker" />
     </Locals>
     <Rules>
-      <Binding Source="[Command]" Target="[Clicker.Command]" />
+      <Binding Source="[Command]" Target="[Clicker.Command]" />      
       <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />
+      <!--<Binding Source="[ProgressPercent]" Target="[ProgressBar]" />-->
       <Default Target="[Input.KeyInteractive]" Value="true" />
       <Condition Source="[Clicker.Clicking]" SourceValue="true">
         <Actions>
@@ -38,7 +41,12 @@
       </Condition>
     </Rules>
     <Content>
-      <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
+      <Panel Layout="HorizontalFlow">
+        <Children>
+          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
+          <!--<me:ProgressBar Name="ProgressBar" Size="150,30" />-->
+        </Children>
+      </Panel>      
     </Content>
   </UI>
   <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
