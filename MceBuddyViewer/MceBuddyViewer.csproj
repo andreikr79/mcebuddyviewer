@@ -110,6 +110,7 @@
     <Compile Include="Code\BuddyViewer.cs" />
     <Compile Include="Code\Launch.cs" />
     <Compile Include="Code\ListSelection.cs" />
+    <Compile Include="Code\VectorTransformer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -137,6 +138,7 @@
   <ItemGroup>
     <None Include="DevInstall.cmd" />
     <Content Include="Markup\Controls\ListBoxItem.mcml" />
+    <Content Include="Markup\Controls\ProgressBar.mcml" />
     <Content Include="Markup\Controls\SimpleListBox.mcml" />
     <None Include="mcebuddyviewer.snk" />
     <None Include="Setup\Build.cmd" />
