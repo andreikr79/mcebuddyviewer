@@ -1,0 +1,68 @@
+﻿<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:cor="assembly://MSCorLib/System"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
+      xmlns:me="Me">
+
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleButton" />
+
+
+  <UI Name="ExpandCollapseButton">
+
+    <Properties>
+      <Command Name="Command" Command="$Required" />
+    </Properties>
+
+    <Locals>
+      <Size Name="Size" Size="50,51" />
+      <BooleanTransformer Name="BooleanInversionTransformer" Inverse="true" />
+    </Locals>
+
+    <Rules>
+
+      <Binding Source="[Forward.Visible]" Target="[Back.Visible]" Transformer="[BooleanInversionTransformer]" />
+
+      <Changed Source="[Command.Invoked]">
+        <Actions>
+          <Set Target="[Forward.Visible]" Value="[Forward.Visible]" Transformer="[BooleanInversionTransformer]" InvokePolicy="Synchronous" />
+          <Invoke Target="[Host.NavigateInto]" />
+        </Actions>
+      </Changed>
+
+    </Rules>
+
+    <Content>
+
+      <Panel Name="Host">
+        <Children>
+
+          <me:SimpleButton Name="Forward"
+                           Command="[Command]"
+                           Size="[Size]"
+                           FocusImage="image://me:SpinnerArrowForwardFocus"
+                           NoFocusImage="image://me:SpinnerArrowForwardNoFocus"
+                           DisabledImage="image://me:SpinnerArrowForwardDormant"
+                           />
+
+          <me:SimpleButton Name="Back"
+                           Command="[Command]"
+                           Size="[Size]"
+                           FocusImage="image://me:SpinnerArrowBackFocus"
+                           NoFocusImage="image://me:SpinnerArrowBackNoFocus"
+                           DisabledImage="image://me:SpinnerArrowBackDormant"
+                           Visible="false"
+                           />
+
+        </Children>
+      </Panel>
+    </Content>
+  </UI>
+
+  <Image Name="SpinnerArrowBackDormant"           Source="res://ehres!SPINNER.ARROW.BACK.DORMANT.PNG"/>
+  <Image Name="SpinnerArrowBackFocus"             Source="res://ehres!SPINNER.ARROW.BACK.FOCUS.PNG"/>
+  <Image Name="SpinnerArrowBackNoFocus"           Source="res://ehres!SPINNER.ARROW.BACK.NOFOCUS.PNG"/>
+  <Image Name="SpinnerArrowForwardDormant"        Source="res://ehres!SPINNER.ARROW.FORWARD.DORMANT.PNG"/>
+  <Image Name="SpinnerArrowForwardFocus"          Source="res://ehres!SPINNER.ARROW.FORWARD.FOCUS.PNG"/>
+  <Image Name="SpinnerArrowForwardNoFocus"        Source="res://ehres!SPINNER.ARROW.FORWARD.NOFOCUS.PNG"/>
+
+</Mcml>

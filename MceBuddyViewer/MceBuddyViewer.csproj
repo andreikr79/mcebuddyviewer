@@ -108,8 +108,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\BuddyViewer.cs" />
+    <Compile Include="Code\DirectoryTreeNode.cs" />
+    <Compile Include="Code\FileTreeNode.cs" />
     <Compile Include="Code\Launch.cs" />
     <Compile Include="Code\ListSelection.cs" />
+    <Compile Include="Code\TreeNode.cs" />
+    <Compile Include="Code\TreeNodeEventArgs.cs" />
+    <Compile Include="Code\TreeView.cs" />
     <Compile Include="Code\VectorTransformer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources.Designer.cs">
@@ -137,8 +142,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DevInstall.cmd" />
+    <Content Include="Markup\Controls\ExpandCollapseButton.mcml" />
     <Content Include="Markup\Controls\ListBoxItem.mcml" />
     <Content Include="Markup\Controls\ProgressBar.mcml" />
+    <Content Include="Markup\Controls\SimpleCheckbox.mcml" />
     <Content Include="Markup\Controls\SimpleListBox.mcml" />
     <None Include="mcebuddyviewer.snk" />
     <None Include="Setup\Build.cmd" />
@@ -175,6 +182,8 @@
     <Content Include="Markup\Controls\Controls.mcml" />
     <Content Include="Markup\Controls\HeaderText.mcml" />
     <Content Include="Markup\Controls\SimpleButton.mcml" />
+    <Content Include="Markup\Controls\TreeNodeItem.mcml" />
+    <Content Include="Markup\Controls\TreeViewHost.mcml" />
     <Content Include="Markup\MainForm.mcml">
       <SubType>Designer</SubType>
     </Content>
