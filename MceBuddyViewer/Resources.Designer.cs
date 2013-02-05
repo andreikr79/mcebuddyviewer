@@ -171,6 +171,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] ExpandCollapseButton {
+            get {
+                object obj = ResourceManager.GetObject("ExpandCollapseButton", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static System.IO.UnmanagedMemoryStream Focus {
             get {
                 return ResourceManager.GetStream("Focus", resourceCulture);
@@ -258,6 +265,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] SimpleCheckbox {
+            get {
+                object obj = ResourceManager.GetObject("SimpleCheckbox", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static byte[] SimpleListBox {
             get {
                 object obj = ResourceManager.GetObject("SimpleListBox", resourceCulture);
@@ -268,6 +282,20 @@ namespace MceBuddyViewer {
         internal static byte[] Sounds {
             get {
                 object obj = ResourceManager.GetObject("Sounds", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] TreeNodeItem {
+            get {
+                object obj = ResourceManager.GetObject("TreeNodeItem", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        internal static byte[] TreeViewHost {
+            get {
+                object obj = ResourceManager.GetObject("TreeViewHost", resourceCulture);
                 return ((byte[])(obj));
             }
         }

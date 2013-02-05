@@ -166,6 +166,10 @@
   <data name="Error" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Sounds\Error.wav;System.IO.MemoryStream, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="ExpandCollapseButton" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Markup\Controls\ExpandCollapseButton.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="Focus" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Sounds\Focus.wav;System.IO.MemoryStream, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
@@ -196,7 +200,6 @@
   <data name="PageTransition" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Sounds\PageTransition.wav;System.IO.MemoryStream, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="ProgressBar" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\Controls\ProgressBar.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
@@ -206,10 +209,19 @@
   <data name="SimpleButton" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\Controls\SimpleButton.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="SimpleCheckbox" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Markup\Controls\SimpleCheckbox.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="SimpleListBox" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\Controls\SimpleListBox.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="Sounds" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\Base\Sounds.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="TreeNodeItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Markup\Controls\TreeNodeItem.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="TreeViewHost" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Markup\Controls\TreeViewHost.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>
