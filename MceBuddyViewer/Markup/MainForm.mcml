@@ -28,6 +28,8 @@
           <Set Target="[StartButton.Text]" Value="Pause" />
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="true" />
+          <Set Target="[AddButton.Command.Available]" Value="true" />
+          <Set Target="[DeleteButton.Command.Available]" Value="true" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Stopped">
@@ -37,6 +39,8 @@
           <Set Target="[StartButton.Text]" Value="Start" />
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="false" />
+          <Set Target="[AddButton.Command.Available]" Value="false" />
+          <Set Target="[DeleteButton.Command.Available]" Value="false" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Paused">
@@ -46,6 +50,8 @@
           <Set Target="[StartButton.Text]" Value="Resume" />
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="true" />
+          <Set Target="[AddButton.Command.Available]" Value="true" />
+          <Set Target="[DeleteButton.Command.Available]" Value="true" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="NotAvailable">
@@ -55,6 +61,8 @@
           <Set Target="[StartButton.Text]" Value="Start" />
           <Set Target="[StartButton.Command.Available]" Value="false" />
           <Set Target="[StopButton.Command.Available]" Value="false" />
+          <Set Target="[AddButton.Command.Available]" Value="false" />
+          <Set Target="[DeleteButton.Command.Available]" Value="false" />
         </Actions>
       </Condition>
       <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
@@ -110,6 +118,16 @@
                   <me:SimpleButton Name="StopButton" Text="Stop" Size="235,51" Margins="10,0,0,0">
                     <Command>
                       <InvokeCommand Target="[BuddyViewer.StopEngine]" />
+                    </Command>
+                  </me:SimpleButton>
+                  <me:SimpleButton Name="AddButton" Text="Add" Size="235,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.AddFileCmd]" />
+                    </Command>
+                  </me:SimpleButton>
+                  <me:SimpleButton Name="DeleteButton" Text="Delete" Size="235,51" Margins="10,0,0,0" Visible="false">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.DeleteFileCmd]" />
                     </Command>
                   </me:SimpleButton>
                   <me:SimpleButton Text="Exit" Size="235,51" Margins="10,0,0,0">

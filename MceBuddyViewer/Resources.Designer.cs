@@ -258,6 +258,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] SelectVideoFile {
+            get {
+                object obj = ResourceManager.GetObject("SelectVideoFile", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static byte[] SimpleButton {
             get {
                 object obj = ResourceManager.GetObject("SimpleButton", resourceCulture);

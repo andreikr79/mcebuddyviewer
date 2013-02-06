@@ -42,6 +42,28 @@ namespace MceBuddyViewer
         private ArrayListDataSet _jobslist;
         private int _jobitemselected = -1;
         private string _estimatedtime;
+        private TreeView _treeView_videofile = new TreeView();
+        private EditableText _editableItem = new EditableText();
+
+        public TreeView TreeViewVideoFile
+        {
+            get { return _treeView_videofile; }
+            set { _treeView_videofile = value; }
+        }
+
+        public EditableText EditableItem
+        {
+            get
+            {
+                if (_editableItem == null)
+                {
+                    _editableItem = new EditableText();
+                }
+                return _editableItem;
+            }
+            set { _editableItem = value; }
+        }
+
 
         private void BackEstimatedTime(object obj)
         {
@@ -653,6 +675,79 @@ namespace MceBuddyViewer
             }
             catch
             {
+            }
+        }
+
+        public void AddFileCmd()
+        {
+            EditableItem.Value = "File Name";
+            string[] drives = Environment.GetLogicalDrives();            
+            TreeViewVideoFile.ChildNodes.Clear();
+            TreeViewVideoFile.CheckedNode = null;
+            string VideoFilesFilter="*.wtv;*.dvr-ms;*.asf;*.avi;*.divx;*.dv;*.flv;*.gxf;*.m1v;*.m2v;*.m2ts;*.m4v;*.mkv;*.mov;*.mp2;*.mp4;*.mpeg;*.mpeg1;*.mpeg2;*.mpeg4;*.mpg;*.mts;*.mxf;*.ogm;*.ts;*.vob;*.wmv;*.tp";
+
+            foreach (string curdrive in drives)
+            {
+                FileTreeNode nodefile = new FileTreeNode(curdrive, curdrive, VideoFilesFilter, TreeViewVideoFile);
+                nodefile.Selectable = false;
+                TreeViewVideoFile.ChildNodes.Add(nodefile);
+            }
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            properties["BuddyViewer"] = this;
+
+            if (session != null)
+            {
+                session.GoToPage("resx://MceBuddyViewer/MceBuddyViewer.Resources/SelectVideoFile", properties);                
+            }
+            else
+            {
+                Debug.WriteLine("GoToMenu");
+            }
+        }
+
+        public void FileSelected()
+        {
+            if (TreeViewVideoFile.CheckedNode.Checked.Value)
+            {
+                string videofile = TreeViewVideoFile.CheckedNode.ToString();
+                if (MCEBuddy.Util.Net.IsUNCPath(videofile))
+                {
+                    Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(Localise.GetPhrase("Warning: Networked files will be accessed using the logon credentials of the MCEBuddy Service, not the currently logged on user. Ensure the MCEBuddy service uses a user account that has local administrative access and access to the remote file [Control Panel -> Administrative Tools -> Services -> MCEBuddy]"), Localise.GetPhrase("Credential Warning"), (DialogButtons)1, 0, true);
+                }
+                addFileToQueue(videofile);
+            }
+            if (session != null)
+            {
+                session.BackPage();
+            }
+        }
+
+        public void CancelSelectFile()
+        {
+            if (session != null)
+            {
+                session.BackPage();
+            }
+        }
+
+        public void DeleteFileCmd()
+        {
+
+        }
+
+        private void addFileToQueue(string videoFile)
+        {
+            if (MCEBuddy.Util.Net.IsUNCPath(videoFile))
+                videoFile = MCEBuddy.Util.Net.GetUNCPath(videoFile);
+
+            try
+            {
+                _pipeProxy.AddManualJob(videoFile);
+                _pipeProxy.Rescan();
+            }
+            catch (Exception)
+            {
+                System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", Localise.GetPhrase("MCEBuddy GUI: Unable to add job"), EventLogEntryType.Warning);
             }
         }
 

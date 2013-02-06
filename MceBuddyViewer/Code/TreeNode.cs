@@ -27,6 +27,16 @@ namespace MceBuddyViewer
             get { return _title; }
             set { _title = value; }
         }
+        public Color NodeColor
+        {
+            get { return _nodecolor; }
+            set { _nodecolor = value; }
+        }
+        public bool Selectable
+        {
+            get { return _selectable; }
+            set { _selectable = value; }
+        }
         public bool HasChildNodes
         {
             get { return _hasChildNodes; }
@@ -54,7 +64,7 @@ namespace MceBuddyViewer
             {
                 if (Checked.Value) TreeView.CheckedNode = this;
             });
-        }
+        }        
 
         public virtual void OnCollapsed()
         {
@@ -75,6 +85,8 @@ namespace MceBuddyViewer
         #region Fields
 
         private string _title = string.Empty;
+        private bool _selectable = true;
+        private Color _nodecolor = new Color(Colors.White);
         private ArrayListDataSet _childNodes = new ArrayListDataSet();
         private bool _hasChildNodes = false;
         private int _level = 0;
