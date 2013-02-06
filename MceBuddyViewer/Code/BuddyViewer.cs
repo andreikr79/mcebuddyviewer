@@ -120,11 +120,11 @@ namespace MceBuddyViewer
                 _jobslist.Clear();
                 try
                 {
-                    List<string[]> fileQueue = (List<string[]>)obj;
-                    foreach (string[] fn in fileQueue)
+                    List<ItemObject> fileQueue = (List<ItemObject>)obj;
+                    foreach (ItemObject item in fileQueue)
                     {
-                        fn[0] = Path.GetFileName(fn[0]);
-                        _jobslist.Add(fn[0]);
+                        item.fileQueue[0] = Path.GetFileName(item.fileQueue[0]);
+                        _jobslist.Add(item);
                     }
                 }
                 catch
@@ -501,6 +501,15 @@ namespace MceBuddyViewer
 
                     // Display the file Queue
                     List<string[]> fileQueue = _pipeProxy.FileQueue();
+                    List<ItemObject> argsQueue = new List<ItemObject>();
+                    foreach (string[] fn in fileQueue)
+                    {
+                        ItemObject arg=new ItemObject();
+                        arg.fileQueue = fn;
+                        arg.isCurrent = false;
+                        arg.Percent = 0;
+                        argsQueue.Add(arg);
+                    }
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, fileQueue.Count);                    
 
                     if (fileQueue.Count > 0)
@@ -510,7 +519,7 @@ namespace MceBuddyViewer
                         {
                             _curindex = JobItemSelected;
                         }
-                        string[] fn = fileQueue[_curindex];
+                        string[] fn = fileQueue[_curindex];                        
                         fn[0] = Path.GetFileName(fn[0]);
                         JobStatus job2 = _pipeProxy.GetJobStatus(_curindex);
                         //CurrentWorkName = fn[0];
@@ -550,10 +559,10 @@ namespace MceBuddyViewer
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEstimatedTime, "");
                     }
 
-                    if (fileQueue.Count != JobsList.Count)
-                    {
-                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, fileQueue);
-                    }
+                    //if (fileQueue.Count != JobsList.Count)
+                    //{
+                    //    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, fileQueue);
+                    //}
 
                     // Set the job status
                     for (int i = 0; i < _numJobs; i++)
@@ -565,13 +574,18 @@ namespace MceBuddyViewer
                         }
                         else if (job.Cancelled)
                         {
-                          // for future code
+                            ItemObject item = argsQueue[i];
+                            item.isCurrent = true;
+                            item.Percent = (int)job.PercentageComplete;
                         }
                         else
                         {
-                          // for future code
+                            ItemObject item = argsQueue[i];
+                            item.isCurrent = true;
+                            item.Percent = (int)job.PercentageComplete;
                         }
                     }
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, argsQueue);
                 }
                 else
                 {                    
@@ -784,7 +798,7 @@ namespace MceBuddyViewer
 
         public void ListItemClicked()
         {
-        }
+        }        
 
         //
         // Our current running state
@@ -800,6 +814,14 @@ namespace MceBuddyViewer
                     FirePropertyChanged("Status");
                 }
             }
+        }
+
+        public class ItemObject
+        {
+            public string[] fileQueue;
+            public int Percent;
+            public bool isCurrent;
+            public override string ToString() { return fileQueue[0]; }
         }
 
         public enum RunningStatus
