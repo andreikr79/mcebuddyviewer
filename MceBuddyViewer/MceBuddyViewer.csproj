@@ -187,6 +187,7 @@
     <Content Include="Markup\MainForm.mcml">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Markup\SelectVideoFile.mcml" />
     <Content Include="Sounds\Select.wav" />
     <Content Include="Sounds\PageTransition.wav" />
     <Content Include="Sounds\MiniSelect.wav" />

@@ -12,8 +12,7 @@
     <Properties>
 
       <a:TreeNode Name="TreeNode" TreeNode="$Required" />
-      <Command Name="Focused" />
-      <Color Name="NodeColor" Color="White" />
+      <Command Name="Focused" />      
 
     </Properties>
 
@@ -27,7 +26,7 @@
     <Rules>
 
       <Binding Source="[TreeNode.ChildNodes]" Target="[ChildNodes.Source]" />
-      <Binding Source="[NodeColor]" Target="[Label.Color]" />
+      <Binding Source="[TreeNode.NodeColor]" Target="[Label.Color]" />
 
       <Changed Source="[cmdExpandCollapse.Invoked]">
         <Conditions>
@@ -48,6 +47,15 @@
         </Actions>
       </Changed>
 
+      <Rule>
+        <Conditions>
+          <Equality Source="[TreeNode.Selectable]" ConditionOp="Equals" Value="false" />
+        </Conditions>
+        <Actions>
+          <Set Target="[Checked.Visible]" Value="false" />
+        </Actions>
+      </Rule>
+      
       <Rule>
         <Conditions>
           <Equality Source="[TreeNode.HasChildNodes]" ConditionOp="Equals" Value="false" />
@@ -81,7 +89,7 @@
                 <Children>
 
                   <me:ExpandCollapseButton Name="Button" Command="[cmdExpandCollapse]" />
-                  <Text Name="Label" Content="[TreeNode.Title]" Color="[NodeColor]" Font="font://me:Font" Margins="0,7,0,0" />
+                  <Text Name="Label" Content="[TreeNode.Title]" Color="[TreeNode.NodeColor]" Font="font://me:Font" Margins="0,7,0,0" />
 
                 </Children>
               </Panel>
