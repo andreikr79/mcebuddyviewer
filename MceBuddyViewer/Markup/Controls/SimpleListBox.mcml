@@ -39,7 +39,7 @@
                   <FlowLayout Orientation="Vertical" />
                 </Layout>
                 <Content>
-                  <me:ListBoxItem Item="[RepeatedItem]" Font="[Font]" Index="[RepeatedItemIndex]" SelectionHolder="[Selection]">
+                  <me:ListBoxItem Item="[RepeatedItem!a:ListItemNode]" Font="[Font]" Index="[RepeatedItemIndex]" SelectionHolder="[Selection]">
                     <Command>
                       <InvokeCommand Description="[RepeatedItem.ToString]" Target="[Command.Invoke]"/>
                     </Command>

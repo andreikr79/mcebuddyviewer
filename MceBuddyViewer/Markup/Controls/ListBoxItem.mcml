@@ -5,11 +5,12 @@
 
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ProgressBar" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleButton" />
   
   <UI Name="ListBoxItem">
     <Properties>
       <ICommand Name="Command" ICommand="$Required" />
-      <cor:Object Name="Item" Object="$Required" />
+      <a:ListItemNode Name="Item" ListItemNode="$Required" />
       <a:ListSelection Name="SelectionHolder" ListSelection="$Required" />
       <Index Name="Index" Index="$Required" />
       <Font Name="Font" Font="font://me:Font" />
@@ -20,8 +21,7 @@
     </Locals>
     <Rules>
       <Binding Source="[Command]" Target="[Clicker.Command]" />      
-      <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />
-      <!--<Binding Source="[ProgressPercent]" Target="[ProgressBar]" />-->
+      <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />      
       <Default Target="[Input.KeyInteractive]" Value="true" />
       <Condition Source="[Clicker.Clicking]" SourceValue="true">
         <Actions>
@@ -32,22 +32,38 @@
       <Condition Source="[Input.KeyFocus]" SourceValue="false" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="0.5" />
+          <Set Target="[DelButton.Visible]" Value="false" />
         </Actions>
       </Condition>
       <Condition Source="[Input.KeyFocus]" SourceValue="true" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="1.0" />
+          <Set Target="[DelButton.Visible]" Value="true" />
         </Actions>
       </Condition>
+      <Condition Source="[Item.isCurrent]" SourceValue="true">
+        <Actions>
+          <Set Target="[ProgressBar.Visible]" Value="true" />
+        </Actions>
+      </Condition>
+      <Condition Source="[Item.isCurrent]" SourceValue="false">
+        <Actions>
+          <Set Target="[ProgressBar.Visible]" Value="false" />
+        </Actions>
+      </Condition>
+      <Binding Source="[Item.Percent]" Target="[ProgressBar.Value]" />
     </Rules>
     <Content>
       <Panel Layout="HorizontalFlow">
         <Children>
-          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
-          <!--<me:ProgressBar Name="ProgressBar" Size="150,30" />-->
+          <me:ProgressBar Name="ProgressBar" Size="100,30" />
+          <me:SimpleButton Name="DelButton" Command="[Command]" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30"/>
+          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />          
         </Children>
       </Panel>      
     </Content>
   </UI>
   <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
+  <Image Name="DelButtonNoFocus" Source="res://ehres!MYRADIO.REMOVE.NOFOCUS.PNG" NineGrid="20,12,20,10"/>
+  <Image Name="DelButtonFocus" Source="res://ehres!MYRADIO.REMOVE.FOCUS.PNG" NineGrid="20,12,20,10"/>
 </Mcml>

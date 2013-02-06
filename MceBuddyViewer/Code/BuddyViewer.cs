@@ -116,19 +116,39 @@ namespace MceBuddyViewer
         private void BackChangedJobsList(object obj)
         {
             if (!IsDisposed)
-            {
-                _jobslist.Clear();
+            {                
                 try
                 {
-                    List<ItemObject> fileQueue = (List<ItemObject>)obj;
-                    foreach (ItemObject item in fileQueue)
+                    List<ListItem> fileQueue = (List<ListItem>)obj;
+                    if (fileQueue.Count != _jobslist.Count)
                     {
-                        item.fileQueue[0] = Path.GetFileName(item.fileQueue[0]);
-                        _jobslist.Add(item);
+                        _jobslist.Clear();
+                        foreach (ListItem item in fileQueue)
+                        {
+                            item.fileQueue[0] = Path.GetFileName(item.fileQueue[0]);
+                            ListItemNode nodeitem = new ListItemNode();
+                            nodeitem.fileQueue = item.fileQueue;
+                            nodeitem.isCurrent = item.isCurrent;
+                            nodeitem.Percent = item.Percent;
+                            _jobslist.Add(nodeitem);
+                        }
+                    }
+                    else
+                    {
+                        for (int indx = 0; indx < fileQueue.Count; indx++)
+                        {
+                            ListItem item = fileQueue[indx];
+                            item.fileQueue[0] = Path.GetFileName(item.fileQueue[0]);
+                            ListItemNode nodeitem = (ListItemNode)_jobslist[indx];
+                            nodeitem.fileQueue = item.fileQueue;
+                            nodeitem.isCurrent = item.isCurrent;
+                            nodeitem.Percent = item.Percent;
+                        }
                     }
                 }
                 catch
-                {                    
+                {
+                    _jobslist.Clear();
                 }
             }
         }
@@ -468,7 +488,7 @@ namespace MceBuddyViewer
         /// Change progress
         /// </summary>
         private void ProgressChanged()
-        {
+        {            
             if (!_engineConnected)
             {
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.NotAvailable);
@@ -501,10 +521,10 @@ namespace MceBuddyViewer
 
                     // Display the file Queue
                     List<string[]> fileQueue = _pipeProxy.FileQueue();
-                    List<ItemObject> argsQueue = new List<ItemObject>();
+                    List<ListItem> argsQueue = new List<ListItem>();
                     foreach (string[] fn in fileQueue)
                     {
-                        ItemObject arg=new ItemObject();
+                        ListItem arg = new ListItem();
                         arg.fileQueue = fn;
                         arg.isCurrent = false;
                         arg.Percent = 0;
@@ -574,15 +594,17 @@ namespace MceBuddyViewer
                         }
                         else if (job.Cancelled)
                         {
-                            ItemObject item = argsQueue[i];
+                            ListItem item = argsQueue[i];
                             item.isCurrent = true;
-                            item.Percent = (int)job.PercentageComplete;
+                            item.Percent = (double)job.PercentageComplete/100;
+                            argsQueue[i] = item;
                         }
                         else
                         {
-                            ItemObject item = argsQueue[i];
+                            ListItem item = argsQueue[i];
                             item.isCurrent = true;
-                            item.Percent = (int)job.PercentageComplete;
+                            item.Percent = (double)job.PercentageComplete/100;
+                            argsQueue[i] = item;
                         }
                     }
                     Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, argsQueue);
@@ -604,6 +626,7 @@ namespace MceBuddyViewer
             }
             catch (Exception e1)
             {
+                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, e1.ToString());
                 Debug.WriteLine(e1.ToString());
             }
         }
@@ -816,12 +839,11 @@ namespace MceBuddyViewer
             }
         }
 
-        public class ItemObject
+        public struct ListItem
         {
             public string[] fileQueue;
-            public int Percent;
+            public double Percent;
             public bool isCurrent;
-            public override string ToString() { return fileQueue[0]; }
         }
 
         public enum RunningStatus
