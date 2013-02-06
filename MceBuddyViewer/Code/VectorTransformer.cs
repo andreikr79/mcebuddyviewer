@@ -26,7 +26,7 @@ namespace MceBuddyViewer
         /// <returns>Output value.</returns>
         public object Transform(object value)
         {
-            string[] parts = String.Format(Format, value).Split(',');
+            string[] parts = String.Format(Format, value).Split(';');
             return new Vector3(
                 Single.Parse(parts[0]),
                 Single.Parse(parts[1]),

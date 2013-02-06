@@ -21,7 +21,7 @@
       <!--scale the 'full' part of the bar according to the percentage-->
       <Binding Source="[Value]" Target="[FullBar.Scale]">
         <Transformer>
-          <a:VectorTransformer Format="{0},1,1" />
+          <a:VectorTransformer Format="{0};1;1" />
         </Transformer>
       </Binding>
 
