@@ -125,7 +125,7 @@
                       <InvokeCommand Target="[BuddyViewer.AddFileCmd]" />
                     </Command>
                   </me:SimpleButton>
-                  <me:SimpleButton Name="DeleteButton" Text="Delete" Size="235,51" Margins="10,0,0,0" Visible="false">
+                  <me:SimpleButton Name="DeleteButton" Text="Delete" Size="235,51" Margins="10,0,0,0">
                     <Command>
                       <InvokeCommand Target="[BuddyViewer.DeleteFileCmd]" />
                     </Command>
