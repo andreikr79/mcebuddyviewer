@@ -29,13 +29,13 @@
           <Set Target="[SelectionHolder.Item]" Value="[Item]" />
         </Actions>
       </Condition>
-      <Condition Source="[Input.KeyFocus]" SourceValue="false" >
+      <Condition Source="[Input.DeepKeyFocus]" SourceValue="false" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="0.5" />
           <Set Target="[DelButton.Visible]" Value="false" />
         </Actions>
       </Condition>
-      <Condition Source="[Input.KeyFocus]" SourceValue="true" >
+      <Condition Source="[Input.DeepKeyFocus]" SourceValue="true" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="1.0" />
           <Set Target="[DelButton.Visible]" Value="true" />
@@ -57,13 +57,18 @@
       <Panel Layout="HorizontalFlow">
         <Children>
           <me:ProgressBar Name="ProgressBar" Size="100,30" />
-          <me:SimpleButton Name="DelButton" Command="[Command]" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30"/>
-          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />          
+          <me:SimpleButton Name="DelButton" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30">
+            <Command>
+              <InvokeCommand Description="[Command.Description]" Target="[Command.Invoke]" />
+            </Command>
+          </me:SimpleButton>
+          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
         </Children>
       </Panel>      
     </Content>
   </UI>
   <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
-  <Image Name="DelButtonNoFocus" Source="res://ehres!MYRADIO.REMOVE.NOFOCUS.PNG" NineGrid="20,12,20,10"/>
-  <Image Name="DelButtonFocus" Source="res://ehres!MYRADIO.REMOVE.FOCUS.PNG" NineGrid="20,12,20,10"/>
+  <Image Name="DelButtonNoFocus" Source="res://ehres!MYRADIO.REMOVE.NOFOCUS.PNG" />
+  <Image Name="DelButtonFocus" Source="res://ehres!MYRADIO.REMOVE.FOCUS.PNG" />
+  <Image  Name="NullImage" Image="null"/>
 </Mcml>

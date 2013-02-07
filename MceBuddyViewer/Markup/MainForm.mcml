@@ -29,7 +29,7 @@
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="true" />
           <Set Target="[AddButton.Command.Available]" Value="true" />
-          <Set Target="[DeleteButton.Command.Available]" Value="true" />
+          <Set Target="[DeleteButton.Visible]" Value="true" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Stopped">
@@ -40,7 +40,7 @@
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="false" />
           <Set Target="[AddButton.Command.Available]" Value="false" />
-          <Set Target="[DeleteButton.Command.Available]" Value="false" />
+          <!--<Set Target="[DeleteButton.Command.Available]" Value="false" />-->
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Paused">
@@ -51,7 +51,7 @@
           <Set Target="[StartButton.Command.Available]" Value="true" />
           <Set Target="[StopButton.Command.Available]" Value="true" />
           <Set Target="[AddButton.Command.Available]" Value="true" />
-          <Set Target="[DeleteButton.Command.Available]" Value="true" />
+          <Set Target="[DeleteButton.Visible]" Value="false" />
         </Actions>
       </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="NotAvailable">
@@ -62,7 +62,7 @@
           <Set Target="[StartButton.Command.Available]" Value="false" />
           <Set Target="[StopButton.Command.Available]" Value="false" />
           <Set Target="[AddButton.Command.Available]" Value="false" />
-          <Set Target="[DeleteButton.Command.Available]" Value="false" />
+          <!--<Set Target="[DeleteButton.Command.Available]" Value="false" />-->
         </Actions>
       </Condition>
       <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
@@ -182,7 +182,7 @@
                   </Panel>
                   <me:SimpleListBox Name="JobsListBox" List="[BuddyViewer.JobsList]" Font="[TextFont]" Size="700,352">
                     <Command>
-                      <InvokeCommand Target="[BuddyViewer.ListItemClicked]" />
+                      <InvokeCommand Target="[BuddyViewer.ListItemClicked]" deleteindex="-1"/>
                     </Command>
                   </me:SimpleListBox>
                 </Children>

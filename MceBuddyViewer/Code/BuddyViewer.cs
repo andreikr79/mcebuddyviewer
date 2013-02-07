@@ -819,8 +819,20 @@ namespace MceBuddyViewer
             }
         }
 
-        public void ListItemClicked()
+        public void ListItemClicked(int deleteindex=-1)
         {
+            try
+            {
+                if (deleteindex >= 0)
+                {
+                    int[] indxList = new int[1];
+                    indxList[1] = deleteindex;
+                    _pipeProxy.CancelJob(indxList);
+                }
+            }
+            catch
+            {
+            }
         }        
 
         //
