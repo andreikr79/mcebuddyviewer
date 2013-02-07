@@ -38,6 +38,9 @@
                 <Layout>
                   <FlowLayout Orientation="Vertical" />
                 </Layout>
+                <Animations>
+                  <Animation Animation="animation://me:ScrollerMoveItemSmooth" />
+                </Animations>
                 <Content>
                   <me:ListBoxItem Item="[RepeatedItem!a:ListItemNode]" Font="[Font]" Index="[RepeatedItemIndex]" SelectionHolder="[Selection]">
                     <Command>
