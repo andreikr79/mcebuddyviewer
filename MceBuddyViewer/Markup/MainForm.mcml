@@ -64,7 +64,11 @@
       <Binding Source="[BuddyViewer.NumWorks.ToString]" Target="[NumWorks.Content]" />
       <Binding Source="[BuddyViewer.CurrentWorkName]" Target="[CurrentWorkName.Content]" />
       <Binding Source="[BuddyViewer.CurrentWorkStatus]" Target="[CurrentWorkStatus.Content]" />
-      <Binding Source="[BuddyViewer.ProcentComplete.ToString]" Target="[ProcentComplete.Content]" />
+      <Binding Source="[BuddyViewer.ProcentComplete]" Target="[ProcentComplete.Content]" >
+        <Transformer>
+          <FormatTransformer Format="{0}" ExtendedFormat="0.00" />
+        </Transformer>
+      </Binding>
       <Binding Source="[JobsListBox.SelectedIndex]" Target="[BuddyViewer.JobItemSelected]" />
       <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />     
     </Rules>
