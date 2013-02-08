@@ -18,17 +18,10 @@
     </Properties>
     <Locals>
       <ClickHandler Name="Clicker" />
+      <Command Name="TextCommand" />
     </Locals>
-    <Rules>
-      <Binding Source="[Command]" Target="[Clicker.Command]" />      
-      <Binding Source="[Command.Available]" Target="[Input.KeyInteractive]" />      
+    <Rules>     
       <Default Target="[Input.KeyInteractive]" Value="true" />
-      <Condition Source="[Clicker.Clicking]" SourceValue="true">
-        <Actions>
-          <Set Target="[SelectionHolder.Index]" Value="[Index.Value]" />
-          <Set Target="[SelectionHolder.Item]" Value="[Item]" />
-        </Actions>
-      </Condition>
       <Condition Source="[Input.DeepKeyFocus]" SourceValue="false" >
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="0.5" />
@@ -39,6 +32,8 @@
         <Actions>
           <Set Target="[TextItem.Alpha]" Value="1.0" />
           <Set Target="[DelButton.Visible]" Value="true" />
+          <Set Target="[SelectionHolder.Index]" Value="[Index.Value]" />
+          <Set Target="[SelectionHolder.Item]" Value="[Item]" />
         </Actions>
       </Condition>
       <Condition Source="[Item.isCurrent]" SourceValue="true">
@@ -57,18 +52,44 @@
       <Panel Layout="HorizontalFlow">
         <Children>
           <me:ProgressBar Name="ProgressBar" Size="100,30" />
-          <me:SimpleButton Name="DelButton" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30">
-            <Command>
-              <InvokeCommand Description="[Command.Description]" Target="[Command.Invoke]" />
-            </Command>
+          <me:SimpleButton Name="DelButton" Command="[Command]" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30">            
           </me:SimpleButton>
-          <Text Name="TextItem" Content="[Item.ToString]" Font="[Font]" Color="White" />
+          <me:ClickedText Name="TextItem" Command="[TextCommand]" Content="[Item.ToString]" Font="[Font]" Color="White" />
         </Children>
       </Panel>      
+    </Content>
+  </UI>
+  <UI Name="ClickedText">
+    <Properties>
+      <ICommand Name="Command" ICommand="$Required" />
+      <cor:String Name="Content" String="" />
+      <Font Name="Font" Font="font://me:Font" />
+      <Color Name="Color" Color="White" />
+      <cor:Single Name="Alpha" Single="1.0" />
+    </Properties>
+    <Locals>
+      <ClickHandler Name="Clicker" />
+    </Locals>
+    <Rules>
+      <Default Target="[Input.KeyInteractive]" Value="true" />
+      <Rule>
+        <Conditions>
+          <Modified Source="[Clicker.Invoked]"/>
+        </Conditions>
+        <Actions>
+          <Invoke Target="[Command.Invoke]" InvokePolicy="AsynchronousLowPri"/>
+        </Actions>
+      </Rule>
+      <Binding Source="[Content]" Target="[ClickText.Content]" />
+      <Binding Source="[Font]" Target="[ClickText.Font]" />
+      <Binding Source="[Color]" Target="[ClickText.Color]" />
+      <Binding Source="[Alpha]" Target="[ClickText.Alpha]" />
+    </Rules>
+    <Content>
+      <Text Name="ClickText" />
     </Content>
   </UI>
   <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
   <Image Name="DelButtonNoFocus" Source="res://ehres!MYRADIO.REMOVE.NOFOCUS.PNG" />
   <Image Name="DelButtonFocus" Source="res://ehres!MYRADIO.REMOVE.FOCUS.PNG" />
-  <Image  Name="NullImage" Image="null"/>
 </Mcml>

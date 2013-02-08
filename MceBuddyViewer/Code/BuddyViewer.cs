@@ -769,7 +769,6 @@ namespace MceBuddyViewer
 
         public void DeleteFileCmd()
         {
-
         }
 
         private void addFileToQueue(string videoFile)
@@ -819,19 +818,19 @@ namespace MceBuddyViewer
             }
         }
 
-        public void ListItemClicked(int deleteindex=-1)
+        public void ListItemClicked()
         {
             try
-            {
-                if (deleteindex >= 0)
+            {                
+                if (JobItemSelected >= 0)
                 {
                     int[] indxList = new int[1];
-                    indxList[1] = deleteindex;
+                    indxList[0] = JobItemSelected;
                     _pipeProxy.CancelJob(indxList);
                 }
             }
             catch
-            {
+            {                
             }
         }        
 

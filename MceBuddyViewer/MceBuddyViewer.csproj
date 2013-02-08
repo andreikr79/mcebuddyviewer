@@ -144,7 +144,9 @@
   <ItemGroup>
     <None Include="DevInstall.cmd" />
     <Content Include="Markup\Controls\ExpandCollapseButton.mcml" />
-    <Content Include="Markup\Controls\ListBoxItem.mcml" />
+    <Content Include="Markup\Controls\ListBoxItem.mcml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Markup\Controls\ProgressBar.mcml">
       <SubType>Designer</SubType>
     </Content>
@@ -184,7 +186,9 @@
     <Content Include="Images\OverlaysButtonNoFocus.png" />
     <Content Include="Markup\Controls\Controls.mcml" />
     <Content Include="Markup\Controls\HeaderText.mcml" />
-    <Content Include="Markup\Controls\SimpleButton.mcml" />
+    <Content Include="Markup\Controls\SimpleButton.mcml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Markup\Controls\TreeNodeItem.mcml" />
     <Content Include="Markup\Controls\TreeViewHost.mcml" />
     <Content Include="Markup\MainForm.mcml">
