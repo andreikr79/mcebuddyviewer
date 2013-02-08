@@ -571,8 +571,8 @@ namespace MceBuddyViewer
                         }                        
                     } else
                     {
-                        //CurrentWorkName = "";
-                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, 0);
+                        //CurrentWorkName = "";                        
+                        Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
                         //CurrentWorkStatus = "";
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkStatus, "");
                         Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackProcentComplete, 0);
