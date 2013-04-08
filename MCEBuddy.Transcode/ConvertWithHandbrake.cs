@@ -16,20 +16,21 @@ namespace MCEBuddy.Transcode
     {
         protected const int DEFAULT_BIT_RATE = 1500;
         protected const double DRC = 2.5; // Dynamic Range Compression (0 to 4, 2.5 is a good value)
-        private int _presetVideoWidth = 0;
 
-        public ConvertWithHandbrake(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan, bool fixCorruptedRemux)
+        public ConvertWithHandbrake(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan)
             : base(conversionOptions, tool, ref videoFile, ref jobStatus, jobLog, ref commercialScan)
         {
 
         }
 
-        protected override void GetPresetWidth()
+        protected override bool IsPresetWidth()
         {
             // Get the profile conversion width
             string scale = ParameterValue("-w");
-            if (scale.Contains(":")) 
-                int.TryParse(scale.Split(':')[0], out _presetVideoWidth);
+            if (!String.IsNullOrWhiteSpace(scale))
+                return true;
+            else
+                return false;
         }
 
         protected override void SetTrim()
@@ -68,46 +69,9 @@ namespace MCEBuddy.Transcode
             ParameterValueReplaceOrInsert("--gain", _volume.ToString("#0.0", System.Globalization.CultureInfo.InvariantCulture)); // it has to be a floating point number in DB
         }
 
-        protected override void SetQuality()
+        protected override void SetBitrateAndQuality()
         {
-            if (ConstantQuality)
-            {
-                int quality;
-                string qualityVal = ParameterValue("-q");
-                if (!int.TryParse(qualityVal, out quality))
-                {
-                    quality = -1;
-                }
-
-                // Set up qualityVal
-                if (_videoParams.Contains("x264"))
-                {
-                    // h.264
-                    if (quality == -1) quality = 20;
-                    quality = ConstantQualityValue(51, 0, quality);
-                }
-                else if (_videoParams.Contains("-e ffmpeg"))
-                {
-                    // MPEG-4 divx
-                    if (quality == -1) quality = 12;
-                    quality = ConstantQualityValue(31, 1, quality);
-                }
-                else if (_videoParams.Contains("-e theora"))
-                {
-                    // theora
-                    if (quality == -1) quality = 45;
-                    quality = ConstantQualityValue(0, 63, quality);
-                }
-                else
-                {
-                    // catchall default h.264
-                    if (quality == -1) quality = 20;
-                    quality = ConstantQualityValue(51, 0, quality);
-                }
-
-                ParameterValueReplaceOrInsert("-q", qualityVal.ToString(System.Globalization.CultureInfo.InvariantCulture));         
-            }
-            else
+            if (!ConstantQuality) // Constant quality does not need to be updated since it's constant quality irrespective of resolution
             {
                 string bitrateToken = "-b";
                 string bitrateVal = ParameterValue("-b");
@@ -138,12 +102,7 @@ namespace MCEBuddy.Transcode
             ParameterValueReplaceOrInsert("-X", _maxWidth.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
-        protected override void SetPreCrop()
-        {
-            // Nothing Pre Crop required)
-        }
-
-        protected override void SetPostCrop()
+        protected override void SetCrop()
         {
             // ToDO Handbrake does an autocrop on the video, so we don't need mencoder crop
             // If skipCropping is defined then we need to disable AutoCropping
@@ -165,15 +124,10 @@ namespace MCEBuddy.Transcode
             }
         }
 
-        protected override int PresetVideoWidth
-        {
-            get { return _presetVideoWidth; }
-        }
-
         protected override void SetAudioLanguage()
         {
             if (_videoFile.AudioTrack == -1)
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Cannot get Audio and Video stream details, continuing without Audio Language selection"), Log.LogEntryType.Warning);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Cannot get Audio and Video stream details, continuing with default Audio Language selection"), Log.LogEntryType.Warning);
             else
             {
                 // We need to compensate for zero channel audio tracks, which are ignored by handbrake
@@ -188,18 +142,21 @@ namespace MCEBuddy.Transcode
                         audioTrack++;
                 }
 
-                ParameterValueReplaceOrInsert("-a", audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audiotrack we had isolated earlier (1st Audio track is 1, FFMPEGStreamInfo is 0 based)
+                if (String.IsNullOrWhiteSpace(ParameterValue("-a"))) // don't override Audio track selection from profile
+                    ParameterValueReplaceOrInsert("-a", audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audiotrack we had isolated earlier (1st Audio track is 1, FFMPEGStreamInfo is 0 based)
+                else
+                    _jobLog.WriteEntry(this, Localise.GetPhrase("User has specified Audio language selection in profile, continuing without Audio Language selection"), Log.LogEntryType.Warning);
             }
         }
 
         protected override void SetAudioChannels()
         {
-            if (_2ChannelAudio)
+            if (_2ChannelAudio && !_audioParams.Contains(" copy")) // copy is not compatible with -6
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Requested to limit Audio Channels to 2"), Log.LogEntryType.Information);
                 ParameterValueReplaceOrInsert("-6", "stereo"); // force 2 channel audio
             }
-            else if (!_audioParams.Contains("copy") && !_audioParams.Contains("-6 ")) // check if 2 channel audio is fixed and no audio channel information is specified in audio params
+            else if (!_audioParams.Contains(" copy") && (ParameterValue("-6") == "")) // check if 2 channel audio is fixed and no audio channel information is specified in audio params
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Did not find Audio Channel information, auto settings channels"), Log.LogEntryType.Information);
 
@@ -208,6 +165,8 @@ namespace MCEBuddy.Transcode
                 else
                     ParameterValueReplaceOrInsert("-6", "auto");
             }
+            else
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Skipping over requested to set audio channel information either due to COPY codec or audio parameters already contains channel directive"), Log.LogEntryType.Warning);
         }
 
         protected override void SetInputFileName()

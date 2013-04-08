@@ -28,7 +28,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-  
+    [Serializable]
     public class ConversionJobOptions
     {
         public string taskName; // Name of conversion task
@@ -58,24 +58,30 @@ namespace MCEBuddy.Globals
         public string comskipIni; // Path to custom Comskip INI file
 
         public bool downloadSeriesDetails; // Download information from internet
+        public bool downloadBanner; // Download the banner file from the internet
         public string tvdbSeriesId; // TVDB Series Id
         public string imdbSeriesId; // IMDB Series Id
 
         public bool renameBySeries; // rename by information
         public bool altRenameBySeries; // alternate renaming
         public string customRenameBySeries; // custom rename file
+        public bool renameOnly; // Only rename and move the original file, do not convert or process the video
 
         public string fileSelection; // File selection filter
-        public string metaSelection; // Metadata selection filter
+        public string metaShowSelection; // Showname Metadata selection filter
+        public string metaNetworkSelection; // Network/Channel name Metadata selection filter
+        public string[] monitorTaskNames; // Filter for related Monitor Task name matching
 
         public bool extractXML; // Create XML file from video properties
 
         public bool disableCropping; // Disable auto cropping
         public bool commercialSkipCut; // do commercial scan keep EDL file but skip cutting the commercials
 
-        public string domainName; // domain name for network credentials
-        public string userName; // user name for network credentials
-        public string password; // password for network credentials
+        public string tivoMAKKey; // TiVO MAK key for decrypting and remuxing files and extracting metadata
+
+        public string domainName = ""; // domain name for network credentials
+        public string userName = ""; // user name for network credentials
+        public string password = ""; // password for network credentials
 
         public bool enabled; // If the conversion task enabled
 
@@ -108,11 +114,15 @@ namespace MCEBuddy.Globals
             allOpts += "Rename by Series -> " + renameBySeries.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Alt Rename by Series -> " + altRenameBySeries.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Custom Rename by Series -> " + customRenameBySeries + "\n";
+            allOpts += "Rename Only -> " + renameOnly.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "File Selection Pattern -> " + fileSelection + "\n";
-            allOpts += "Show Selection Pattern -> " + metaSelection + "\n";
+            allOpts += "Show Selection Pattern -> " + metaShowSelection + "\n";
+            allOpts += "Channel Selection Pattern -> " + metaNetworkSelection + "\n";
+            allOpts += "Monitor Tasks Selection -> " + (monitorTaskNames == null ? "" : String.Join(",", monitorTaskNames)) + "\n";
             allOpts += "Extract XML -> " + extractXML.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Disable Cropping -> " + disableCropping.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Task Commercial Skip Cut -> " + commercialSkipCut.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "TiVO MAK Key -> " + tivoMAKKey + "\n";
             allOpts += "Domain Name -> " + domainName + "\n";
             allOpts += "User Name -> " + userName + "\n";
             allOpts += "Password -> " + new String('*', password.Length) + "\n"; // mask the password, preserve the length
@@ -131,7 +141,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-   
+    [Serializable]
     public class MonitorJobOptions
     {
         public string taskName; // Name of monitor task
@@ -139,9 +149,9 @@ namespace MCEBuddy.Globals
         public string searchPattern; // file search pattern
         public bool monitorSubdirectories; // monitor sub directories
 
-        public string domainName; // domain name for network credentials
-        public string userName; // user name for network credentials
-        public string password; // password for network credentials
+        public string domainName = ""; // domain name for network credentials
+        public string userName = ""; // user name for network credentials
+        public string password = ""; // password for network credentials
 
         public override string ToString()
         {
@@ -150,6 +160,7 @@ namespace MCEBuddy.Globals
             allOpts += "Task -> " + taskName + "\n";
             allOpts += "Search Path -> " + searchPath + "\n";
             allOpts += "Search Pattern -> " + searchPattern + "\n";
+            allOpts += "Monitor SubDirectories -> " + monitorSubdirectories + "\n";
             allOpts += "Domain Name -> " + domainName + "\n";
             allOpts += "User Name -> " + userName + "\n";
             allOpts += "Password -> " + new String('*', password.Length) + "\n"; // mask the password, preserve the length
@@ -167,7 +178,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-
+    [Serializable]
     public class EMailOptions
     {
         public string smtpServer; // Name of SMTP server
@@ -179,11 +190,13 @@ namespace MCEBuddy.Globals
 
         public string fromAddress; // From eMail address
         public string toAddresses; // to eMail addresses (multiple separated by ;)
+        public string bccAddress; // Bcc eMail addresses (multiple separated by ;)
 
         public bool successEvent; // send eMail on successful conversion
         public bool failedEvent; // send eMail on failed conversion
         public bool cancelledEvent; // send eMail on cancelled conversion
         public bool startEvent; // send eMail on start of conversion
+        public bool downloadFailedEvent; // send eMail if unable to download series information
 
 
         public override string ToString()
@@ -197,10 +210,12 @@ namespace MCEBuddy.Globals
             allOpts += "Password -> " + new String('*', password.Length) + "\n"; // mask the password, preserve the length
             allOpts += "From -> " + fromAddress + "\n";
             allOpts += "To -> " + toAddresses + "\n";
+            allOpts += "Bcc -> " + bccAddress + "\n";
             allOpts += "eMail On Success -> " + successEvent.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "eMail On Failure -> " + failedEvent.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "eMail On Cancellation -> " + cancelledEvent.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "eMail On Start -> " + startEvent.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "eMail On Download Failure -> " + downloadFailedEvent.ToString(CultureInfo.InvariantCulture) + "\n";
 
             return allOpts;
         }
@@ -215,7 +230,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-
+    [Serializable]
     public class GeneralOptions
     {
         public int wakeHour; // Hour to wake system
@@ -238,13 +253,14 @@ namespace MCEBuddy.Globals
         public int logKeepDays; // number of days to keep the logs
 
         public bool deleteOriginal; // Delete original file after successful conversion
+        public bool useRecycleBin; // Use recycle bin for original recordings
         public bool archiveOriginal; // Archive original file after successful conversion
         public bool deleteConverted; // Delete converted file when source file is deleted
 
         public bool allowSleep; // Allow system to enter sleep during active conversion
 
         public bool sendEmail; // Send emails on various events
-        public EMailOptions eMailSettings; // Settings used for sending eMails
+        public EMailOptions eMailSettings = new EMailOptions(); // Settings used for sending eMails
 
         public string locale; // Locale to be used
 
@@ -254,7 +270,12 @@ namespace MCEBuddy.Globals
         public int hangTimeout; // Timeout for apps console output before they are determined as hung
         public int pollPeriod; // Polling period for scanning for new files in the monitor tasks
         public string processPriority; // Priority of the applications
+        public IntPtr CPUAffinity; // Affinity of CPU set by user
         public bool engineRunning; // Last state of the MCEBuddy engine
+        public bool ignoreCopyProtection; // Ignore Copy Protection flags on recording while converting
+        public double subtitleSegmentOffset; // For each commercial segment cut, incremental amount of seconds to offset the subtitles
+
+        public string comskipPath; // Path to custom Comskip (donator version) to use
 
         public int localServerPort; // Port of the local MCEBuddy server engine, to host the service and enable UPnP
         public bool uPnPEnable; // UPnP support
@@ -275,6 +296,7 @@ namespace MCEBuddy.Globals
             allOpts += "Enable Job Logs -> " + logJobs.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Log Level -> " + logLevel.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Delete Original -> " + deleteOriginal.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "Use Recycle Bin -> " + useRecycleBin.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Archive Original -> " + archiveOriginal.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Sync Converted -> " + deleteConverted.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Allow Sleep During Conversions -> " + allowSleep.ToString(CultureInfo.InvariantCulture) + "\n";
@@ -287,7 +309,11 @@ namespace MCEBuddy.Globals
             allOpts += "App Hang Timeout -> " + hangTimeout.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Scan New Files Poll Period -> " + pollPeriod.ToString(CultureInfo.InvariantCulture) + "\n";
             allOpts += "Process Priority -> " + processPriority + "\n";
+            allOpts += "CPU Affinity -> " + CPUAffinity.ToString("d") + "\n";
             allOpts += "Engine Running -> " + engineRunning.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "Ignore Copy Protection -> " + ignoreCopyProtection.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "Subtitle Cut Segment Incremental Offset -> " + subtitleSegmentOffset.ToString(CultureInfo.InvariantCulture) + "\n";
+            allOpts += "Custom Comskip Path -> " + comskipPath + "\n";
             allOpts += "Local Server Port -> " + localServerPort + "\n";
             allOpts += "UPnP Enabled -> " + uPnPEnable.ToString(CultureInfo.InvariantCulture) + "\n";
 

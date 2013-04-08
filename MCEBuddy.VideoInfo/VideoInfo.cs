@@ -26,11 +26,12 @@ namespace MCEBuddy.VideoProperties
         private string _requestedAudioLanguage; // Language that we were requested to look for
         private string _originalFileName;
         private string _remuxedFileName;
-        private bool skipCropping;
-        private FFmpegMediaInfo originalFileFFmpegStreamInfo;
-        private FFmpegMediaInfo ffmpegStreamInfo;
+        private bool _skipCropping;
+        private FFmpegMediaInfo _originalFileFFmpegStreamInfo;
+        private FFmpegMediaInfo _ffmpegStreamInfo;
+        private bool _ignoreSuspend = false; // If called from UI, we ignore any suspend requests to avoid hanging
 
-        // VideoInfo Parameters to be reset each time Update is called - these are to be reset from scratch for a clean update by the Update function
+        // IMPORTANT ADD PARAMETERS TO RESET SECTION: VideoInfo Parameters to be reset each time Update is called - these are to be reset from scratch for a clean update by the Update function
         private bool _error;
         private string _videoCodec;
         private string _audioCodec;
@@ -43,12 +44,13 @@ namespace MCEBuddy.VideoProperties
         private int _cropHeight;
         private int _cropWidth;
         private string _cropString;
-        private int audioStream; // Stream number of the selected Audio Channel
-        private int audioTrack; // Audio track number of the selected Audio Channel (0 based reference, i.e. 0 indicates 1st audio)
-        private int videoStream; // Stream number for the video stream (there is only 1 video stream per file)
-        private int videoPID; // Video stream PID
-        private int audioPID; // Audio stream PID
+        private int _audioStream; // Stream number of the selected Audio Channel
+        private int _audioTrack; // Audio track number of the selected Audio Channel (0 based reference, i.e. 0 indicates 1st audio)
+        private int _videoStream; // Stream number for the video stream (there is only 1 video stream per file)
+        private int _videoPID; // Video stream PID
+        private int _audioPID; // Audio stream PID
         private string _audioLanguage; // Store the language we are selecting
+        private bool _selectedAudioImpaired; // Is this audio selection impaired audio
 
         private void ResetParameters()
         {
@@ -64,16 +66,23 @@ namespace MCEBuddy.VideoProperties
             _cropHeight = 0;
             _cropWidth = 0;
             _cropString = "";
-            audioStream = -1; // Stream number of the selected Audio Channel
-            audioTrack = -1; // Audio track number of the selected Audio Channel (0 based reference, i.e. 0 indicates 1st audio)
-            videoStream = -1; // Stream number for the video stream (there is only 1 video stream per file)
-            videoPID = -1; // Video stream PID
-            audioPID = -1; // Audio stream PID
+            _audioStream = -1; // Stream number of the selected Audio Channel
+            _audioTrack = -1; // Audio track number of the selected Audio Channel (0 based reference, i.e. 0 indicates 1st audio)
+            _videoStream = -1; // Stream number for the video stream (there is only 1 video stream per file)
+            _videoPID = -1; // Video stream PID
+            _audioPID = -1; // Audio stream PID
             _audioLanguage = ""; // Store the language we are selecting
+            _selectedAudioImpaired = false; // no imparied audio
         }
 
-        public VideoInfo(string videoFileName, ref JobStatus jobStatus, Log jobLog)
+        /// <summary>
+        /// Gets the audio / video information for a file, does not check cropping information
+        /// </summary>
+        /// <param name="videoFileName">Full path to the video file to get information about</param>
+        /// <param name="ignoreSuspend">True if called from a GUI</param>
+        public VideoInfo(string videoFileName, ref JobStatus jobStatus, Log jobLog, bool ignoreSuspend)
         {
+            _ignoreSuspend = ignoreSuspend;
             UpdateVideoInfo("", videoFileName, "", "", "", ref jobStatus, jobLog);
         }
 
@@ -106,12 +115,12 @@ namespace MCEBuddy.VideoProperties
             Ini ini = new Ini(GlobalDefs.ProfileFile);
 
             if (String.IsNullOrEmpty(profile))
-                skipCropping = true; // we don't need crop info
+                _skipCropping = true; // we don't need crop info
             else
-                skipCropping = ini.ReadBoolean(profile, "SkipCropping", false);
+                _skipCropping = ini.ReadBoolean(profile, "SkipCropping", false);
 
-            string activeFileName = videoFileName; // source file
-            if (!String.IsNullOrEmpty(remuxedFileName)) activeFileName = remuxedFileName; // if there is a remux file, then the active conversion file is the remux file
+            string activeFileName = _originalFileName; // source file
+            if (!String.IsNullOrEmpty(_remuxedFileName)) activeFileName = _remuxedFileName; // if there is a remux file, then the active conversion file is the remux file
 
             _jobLog.WriteEntry(this, "Reading MediaInfo from " + activeFileName, Log.LogEntryType.Information);
             MediaInfoDll mi = new MediaInfoDll();
@@ -167,75 +176,81 @@ namespace MCEBuddy.VideoProperties
 
             // Supplement with extracting Video and Audio information (sometimes MediaInfo fails) using FFMPEG and selected the Audio Language specified
             _jobLog.WriteEntry(this, Localise.GetPhrase("Supplementing Media information using FFMPEG"), Log.LogEntryType.Information);
-            ffmpegStreamInfo = new FFmpegMediaInfo(activeFileName, ref _jobStatus, _jobLog);
-            ffmpegStreamInfo.Run();
-            if (ffmpegStreamInfo.Success && !ffmpegStreamInfo.ParseError)
+            _ffmpegStreamInfo = new FFmpegMediaInfo(activeFileName, ref _jobStatus, _jobLog, _ignoreSuspend); // this may be called from the UI request
+            _ffmpegStreamInfo.Run();
+            if (_ffmpegStreamInfo.Success && !_ffmpegStreamInfo.ParseError)
             {
                 //Video parameters
-                _width = ffmpegStreamInfo.MediaInfo.VideoInfo.Width;
-                _height = ffmpegStreamInfo.MediaInfo.VideoInfo.Height;
+                _width = _ffmpegStreamInfo.MediaInfo.VideoInfo.Width;
+                _height = _ffmpegStreamInfo.MediaInfo.VideoInfo.Height;
                 if (_fps == 0) // use FPS from MediaInfo if available, more reliable
-                    _fps = ffmpegStreamInfo.MediaInfo.VideoInfo.FPS;
+                    _fps = _ffmpegStreamInfo.MediaInfo.VideoInfo.FPS;
                 else
-                    ffmpegStreamInfo.MediaInfo.VideoInfo.FPS = _fps; // Store the value from MediaInfo, more reliable
-                _duration = ffmpegStreamInfo.MediaInfo.VideoInfo.Duration;
-                _videoCodec = ffmpegStreamInfo.MediaInfo.VideoInfo.VideoCodec;
+                    _ffmpegStreamInfo.MediaInfo.VideoInfo.FPS = _fps; // Store the value from MediaInfo, more reliable
+                _duration = _ffmpegStreamInfo.MediaInfo.VideoInfo.Duration;
+                _videoCodec = _ffmpegStreamInfo.MediaInfo.VideoInfo.VideoCodec;
 
-                // Audio parameters - find the best Audio channel
+                // Audio parameters - find the best Audio channel for the selected language otherwise by default the encoder will select the best audio channel
                 bool foundLang = false;
-                for (int i = 0; i < ffmpegStreamInfo.AudioTracks; i++)
+                if (!String.IsNullOrEmpty(_requestedAudioLanguage))
                 {
-                    /* Quoting from FFMPEG documentation:
-                        * By default ffmpeg includes only one stream of each type (video, audio, subtitle) present in the input files and adds them to each output file.
-                        * It picks the "best" of each based upon the following criteria;
-                        *      for video it is the stream with the highest resolution,
-                        *      for audio the stream with the most channels,
-                        *      for subtitle it’s the first subtitle stream.
-                        * In the case where several streams of the same type rate equally, the lowest numbered stream is chosen.
-                    */
-                    if (ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels > _audioChannels && !foundLang) // we keep looking as long as didn't find a language match
+                    for (int i = 0; i < _ffmpegStreamInfo.AudioTracks; i++)
                     {
-                        _audioChannels = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels;
-                        audioStream = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Stream; // store the stream number for the selected audio channel
-                        _audioCodec = ffmpegStreamInfo.MediaInfo.AudioInfo[i].AudioCodec;
-                        audioPID = ffmpegStreamInfo.MediaInfo.AudioInfo[i].PID; // Audio PID
-                        audioTrack = i; // Store the audio track number we selected
-                        _audioLanguage = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Language.ToLower(); // this is what we selected
-                    }
+                        // Language selection check, if the user has picked a specific language code, look for it
+                        // If we find a match, we look the one with the highest number of channels in it
+                        if ((_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Language.ToLower() == _requestedAudioLanguage) && (_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels > 0))
+                        {
+                            if (foundLang)
+                                if (!( // take into account impaired tracks (since impaired tracks typically have no audio)
+                                    ((_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels > _audioChannels) && !_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Impaired) || // PREFERENCE to non-imparied Audio tracks with the most channels
+                                    ((_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels > _audioChannels) && _selectedAudioImpaired) || // PREFERENCE to Audio tracks with most channels if currently selected track is impaired
+                                    (!_ffmpegStreamInfo.MediaInfo.AudioInfo[i].Impaired && _selectedAudioImpaired) // PREFER non impaired audio over currently selected impaired
+                                    ))
+                                    continue; // we have found a lang match, now we are looking for more channels only now
 
-                    // Language selection check, if the user has picked a specific language code, look for it
-                    // If we find a match, we look the one with the highest number of channels in it
-                    if (ffmpegStreamInfo.MediaInfo.AudioInfo[i].Language.ToLower() == _requestedAudioLanguage)
-                    {
-                        if (foundLang)
-                            if (ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels <= _audioChannels)
-                                continue; // we have found a lang match, now we are looking for more channels only now
-
-                        _audioChannels = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels;
-                        audioStream = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Stream; // store the stream number for the selected audio channel
-                        _audioCodec = ffmpegStreamInfo.MediaInfo.AudioInfo[i].AudioCodec;
-                        audioPID = ffmpegStreamInfo.MediaInfo.AudioInfo[i].PID; // Audio PID
-                        audioTrack = i; // Store the audio track number we selected
-                        _audioLanguage = ffmpegStreamInfo.MediaInfo.AudioInfo[i].Language.ToLower(); // this is what we selected
-                        foundLang = true; // We foudn the language we were looking for
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Found Audio Language match for language") + " " + _requestedAudioLanguage.ToUpper() + ", " + Localise.GetPhrase("Audio Stream") + " " + audioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Audio Track") + " " + audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Channels") + " " + _audioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Codec") + " " + _audioCodec, Log.LogEntryType.Debug);
+                            _audioChannels = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].Channels;
+                            _audioStream = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].Stream; // store the stream number for the selected audio channel
+                            _audioCodec = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].AudioCodec;
+                            _audioPID = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].PID; // Audio PID
+                            _audioTrack = i; // Store the audio track number we selected
+                            _audioLanguage = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].Language.ToLower(); // this is what we selected
+                            _selectedAudioImpaired = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].Impaired; // Is this an imparied audio track?
+                            foundLang = true; // We foudn the language we were looking for
+                            _jobLog.WriteEntry(this, Localise.GetPhrase("Found Audio Language match for language") + " " + _requestedAudioLanguage.ToUpper() + ", " + Localise.GetPhrase("Audio Stream") + " " + _audioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Audio Track") + " " + _audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Channels") + " " + _audioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Codec") + " " + _audioCodec + " Impaired " + _selectedAudioImpaired.ToString(), Log.LogEntryType.Debug);
+                        }
                     }
 
                     // Store the video information (there's only 1 video per file)
-                    videoStream = ffmpegStreamInfo.MediaInfo.VideoInfo.Stream;
-                    videoPID = ffmpegStreamInfo.MediaInfo.VideoInfo.PID; // video PID
+                    _videoStream = _ffmpegStreamInfo.MediaInfo.VideoInfo.Stream;
+                    _videoPID = _ffmpegStreamInfo.MediaInfo.VideoInfo.PID; // video PID
+
+                    if (!foundLang)
+                        _jobLog.WriteEntry(this, Localise.GetPhrase("Could not find a match for selected Audio Language Code") + " " + _requestedAudioLanguage + ", letting encoder choose best audio language", Log.LogEntryType.Warning);
+                    else
+                        _jobLog.WriteEntry(this, Localise.GetPhrase("Selected Audio Stream") + " " + _audioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Audio Track") + " " + _audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Channels") + " " + _audioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Codec") + " " + _audioCodec + ", Impaired " + _selectedAudioImpaired.ToString(), Log.LogEntryType.Debug);
                 }
-
-                if (!foundLang && (!String.IsNullOrEmpty(_requestedAudioLanguage)))
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Could not find a match for selected Audio Language Code") + " " + _requestedAudioLanguage, Log.LogEntryType.Warning);
-
-                if (audioTrack != -1)
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Selected Audio Stream") + " " + audioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Audio Track") + " " + audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Channels") + " " + _audioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Codec") + " " + _audioCodec, Log.LogEntryType.Information);
                 else
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to read Audio Stream information using FFMPEG"), Log.LogEntryType.Warning);
+                {
+                    // check if all audio streams have same codec, if so populate the field for later use during reading profiles
+                    for (int i = 0; i < _ffmpegStreamInfo.AudioTracks; i++)
+                    {
+                        if (i == 0)
+                            _audioCodec = _ffmpegStreamInfo.MediaInfo.AudioInfo[i].AudioCodec; // baseline the codec name
+                        else if (_audioCodec != _ffmpegStreamInfo.MediaInfo.AudioInfo[i].AudioCodec)
+                        {
+                            _audioCodec = ""; // All codecs are not the same, reset it and let the encoder figure it out
+                            break; // we're done here
+                        }
+                    }
+
+                    _jobLog.WriteEntry(this, Localise.GetPhrase("Audio Stream") + " " + _audioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Audio Track") + " " + _audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Channels") + " " + _audioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", " + Localise.GetPhrase("Codec") + " " + _audioCodec + ", Impaired " + _selectedAudioImpaired.ToString(), Log.LogEntryType.Debug);
+                    _jobLog.WriteEntry(this, "No audio language selected, letting encoder choose best audio language", Log.LogEntryType.Warning);
+                }
 
                 _error = false; // all good now
             }
+            else
+                _error = true;
             
             if (_error)
             {
@@ -244,18 +259,13 @@ namespace MCEBuddy.VideoProperties
             }
 
             // Get the video properties for the original video
-            if (!String.IsNullOrEmpty(remuxedFileName))
-                originalFileFFmpegStreamInfo = ffmpegStreamInfo; // it's the same file
-            else
-            {
-                _jobLog.WriteEntry(this, "Reading Original File Media information", Log.LogEntryType.Information);
-                originalFileFFmpegStreamInfo = new FFmpegMediaInfo(activeFileName, ref _jobStatus, _jobLog);
-                originalFileFFmpegStreamInfo.Run();
-                if (!originalFileFFmpegStreamInfo.Success || originalFileFFmpegStreamInfo.ParseError)
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to read media information using FFMPEG"), Log.LogEntryType.Warning);
-            }
+            _jobLog.WriteEntry(this, "Reading Original File Media information", Log.LogEntryType.Information);
+            _originalFileFFmpegStreamInfo = new FFmpegMediaInfo(_originalFileName, ref _jobStatus, _jobLog, _ignoreSuspend);
+            _originalFileFFmpegStreamInfo.Run();
+            if (!_originalFileFFmpegStreamInfo.Success || _originalFileFFmpegStreamInfo.ParseError)
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to read media information using FFMPEG"), Log.LogEntryType.Warning);
 
-            if (skipCropping)
+            if (_skipCropping)
             {
                 _jobLog.WriteEntry(this, "Skipping crop information", Log.LogEntryType.Information);
             }
@@ -265,7 +275,7 @@ namespace MCEBuddy.VideoProperties
                 if (orderSetting != "handbrake") // if handbrake is being used (only handbrake and not combined with any backup encoder) then skip cropping as Handbrake does autocropping
                 {
                     _jobLog.WriteEntry(this, "Getting crop information using MEncoder", Log.LogEntryType.Information);
-                    MencoderCropDetect mencoderCropDetect = new MencoderCropDetect(activeFileName, edlFile, ref _jobStatus, jobLog);
+                    MencoderCropDetect mencoderCropDetect = new MencoderCropDetect(activeFileName, _EDLFile, ref _jobStatus, jobLog);
                     mencoderCropDetect.Run();
                     if (!mencoderCropDetect.Success || _jobStatus.PercentageComplete < GlobalDefs.ACCEPTABLE_COMPLETION)
                     {
@@ -275,10 +285,15 @@ namespace MCEBuddy.VideoProperties
                     }
                     else if ((!String.IsNullOrEmpty(mencoderCropDetect.CropString)) && (mencoderCropDetect.CropHeight > 0) && (mencoderCropDetect.CropWidth > 0))
                     {
-                        _cropString = mencoderCropDetect.CropString;
-                        _cropWidth = Util.MathLib.RoundOff(mencoderCropDetect.CropWidth, 2);    //Rounding to nearest 2
-                        _cropHeight = Util.MathLib.RoundOff(mencoderCropDetect.CropHeight, 2);
-                        jobLog.WriteEntry(this, "Crop String : " + _cropString + ", Crop Height " + _cropHeight + ", Crop Width " + _cropWidth, Log.LogEntryType.Debug);
+                        if ((mencoderCropDetect.CropWidth <= _width) && (mencoderCropDetect.CropHeight <= _height))
+                        {
+                            _cropWidth = Util.MathLib.RoundOff(mencoderCropDetect.CropWidth, 16); // Round width to the nearest multiple of 16
+                            _cropHeight = Util.MathLib.RoundOff(mencoderCropDetect.CropHeight, 8); // Round height to the nearest multiple of 8
+                            _cropString = mencoderCropDetect.GenerateCropString(_cropWidth, _cropHeight, mencoderCropDetect.CropStartX, mencoderCropDetect.CropStartY); // Get the new crop string
+                            jobLog.WriteEntry(this, "Crop String : " + _cropString + ", Crop Height " + mencoderCropDetect.CropHeight + ", Crop Width " + mencoderCropDetect.CropWidth, Log.LogEntryType.Debug);
+                        }
+                        else
+                            _jobLog.WriteEntry(this, Localise.GetPhrase("MEncoder Crop Detect Process error, Crop size > Video size, ignoring cropping. Crop Width:" + _cropWidth + " Crop Height:" + _cropHeight + " Video Width:" + _width + " Video Height:" + _height), Log.LogEntryType.Warning);
                     }
                     else
                         _jobLog.WriteEntry(this, Localise.GetPhrase("MEncoder Crop Detect Process - no cropping detected"), Log.LogEntryType.Information);
@@ -388,37 +403,37 @@ namespace MCEBuddy.VideoProperties
 
         public int AudioStream
         {
-            get { return audioStream; }
+            get { return _audioStream; }
         }
 
         public int AudioTrack
         {
-            get { return audioTrack; }
+            get { return _audioTrack; }
         }
 
         public int VideoStream
         {
-            get { return videoStream; }
+            get { return _videoStream; }
         }
 
         public int AudioPID
         {
-            get { return audioPID; }
+            get { return _audioPID; }
         }
 
         public int VideoPID
         {
-            get { return videoPID; }
+            get { return _videoPID; }
         }
 
         public FFmpegMediaInfo FFMPEGStreamInfo
         {
-            get { return ffmpegStreamInfo; }
+            get { return _ffmpegStreamInfo; }
         }
 
         public FFmpegMediaInfo OriginalVideoFFMPEGStreamInfo
         {
-            get { return originalFileFFmpegStreamInfo; }
+            get { return _originalFileFFmpegStreamInfo; }
         }
 
         public string AudioLanguage

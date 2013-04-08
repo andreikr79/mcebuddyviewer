@@ -17,22 +17,6 @@ namespace MCEBuddy.MetaData
         private const string MCEBUDDY_THETVDB_API_KEY = "24BC47A0DF94324E";
         private static string[] THETVDB_SUPPORTED_LANGUAGES = { "en", "da", "fi", "nl", "de", "it","es", "fr","pl","hu","el","tr","ru","he","ja","pt","zh","cs","sl","hr","ko","sv","no"};
 
-        private static string GetValue( string Tag, string Source )
-        {
-            // It's a hack, but it works
-
-            int StartPos = Source.IndexOf("<" + Tag + ">") + Tag.Length + 2;
-            int EndPos = Source.IndexOf("</" + Tag + ">");
-            if ((StartPos != -1 ) && (EndPos != -1 ) && (EndPos > StartPos))
-            {
-                return Source.Substring(StartPos, EndPos - StartPos);
-            }
-            else
-            {
-                return "";
-            }
-        }
-
         public static bool DownloadSeriesDetails(ref VideoTags videoTags)
         {
             XPathDocument Xp;
@@ -47,18 +31,18 @@ namespace MCEBuddy.MetaData
             // ******************
             try
             {
-                if (!string.IsNullOrEmpty(videoTags.movieId)) // If we have a specific IMDB movieId specified, look up the movie details
+                if (!String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // If we have a specific IMDB movieId specified, look up the movie details on TVDB
                 {
-                    Xp = new XPathDocument("http://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=" + videoTags.movieId);
+                    Xp = new XPathDocument("http://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=" + videoTags.imdbMovieId);
                 }
-                else if (!string.IsNullOrEmpty(videoTags.seriesId)) // If we have a specific TVDB seriesId specified, look up the movie details
+                else if (!String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) // If we have a specific TVDB seriesId specified, look up the series details
                 {
                     // First try to match by Episode name, many time broadcasters mess up the Original Broadcast date or TVDB has the wrong date (user submitted)
-                    if (MatchByEpisodeName(ref videoTags, videoTags.seriesId) == true)
+                    if (MatchByEpisodeName(ref videoTags, videoTags.tvdbSeriesId) == true)
                         return true; // If it's false, we keep looping through all the returned series
 
                     // Since we cannot match by Episode name, (assuming an error from the broadcaster), let us try to match by original broadcast date
-                    if (MatchByBroadcastTime(ref videoTags, videoTags.seriesId) == true)
+                    if (MatchByBroadcastTime(ref videoTags, videoTags.tvdbSeriesId) == true)
                         return true; // If it's false, we keep looping through all the returned series
 
                     return false;
@@ -79,9 +63,14 @@ namespace MCEBuddy.MetaData
 
             while (Itr.MoveNext()) // loop through all series returned trying to find a match
             {
-                string seriesID = GetValue("seriesid", Itr.Current.InnerXml);
+                string seriesID = XML.GetXMLTagValue("seriesid", Itr.Current.OuterXml);
+                string seriesTitle = XML.GetXMLTagValue("SeriesName", Itr.Current.OuterXml);
 
-                if (seriesID == "") continue; // can't do anything without seriesID
+                // Compare the series title with the title of the recording
+                if (String.Compare(seriesTitle.ToLower().Trim(), videoTags.Title.ToLower().Trim(), CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) != 0)
+                    continue; // Name mismatch
+
+                if (String.IsNullOrWhiteSpace(seriesID)) continue; // can't do anything without seriesID
 
                 // First try to match by Episode name, many time broadcasters mess up the Original Broadcast date or TVDB has the wrong date (user submitted)
                 if (MatchByEpisodeName(ref videoTags, seriesID) == true)
@@ -101,99 +90,110 @@ namespace MCEBuddy.MetaData
         /// </summary>
         private static bool MatchByBroadcastTime(ref VideoTags videoTags, string seriesID)
         {
-                // If we have no original broadcasttime 
-                if (videoTags.OriginalBroadcastDateTime <= Globals.GlobalDefs.NO_BROADCAST_TIME)
+            // If we have no original broadcasttime 
+            if (videoTags.OriginalBroadcastDateTime <= Globals.GlobalDefs.NO_BROADCAST_TIME)
+            {
+                return false;
+            }
+
+            // **************************************
+            // Get the series and episode information
+            // **************************************
+            string lang = Localise.TwoLetterISO();
+
+            if (!((IList<string>)THETVDB_SUPPORTED_LANGUAGES).Contains(lang))
+            {
+                lang = "en";
+            }
+
+            string queryUrl = "http://www.thetvdb.com/api/" + MCEBUDDY_THETVDB_API_KEY + "/series/" + seriesID + "/all/" + lang + ".xml";
+            XPathDocument XpS;
+            XPathNavigator NavS;
+            XPathExpression ExpS;
+            XPathNodeIterator ItrS;
+            string overview = "";
+            string bannerUrl = "";
+            string imdbID = "";
+            string firstAiredStr = "";
+            DateTime firstAired = GlobalDefs.NO_BROADCAST_TIME;
+            int seasonNo = 0;
+            int episodeNo = 0;
+            string episodeName = "";
+            string episodeOverview = "";
+            List<string> genres = new List<string>();
+
+            try
+            {
+                // Get the Series information
+                XpS = new XPathDocument(queryUrl);
+                NavS = XpS.CreateNavigator();
+                ExpS = NavS.Compile("//Data/Series"); // Series information
+                ItrS = NavS.Select(ExpS);
+                ItrS.MoveNext();
+                overview = XML.GetXMLTagValue("Overview", ItrS.Current.OuterXml);
+                bannerUrl = XML.GetXMLTagValue("banner", ItrS.Current.OuterXml);
+                imdbID = XML.GetXMLTagValue("IMDB_ID", ItrS.Current.OuterXml);
+                string genreValue = XML.GetXMLTagValue("Genre", ItrS.Current.OuterXml);
+                if (!String.IsNullOrWhiteSpace(genreValue))
+                    foreach (string genre in genreValue.Split('|'))
+                        if (!String.IsNullOrWhiteSpace(genre)) genres.Add(genre);
+
+                // Get the Episode information
+                XpS = new XPathDocument(queryUrl);
+                NavS = XpS.CreateNavigator();
+                ExpS = NavS.Compile("//Data/Episode");
+                ItrS = NavS.Select(ExpS);
+            }
+            catch
+            {
+                return false;
+            }
+
+            while (ItrS.MoveNext())
+            {
+                firstAiredStr = XML.GetXMLTagValue("FirstAired", ItrS.Current.OuterXml);
+                if (DateTime.TryParse(firstAiredStr, null, DateTimeStyles.AssumeLocal, out firstAired))
                 {
-                    return false;
-                }
-
-                // **************************************
-                // Get the series and episode information
-                // **************************************
-                string lang = Localise.TwoLetterISO();
-
-                if (!((IList<string>)THETVDB_SUPPORTED_LANGUAGES).Contains(lang))
-                {
-                    lang = "en";
-                }
-
-                string queryUrl = "http://www.thetvdb.com/api/" + MCEBUDDY_THETVDB_API_KEY + "/series/" + seriesID + "/all/" + lang + ".xml";
-                XPathDocument XpS;
-                XPathNavigator NavS;
-                XPathExpression ExpS;
-                XPathNodeIterator ItrS;
-                string overview = "";
-                string bannerUrl = "";
-
-                try
-                {
-                    // Get the Series information
-                    XpS = new XPathDocument(queryUrl);
-                    NavS = XpS.CreateNavigator();
-                    ExpS = NavS.Compile("//Data/Series"); // Series information
-                    ItrS = NavS.Select(ExpS);
-                    ItrS.MoveNext();
-                    overview = GetValue("Overview", ItrS.Current.InnerXml);
-                    bannerUrl = GetValue("banner", ItrS.Current.InnerXml);
-
-                    // Get the Episode information
-                    XpS = new XPathDocument(queryUrl);
-                    NavS = XpS.CreateNavigator();
-                    ExpS = NavS.Compile("//Data/Episode");
-                    ItrS = NavS.Select(ExpS);
-                }
-                catch
-                {
-                    return false;
-                }
-
-
-                string firstAiredStr = "";
-                DateTime firstAired = GlobalDefs.NO_BROADCAST_TIME;
-                string seasonNumber = "";
-                string episodeNumber = "";
-                string episodeName = "";
-                string episodeOverview = "";
-                while (ItrS.MoveNext())
-                {
-                    firstAiredStr = GetValue("FirstAired", ItrS.Current.InnerXml);
-                    if (DateTime.TryParse(firstAiredStr, out firstAired))
+                    // The information is stored on the server using the network timezone
+                    // So we assume that the show being converted was recorded locally and is converted locally so the timezones match
+                    DateTime dt = videoTags.OriginalBroadcastDateTime.ToLocalTime();
+                    if (firstAired.Date == dt.Date) // TVDB only reports the date not the time
                     {
-                        // The information is stored on the server using the network timezone
-                        // So we assume that the show being converted was recorded locally and is converted locally so the timezones match
-                        DateTime dt = videoTags.OriginalBroadcastDateTime.ToLocalTime();
-                        if (firstAired.Date == dt.Date) // TVDB only reports the date not the time
-                        {
-                            seasonNumber = GetValue("SeasonNumber", ItrS.Current.InnerXml);
-                            episodeNumber = GetValue("EpisodeNumber", ItrS.Current.InnerXml);
-                            episodeName = GetValue("EpisodeName", ItrS.Current.InnerXml);
-                            episodeOverview = GetValue("Overview", ItrS.Current.InnerXml);
+                        episodeName = XML.GetXMLTagValue("EpisodeName", ItrS.Current.OuterXml);
+                        if (String.IsNullOrWhiteSpace(episodeName))
+                            return false; // WRONG series, if there is no name we're in the incorrect series (probably wrong country)
+
+                        int.TryParse(XML.GetXMLTagValue("SeasonNumber", ItrS.Current.OuterXml), out seasonNo);
+                        int.TryParse(XML.GetXMLTagValue("EpisodeNumber", ItrS.Current.OuterXml), out episodeNo);
+                        episodeOverview = XML.GetXMLTagValue("Overview", ItrS.Current.OuterXml);
                             
-                            // ********************
-                            // Get the banner file
-                            // ********************
-                            if ((!File.Exists(videoTags.BannerFile)) && (!String.IsNullOrEmpty(bannerUrl)))
+                        // ********************
+                        // Get the banner file
+                        // ********************
+                        VideoMetaData.DownloadBannerFile(ref videoTags, "http://www.thetvdb.com/banners/" + bannerUrl); // Get bannerfile
+
+                        if ((episodeNo != 0) && (videoTags.Episode == 0)) videoTags.Episode = episodeNo;
+                        if ((seasonNo != 0) && (videoTags.Season == 0)) videoTags.Season = seasonNo;
+                        if (!String.IsNullOrWhiteSpace(episodeName) && String.IsNullOrWhiteSpace(videoTags.SubTitle)) videoTags.SubTitle = episodeName;
+                        if (!String.IsNullOrWhiteSpace(episodeOverview) && String.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
+                            else if (!String.IsNullOrWhiteSpace(overview) && (String.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
+                        if (!String.IsNullOrWhiteSpace(seriesID) && String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
+                        if (!String.IsNullOrWhiteSpace(imdbID) && String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
+                        if (genres.Count > 0)
+                        {
+                            if (videoTags.Genres != null)
                             {
-                                Util.Internet.WGet("http://www.thetvdb.com/banners/" + bannerUrl, videoTags.BannerFile);
-                                if (!File.Exists(videoTags.BannerFile))
-                                    videoTags.BannerFile = "";
-                                else
-                                    videoTags.BannerURL = "http://www.thetvdb.com/banners/" + bannerUrl;
+                                if (videoTags.Genres.Length == 0)
+                                    videoTags.Genres = genres.ToArray();
                             }
                             else
-                                videoTags.BannerURL = "http://www.thetvdb.com/banners/" + bannerUrl;
-
-                            int.TryParse(seasonNumber, out videoTags.Season);
-                            int.TryParse(episodeNumber, out videoTags.Episode);
-                            videoTags.SubTitle = episodeName;
-                            if (episodeOverview != "") videoTags.SubTitleDescription = episodeOverview;
-                            else if ((overview != "") && (String.IsNullOrEmpty(videoTags.SubTitleDescription))) videoTags.SubTitleDescription = overview;
-                            videoTags.seriesId = seriesID;
-
-                            return true; // Found a match got all the data, we're done here
+                                videoTags.Genres = genres.ToArray();
                         }
+
+                        return true; // Found a match got all the data, we're done here
                     }
                 }
+            }
             
             return false;
         }
@@ -204,7 +204,7 @@ namespace MCEBuddy.MetaData
         private static bool MatchByEpisodeName(ref VideoTags videoTags, string seriesID)
         {
 
-            if (String.IsNullOrEmpty(videoTags.SubTitle))
+            if (String.IsNullOrWhiteSpace(videoTags.SubTitle))
                 return false; //Nothing to match here
 
             // **************************************
@@ -219,6 +219,14 @@ namespace MCEBuddy.MetaData
                 XPathNodeIterator ItrS;
                 string overview = "";
                 string bannerUrl = "";
+                string imdbID = "";
+                List<String> genres = new List<string>();;
+                int seasonNo = 0;
+                int episodeNo = 0;
+                string episodeName = "";
+                string episodeOverview = "";
+                string firstAiredStr = "";
+                DateTime firstAired = GlobalDefs.NO_BROADCAST_TIME;
 
                 try
                 {
@@ -228,8 +236,13 @@ namespace MCEBuddy.MetaData
                     ExpS = NavS.Compile("//Data/Series"); // Series information
                     ItrS = NavS.Select(ExpS);
                     ItrS.MoveNext();
-                    overview = GetValue("Overview", ItrS.Current.InnerXml);
-                    bannerUrl = GetValue("banner", ItrS.Current.InnerXml);
+                    overview = XML.GetXMLTagValue("Overview", ItrS.Current.OuterXml);
+                    bannerUrl = XML.GetXMLTagValue("banner", ItrS.Current.OuterXml);
+                    imdbID = XML.GetXMLTagValue("IMDB_ID", ItrS.Current.OuterXml);
+                    string genreValue = XML.GetXMLTagValue("Genre", ItrS.Current.OuterXml);
+                    if (!String.IsNullOrWhiteSpace(genreValue))
+                        foreach (string genre in genreValue.Split('|'))
+                            if (!String.IsNullOrWhiteSpace(genre)) genres.Add(genre);
 
                     // Get the episode information
                     XpS = new XPathDocument(queryUrl);
@@ -243,52 +256,44 @@ namespace MCEBuddy.MetaData
                 }
 
 
-                string seasonNumber = "";
-                string episodeNumber = "";
-                string episodeName = "";
-                string episodeOverview = "";
-                string firstAiredStr = "";
-                DateTime firstAired = GlobalDefs.NO_BROADCAST_TIME;
-
                 while (ItrS.MoveNext())
                 {
-                    episodeName = GetValue("EpisodeName", ItrS.Current.InnerXml);
-                    if (episodeName != "")
+                    episodeName = XML.GetXMLTagValue("EpisodeName", ItrS.Current.OuterXml);
+                    if (!String.IsNullOrWhiteSpace(episodeName))
                     {
 
-                        if (videoTags.SubTitle.ToLower() == episodeName.ToLower()) // Compare the episode names (case can change very often)
+                        if (String.Compare(videoTags.SubTitle.Trim().ToLower(), episodeName.Trim().ToLower(), CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) == 0) // Compare the episode names (case / special characters / whitespace can change very often)
                         {
-                            seasonNumber = GetValue("SeasonNumber", ItrS.Current.InnerXml);
-                            episodeNumber = GetValue("EpisodeNumber", ItrS.Current.InnerXml);
-                            episodeOverview = GetValue("Overview", ItrS.Current.InnerXml);
+                            int.TryParse(XML.GetXMLTagValue("SeasonNumber", ItrS.Current.OuterXml), out seasonNo);
+                            int.TryParse(XML.GetXMLTagValue("EpisodeNumber", ItrS.Current.OuterXml), out episodeNo);
+                            episodeOverview = XML.GetXMLTagValue("Overview", ItrS.Current.OuterXml);
 
                             // ********************
                             // Get the banner file
                             // ********************
-                            if ((!File.Exists(videoTags.BannerFile)) && (!String.IsNullOrEmpty(bannerUrl)))
+                            VideoMetaData.DownloadBannerFile(ref videoTags, "http://www.thetvdb.com/banners/" + bannerUrl); // Get bannerfile
+
+                            if ((episodeNo != 0) && (videoTags.Episode == 0)) videoTags.Episode = episodeNo;
+                            if ((seasonNo != 0) && (videoTags.Season == 0)) videoTags.Season = seasonNo;
+                            if (!String.IsNullOrWhiteSpace(episodeOverview) && String.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
+                            else if (!String.IsNullOrWhiteSpace(overview) && (String.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
+                            if (!String.IsNullOrWhiteSpace(seriesID) && String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
+                            if (!String.IsNullOrWhiteSpace(imdbID) && String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
+                            if (genres.Count > 0)
                             {
-                                Util.Internet.WGet("http://www.thetvdb.com/banners/" + bannerUrl, videoTags.BannerFile);
-                                if (!File.Exists(videoTags.BannerFile))
+                                if (videoTags.Genres != null)
                                 {
-                                    videoTags.BannerFile = "";
+                                    if (videoTags.Genres.Length == 0)
+                                        videoTags.Genres = genres.ToArray();
                                 }
                                 else
-                                    videoTags.BannerURL = "http://www.thetvdb.com/banners/" + bannerUrl;
+                                    videoTags.Genres = genres.ToArray();
                             }
-                            else
-                                videoTags.BannerURL = "http://www.thetvdb.com/banners/" + bannerUrl;
 
-                            int.TryParse(seasonNumber, out videoTags.Season);
-                            int.TryParse(episodeNumber, out videoTags.Episode);
-                            videoTags.SubTitle = episodeName;
-                            if (episodeOverview != "") videoTags.SubTitleDescription = episodeOverview;
-                            else if ((overview != "") && (String.IsNullOrEmpty(videoTags.SubTitleDescription))) videoTags.SubTitleDescription = overview;
-                            videoTags.seriesId = seriesID;
-
-                            firstAiredStr = GetValue("FirstAired", ItrS.Current.InnerXml);
+                            firstAiredStr = XML.GetXMLTagValue("FirstAired", ItrS.Current.OuterXml);
                             if (DateTime.TryParse(firstAiredStr, out firstAired))
                             {
-                                if (videoTags.OriginalBroadcastDateTime == GlobalDefs.NO_BROADCAST_TIME) // Only update if there isn't one already
+                                if ((firstAired > GlobalDefs.NO_BROADCAST_TIME) && (videoTags.OriginalBroadcastDateTime <= GlobalDefs.NO_BROADCAST_TIME)) // Only update if there isn't one already
                                     videoTags.OriginalBroadcastDateTime = firstAired; // TVDB stores time in network (local) timezone
                             }
 

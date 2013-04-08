@@ -79,9 +79,6 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyName>MCEBuddyMCE.RemuxMediaCenter</AssemblyName>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug\</OutputPath>
@@ -94,10 +91,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -111,9 +105,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRuleSetDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisRuleDirectories>;C:\Program Files\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -121,6 +113,7 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -132,23 +125,23 @@
   <ItemGroup>
     <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
       <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddyMCE.AppWrapper</Name>
+      <Name>MCEBuddy.AppWrapper</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.DirectShowLib\MCEBuddyMCE.DirectShowLib.csproj">
       <Project>{CE009BFA-5EF6-4153-B2A1-2FA79698A9AE}</Project>
-      <Name>MCEBuddyMCE.DirectShowLib</Name>
+      <Name>MCEBuddy.DirectShowLib</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
       <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
-      <Name>MCEBuddyMCE.Globals</Name>
+      <Name>MCEBuddy.Globals</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
-      <Name>MCEBuddyMCE.Util</Name>
+      <Name>MCEBuddy.Util</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
       <Project>{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}</Project>
-      <Name>MCEBuddyMCE.VideoProperties</Name>
+      <Name>MCEBuddy.VideoProperties</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

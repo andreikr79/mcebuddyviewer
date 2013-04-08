@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 using MCEBuddy.Globals;
 using MCEBuddy.VideoProperties;
@@ -12,14 +13,15 @@ namespace MCEBuddy.Transcode
 {
     public class ConvertWithCopy : ConvertBase
     {
-        public ConvertWithCopy(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan, bool fixCorruptedRemux)
+        public ConvertWithCopy(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan)
             : base(conversionOptions, tool, ref videoFile, ref jobStatus, jobLog, ref commercialScan)
         {
 
         }
 
-        protected override void GetPresetWidth()
+        protected override bool IsPresetWidth()
         {
+            return false;
         }
 
         protected override void SetTrim()
@@ -38,7 +40,7 @@ namespace MCEBuddy.Transcode
         {
         }
 
-        protected override void SetQuality()
+        protected override void SetBitrateAndQuality()
         {
         }
 
@@ -46,11 +48,7 @@ namespace MCEBuddy.Transcode
         {
         }
 
-        protected override void SetPostCrop()
-        {
-        }
-
-        protected override void SetPreCrop()
+        protected override void SetCrop()
         {
         }
 
@@ -61,11 +59,6 @@ namespace MCEBuddy.Transcode
         protected override bool ConstantQuality
         {
             get { return false; }
-        }
-
-        protected override int PresetVideoWidth
-        {
-            get { return 0; }
         }
 
         protected override void SetInputFileName() // general parameters already setup, now add the input filename details
@@ -86,11 +79,18 @@ namespace MCEBuddy.Transcode
 
         protected override bool ConvertWithTool()
         {
-            //nothing here
-            _replaceWithOriginalName = ""; // incase someone accidentally populated the copy-ext= field
-            _convertedFile = SourceVideo; // same file
-            _jobStatus.PercentageComplete = 100;
-            return true;
+            try
+            {
+                //nothing here
+                File.Copy(SourceVideo, _convertedFile); // Same file just copy it over since we need to preserve the original/remuxed file
+                _jobStatus.PercentageComplete = 100;
+                return true;
+            }
+            catch (Exception e)
+            {
+                _jobLog.WriteEntry("Error processing file with Copy Encoder, error -> " + e.ToString(), Log.LogEntryType.Error);
+                return false;
+            }
         }
     }
 }

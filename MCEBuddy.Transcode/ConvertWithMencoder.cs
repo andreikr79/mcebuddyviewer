@@ -23,27 +23,19 @@ namespace MCEBuddy.Transcode
         private const int DEFAULT_LAVC_BITRATE = 2000;
         private bool mEncoderEDLSkip = false;
         private bool commercialSkipCut = false;
-        private bool _fixCorruptedRemux = false;
         private string _extractCC = "";
         private const double DRC = 0.8; // Dynamic Range Compression to 80%
-        private int _presetVideoWidth = 0;
 
-        public ConvertWithMencoder(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan, bool fixCorruptedRemux)
+        public ConvertWithMencoder(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan)
             : base(conversionOptions, tool, ref videoFile, ref  jobStatus, jobLog, ref commercialScan)
         {
             //Check if MEncoder EDL Removal has been disabled at conversion time
             Ini ini = new Ini(GlobalDefs.ProfileFile);
             mEncoderEDLSkip = ini.ReadBoolean(conversionOptions.profile, "MEncoderEDLSkip", false);
             commercialSkipCut = (conversionOptions.commercialSkipCut || (ini.ReadBoolean(conversionOptions.profile, "CommercialSkipCut", false))); // commercial skipcutting can be defined in Task or Profile
-            _fixCorruptedRemux = fixCorruptedRemux;
+            
             _extractCC = conversionOptions.extractCC;
-            if (fixCorruptedRemux)
-            {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Corrupted video was fixed with Remux, enabling MEncoderEDLSkip to skip EDL cutting during encoding"), Log.LogEntryType.Information);
-                mEncoderEDLSkip = true;
-            }
-
-            if (!String.IsNullOrEmpty(conversionOptions.extractCC)) // If Closed Caption extraction is enabled, we don't use cut EDL using Mencoder during encoding, Mencoder has a bug which causes it to cut out of sync with the EDL file which throws the CC out of sync, it will be cut separately
+            if (!String.IsNullOrEmpty(_extractCC)) // If Closed Caption extraction is enabled, we don't use cut EDL using Mencoder during encoding, Mencoder has a bug which causes it to cut out of sync with the EDL file which throws the CC out of sync, it will be cut separately
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Closed Captions Enabled, skipping EDL cutting during encoding"), Log.LogEntryType.Information);
                 mEncoderEDLSkip = true;
@@ -56,12 +48,14 @@ namespace MCEBuddy.Transcode
             }
         }
 
-        protected override void GetPresetWidth()
+        protected override bool IsPresetWidth()
         {
             // Get the profile conversion width
             string scale = ParameterSubValue("-vf", "scale");
-            if (scale.Contains(":"))
-                int.TryParse(scale.Split(':')[0], out _presetVideoWidth);
+            if (!String.IsNullOrWhiteSpace(scale))
+                return true;
+            else
+                return false;
         }
 
         protected override void SetTrim()
@@ -131,34 +125,36 @@ namespace MCEBuddy.Transcode
 
         }
 
-        protected override void SetQuality()
+        protected override void SetBitrateAndQuality()
         {
             if (_quality == 1) return;
-            
-            // Try for the fixed bitrate options
-            SetBitRate("x264encopts", "bitrate", DEFAULT_X264_BITRATE);
-            SetBitRate("xvidencopts", "bitrate", DEFAULT_XVID_BITRATE);
-            SetBitRate("lavcopts", "vbitrate", DEFAULT_LAVC_BITRATE);
 
-            // Try for the constant quality options
-            SetConstantQuality("x264encopts", "qp", 51, 1, DEFAULT_X264_QUALITY);
-            SetConstantQuality("xvidencopts", "fixed_quant", 31, 1, DEFAULT_XVID_QUALITY);
-            SetConstantQuality("lavcopts", "vqscale", 31, 1, DEFAULT_LAVC_QUALITY);
+            if (!ConstantQuality) // Constant quality does not need to be updated since it's constant quality irrespective of resolution
+            {
+                // Try for the fixed bitrate options
+                SetBitRate("x264encopts", "bitrate", DEFAULT_X264_BITRATE);
+                SetBitRate("xvidencopts", "bitrate", DEFAULT_XVID_BITRATE);
+                SetBitRate("lavcopts", "vbitrate", DEFAULT_LAVC_BITRATE);
+            }
         }
 
         protected override void SetResize()
         {
-            // Set the conversion profile width
-            string scaleCmd = _maxWidth.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":-10";
+            int VideoWidth = _videoFile.Width;
+            if ((_videoFile.CropWidth > 0) && (_videoFile.CropWidth < _videoFile.Width))
+                VideoWidth = _videoFile.CropWidth; // Use the cropped width if present
+
+            // Set the conversion profile width - it must be multiple of 16
+            int newWidth = VideoWidth;
+            if (newWidth > _maxWidth)
+                newWidth = _maxWidth; // We use the less of two, MaxWidth of post cropping video width
+            newWidth = Util.MathLib.RoundOff(newWidth, 16);
+
+            string scaleCmd = newWidth.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":-10";
             AddVideoFilter("scale", scaleCmd);
         }
 
-        protected override void SetPreCrop()
-        {
-            // nothing PreCrop required
-        }
-
-        protected override void SetPostCrop()
+        protected override void SetCrop()
         {
             if (!_skipCropping)
             {
@@ -185,11 +181,6 @@ namespace MCEBuddy.Transcode
             }
         }
 
-        protected override int PresetVideoWidth
-        {
-            get { return _presetVideoWidth; }
-        }
-
         protected override void SetOutputFileName()
         {
             // TODO: SetAdRemoval here causes the audio to out of sync slightly, so a compensation has been added to profile 0.185 seconds adjustment. Need to double check if there are any other issues (check -mc 0 and -noskip options if required)
@@ -200,9 +191,14 @@ namespace MCEBuddy.Transcode
         protected override void SetAudioLanguage()
         {
             if (_videoFile.AudioPID == -1)
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Cannot get Audio and Video stream details, continuing without Audio Language selection"), Log.LogEntryType.Warning);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Cannot get Audio and Video stream details, continuing with default Audio Language selection"), Log.LogEntryType.Warning);
             else
-                ParameterValueReplaceOrInsert("-aid", (_videoFile.AudioPID).ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audio track PID we had isolated earlier
+            {
+                if (String.IsNullOrWhiteSpace(ParameterValue("-aid")))
+                    ParameterValueReplaceOrInsert("-aid", (_videoFile.AudioPID).ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audio track PID we had isolated earlier
+                else
+                    _jobLog.WriteEntry(this, Localise.GetPhrase("User has specified Audio language selection in profile, continuing without Audio Language selection"), Log.LogEntryType.Warning);
+            }
         }
 
         protected override void SetInputFileName()
@@ -283,16 +279,18 @@ namespace MCEBuddy.Transcode
 
         protected override void SetAudioChannels()
         {
-            if (_2ChannelAudio) // Fix output to 2 channels
+            if (_2ChannelAudio && !_audioParams.Contains(" copy")) // Fix output to 2 channels, copy is not compatible with -channels
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Requested to limit Audio Channels to 2"), Log.LogEntryType.Information);
                 ParameterValueReplaceOrInsert("-channels", "2");
             }
-            else if (_videoFile.AudioChannels > 0 && !_audioParams.Contains("copy") && !_audioParams.Contains("-channels ")) // don't override the Audio Params if specified
+            else if (_videoFile.AudioChannels > 0 && !_audioParams.Contains(" copy") && (ParameterValue("-channels") == "")) // don't override the Audio Params if specified
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Did not find Audio Channel information, settings channels to") + " " + _videoFile.AudioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Information);
                 ParameterValueReplaceOrInsert("-channels", _videoFile.AudioChannels.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+            else
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Skipping over requested to set audio channel information either due to COPY codec or audio parameters already contains channel directive"), Log.LogEntryType.Warning);
         }
 
         protected override bool ConvertWithTool()
@@ -342,13 +340,6 @@ namespace MCEBuddy.Transcode
                 }
                 else
                     _jobLog.WriteEntry(this, Localise.GetPhrase("xvidenc threaded support present"), Log.LogEntryType.Debug);
-            }
-
-            // Check to see if there was a corrupted video file that was fixed through Remux, then disable skipping since MEncoder does not skip well with fixed files causing audio to go out of sync
-            if (_fixCorruptedRemux)
-            {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Found Remuxed fixed corrupted video, disabling video skipping"), Log.LogEntryType.Information);
-                ParameterValueReplaceOrInsert("-ss", "0");
             }
 
             if (_2Pass == true)
@@ -434,8 +425,6 @@ namespace MCEBuddy.Transcode
                 }
             }
             return (me.Success);
-
         }
-
     }
 }

@@ -33,6 +33,7 @@ namespace MCEBuddy.Util
             bool ssl = emailOptions.ssl;
             string fromAddress = emailOptions.fromAddress;
             string toAddresses = emailOptions.toAddresses;
+            string bccAddresses = emailOptions.bccAddress;
             string username = emailOptions.userName;
             string password = emailOptions.password;
 
@@ -49,10 +50,22 @@ namespace MCEBuddy.Util
             try
             {
                 // Create the eMail message
-                string[] addresses = toAddresses.Split(';');
-                MailMessage eMailMessage = new MailMessage(fromAddress, addresses[0], subject, message);
-                for (int i=1; i<addresses.Length; i++) // skip the first one since it's aleady added
-                    eMailMessage.To.Add(addresses[i]); // Add the To recipients
+                MailMessage eMailMessage = new MailMessage();
+                eMailMessage.Subject = subject;
+                eMailMessage.Body = message;
+                eMailMessage.From = new MailAddress(fromAddress);
+                if (!String.IsNullOrWhiteSpace(toAddresses)) // Avoid an exception, since to is not mandatory
+                {
+                    string[] addresses = toAddresses.Split(';');
+                    for (int i = 0; i < addresses.Length; i++)
+                        eMailMessage.To.Add(addresses[i]); // Add the To recipients
+                }
+                if (!String.IsNullOrWhiteSpace(bccAddresses)) // Avoid an exception, since bcc is not mandatory
+                {
+                    string[] bccToAddresses = bccAddresses.Split(';');
+                    for (int i = 0; i < bccToAddresses.Length; i++)
+                        eMailMessage.Bcc.Add(bccToAddresses[i]); // Add the Bcc recipients
+                }
                 eMailMessage.BodyEncoding = System.Text.Encoding.UTF8;
                 eMailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
 

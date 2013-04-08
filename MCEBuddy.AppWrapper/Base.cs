@@ -22,34 +22,44 @@ namespace MCEBuddy.AppWrapper
         protected bool _success = false;
         protected JobStatus _jobStatus;
         protected Log _jobLog;
-        private bool _customApp = false;
+        private bool _showWindow = false; // By default windows are hidden
         private ProcessPriorityClass lastPriority = GlobalDefs.Priority;
         private bool isSuspended = false;
+        private bool _ignoreSuspend = false;
+        private float _lastPercentageComplete = 0;
+        protected bool _unrecoverableError = false; // The Output Handler encountered an unrecoverable error and process must be terminated to avoid a hang
 
-        public Base(string parameters, string appPath, ref JobStatus jobStatus, Log jobLog)
+        /// <summary>
+        /// Default base class for starting a process within the MCEBuddy installation directory
+        /// </summary>
+        /// <param name="parameters">Parameters for a process</param>
+        /// <param name="appPath">Relative path of app to MCEBuddy installation directory</param>
+        /// <param name="ignoreSuspend">Don't stop the process if MCEBuddy is suspended by user (useful if app is being called by the GUI or can deadlock)</param>
+        public Base(string parameters, string appPath, ref JobStatus jobStatus, Log jobLog, bool ignoreSuspend=false)
         {
             _ApplicationPath = Path.Combine(GlobalDefs.AppPath, appPath);
-            Parameters = parameters;
+            _Parameters = parameters;
             _jobStatus = jobStatus;
             _jobLog = jobLog;
+            _ignoreSuspend = ignoreSuspend;
 
             _HangPeriod = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.hangTimeout; // Default period to detect hang due to no output activity on console - 300 seconds
         }
 
-        public Base(string parameters, string appPath, ref JobStatus jobStatus, Log jobLog, bool customApp, bool defaultSuccess)
+        /// <summary>
+        /// Base class for starting a custom process with custom parameters and absolute path
+        /// </summary>
+        /// <param name="showWindow">If false then the window for the custom app is hidden</param>
+        /// <param name="parameters">Parameters for the custom process</param>
+        /// <param name="appPath">Absolute Path to custom process</param>
+        public Base(bool showWindow, string parameters, string appPath, ref JobStatus jobStatus, Log jobLog)
         {
-            if (customApp)
-            {
-                _ApplicationPath = appPath;
-                _customApp = customApp;
-            }
-            else
-                _ApplicationPath = Path.Combine(GlobalDefs.AppPath, appPath);
-
-            Parameters = parameters;
+            _showWindow = showWindow; // Do we need to hide the window?
+            _ApplicationPath = appPath; // Absolute path
+            _Parameters = parameters;
             _jobStatus = jobStatus;
             _jobLog = jobLog;
-            _success = defaultSuccess;
+            _success = true; // by default for custom apps, there is no output handler to assume success is true
         }
 
         protected virtual void OutputHandler(object sendingProcess, DataReceivedEventArgs ConsoleOutput)
@@ -73,7 +83,6 @@ namespace MCEBuddy.AppWrapper
         public string Parameters
         {
             get { return _Parameters; }
-            set { _Parameters = value; }
         }
 
         public bool Success
@@ -83,6 +92,9 @@ namespace MCEBuddy.AppWrapper
 
         protected void UpdateETAByPercentageComplete()
         {
+            if (_jobStatus.PercentageComplete < _lastPercentageComplete)
+                _StartTime = DateTime.Now; // Reset it since the counter reset
+
             if (_jobStatus.PercentageComplete > 2)
             {
                 float percComplete = ((float)_jobStatus.PercentageComplete / (float)100  );
@@ -92,6 +104,8 @@ namespace MCEBuddy.AppWrapper
                 TimeSpan ts = TimeSpan.FromSeconds((int)secsToGo);
                 UpdateETA(ts.Hours, ts.Minutes, ts.Seconds);
             }
+
+            _lastPercentageComplete = _jobStatus.PercentageComplete; // keep track
         }
 
         protected void UpdateETA(int Hours, int Minutes, int Seconds)
@@ -110,7 +124,8 @@ namespace MCEBuddy.AppWrapper
         {
             //_success = false; //initial state to be defined by each inheriting class depending on it's handlers, we only update error conditions in this routine
             Process Proc;
-            DateTime StartTime;
+            DateTime ExecutionStartTime;
+            DateTime SuspendStartTime = new DateTime(0);
 
             // Last thing to check, for custom commands, this will log an error and exit
             if (!File.Exists(_ApplicationPath))
@@ -144,7 +159,7 @@ namespace MCEBuddy.AppWrapper
             Proc = new Process();
             Proc.StartInfo.FileName = _ApplicationPath;
             Proc.StartInfo.Arguments = _Parameters;
-            if (_customApp)
+            if (_showWindow)
             {
                 Proc.StartInfo.CreateNoWindow = false; // for custom apps we create a window
                 Proc.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
@@ -160,17 +175,13 @@ namespace MCEBuddy.AppWrapper
             Proc.StartInfo.UseShellExecute = false; // always false else error handlers break
             Proc.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
             Proc.ErrorDataReceived += new DataReceivedEventHandler(OutputHandler);
-            StartTime = DateTime.Now;
             if (_HangPeriod > 0) _LastTick = DateTime.Now;
 
             _jobLog.WriteEntry(this, Localise.GetPhrase("Launching process") + " " + _ApplicationPath, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, Localise.GetPhrase("Process arguments") + " " + _Parameters, Log.LogEntryType.Debug);
-            //Reset the counters - duplicate
-            //_jobStatus.ETA = "";
-            //_jobStatus.PercentageComplete = 0;
 
             //Start the process
-            _StartTime = DateTime.Now;
+            ExecutionStartTime = _StartTime = DateTime.Now;
             try
             {
                 Proc.Start(); // First start the process else we get an exception
@@ -180,6 +191,19 @@ namespace MCEBuddy.AppWrapper
                 IOPriority.SetPriority(Proc.Handle, GlobalDefs.IOPriority); // Set the IO Priority
                 if (GlobalDefs.IOPriority == PriorityTypes.IDLE_PRIORITY_CLASS) // If we set to IDLE IO Priority we need to set the background mode begin (only valid on CURRENT process and all CHILD process inherit)
                     IOPriority.SetPriority(PriorityTypes.PROCESS_MODE_BACKGROUND_BEGIN); 
+                
+                try
+                {
+                    if (MCEBuddyConf.GlobalMCEConfig.GeneralOptions.CPUAffinity != (IntPtr)0)
+                    {
+                        _jobLog.WriteEntry(this, "Setting CPU affinity to -> " + MCEBuddyConf.GlobalMCEConfig.GeneralOptions.CPUAffinity.ToString("d"), Log.LogEntryType.Debug);
+                        Proc.ProcessorAffinity = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.CPUAffinity;
+                    }
+                }
+                catch (Exception e)
+                {
+                    _jobLog.WriteEntry(this, "Error trying to set CPU affinity to -> " + MCEBuddyConf.GlobalMCEConfig.GeneralOptions.CPUAffinity.ToString("d") + "\n" + e.ToString(), Log.LogEntryType.Warning);
+                }
 
                 Proc.BeginOutputReadLine();
                 Proc.BeginErrorReadLine();
@@ -196,16 +220,22 @@ namespace MCEBuddy.AppWrapper
             {
                 try
                 {
-                    if (!isSuspended && GlobalDefs.Suspend) // Check if process has to be suspended (if not already)
+                    if (!_ignoreSuspend) // for some processes like ffmpegMediaInfo initiated by UI, we cannot block since it will hang the application
                     {
-                        IOPriority.SuspendProcess(Proc.Id);
-                        isSuspended = true;
-                    }
+                        if (!isSuspended && GlobalDefs.Suspend) // Check if process has to be suspended (if not already)
+                        {
+                            IOPriority.SuspendProcess(Proc.Id);
+                            _jobLog.Flush(); // Flush the pending writes
+                            SuspendStartTime = DateTime.Now; // when we suspended process
+                            isSuspended = true;
+                        }
 
-                    if (isSuspended && !GlobalDefs.Suspend) // Check if we need to resume the process
-                    {
-                        isSuspended = false;
-                        IOPriority.ResumeProcess(Proc.Id);
+                        if (isSuspended && !GlobalDefs.Suspend) // Check if we need to resume the process
+                        {
+                            isSuspended = false;
+                            _StartTime += DateTime.Now.Subtract(SuspendStartTime); // compensate for suspended time
+                            IOPriority.ResumeProcess(Proc.Id);
+                        }
                     }
 
                     if (lastPriority != GlobalDefs.Priority) // Check if the priority was changed and if so update it
@@ -245,6 +275,13 @@ namespace MCEBuddy.AppWrapper
                     break;
                 }
 
+                if (_unrecoverableError)
+                {
+                    _jobLog.WriteEntry("Unrecoverable error encountered. Process likely hung, killing it", Log.LogEntryType.Error);
+                    _success = false;
+                    break;
+                }
+
                 if (isSuspended) _LastTick = DateTime.Now; // Since during suspension there will be no output it shouldn't terminate the process
 
                 if ((_HangPeriod > 0) && (DateTime.Now > _LastTick.AddSeconds(_HangPeriod)))
@@ -277,7 +314,7 @@ namespace MCEBuddy.AppWrapper
                 }
             }
 
-            _ExecutionTime = DateTime.Now - StartTime;
+            _ExecutionTime = DateTime.Now - ExecutionStartTime;
 
             //Close out
             try

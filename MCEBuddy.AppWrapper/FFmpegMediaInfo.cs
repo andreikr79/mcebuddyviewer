@@ -72,7 +72,7 @@ namespace MCEBuddy.AppWrapper
             get { return subtitleTracks; }
         }
 
-        public int ZeroBitrateTracks
+        public int ZeroChannelAudioTrackCount
         {
             get { return zeroChannelTracks; }
         }
@@ -82,13 +82,14 @@ namespace MCEBuddy.AppWrapper
             get { return mediaInfo; }
         }
 
-        public FFmpegMediaInfo (string fileName, ref JobStatus jobStatus, Log jobLog)
-            : base(fileName, APP_PATH, ref jobStatus, jobLog )
+        public FFmpegMediaInfo (string fileName, ref JobStatus jobStatus, Log jobLog, bool ignoreSuspend = false)
+            : base(fileName, APP_PATH, ref jobStatus, jobLog, ignoreSuspend)
         {
             mediaInfo = new MediaInfo();
             mediaInfo.VideoInfo = new MediaInfo.Video(); // We have only 1 video track per file, audio/subtitle tracks are created and added as detected
             _success = true; // information always suceeds unless we find an error in the output
-            _Parameters = " -i " + MCEBuddy.Util.FilePaths.FixSpaces(fileName); // create the format for run the command
+            // -probesize 100M -analyzeduration 300M are important to identify broken audio streams in some files
+            _Parameters = " -probesize 100M -analyzeduration 300M -i " + MCEBuddy.Util.FilePaths.FixSpaces(fileName); // create the format for run the command
         }
 
         // Convert the string to time in seconds
@@ -188,111 +189,120 @@ namespace MCEBuddy.AppWrapper
                  *   Stream #0:0: Audio: ac3 ([0] [0][0] / 0x2000), 48000 Hz, stereo, s16, 192 kb/s
                  *   Stream #0:0(eng): Audio: ac3, 48000 Hz, 5.1(side), s16, 384 kb/s
                  *   Stream #0:1: Audio: mp3 (U[0][0][0] / 0x0055), 12000 Hz, stereo, s16, 32 kb/s
+                 *   Stream #0:4[0x2d](nar): Audio: mp2 (P[0][0][0] / 0x0050), 48000 Hz, stereo, s16p, 256 kb/s (visual impaired)
+                 *   Stream #0:0[0x75](eng): Audio: mp2 (P[0][0][0] / 0x0050), 48000 Hz, mono, s16p, 64 kb/s (hearing impaired)
+                 *   Stream #0:1[0x3f](eng): Audio: aac_latm ([2][22][0][0] / 0x1602), 48000 Hz, stereo, fltp (hearing impaired)
                  *   Stream #0:0[0x11]: Subtitle: dvb_teletext
                  *   Stream #0:3[0x2d](eng): Subtitle: dvb_teletext
                  */
                 try
                 {
                     // Parsing the Video section - we break this up into 4 sections, <Stream #0> <1[0x2b](eng)> <Video> <the rest...>
-                    if (StdOut.Contains("Stream #0:") && StdOut.Contains("Video"))
+                    if (StdOut.Contains("Stream #0:") && StdOut.Contains("Video") && (mediaInfo.VideoInfo.Stream == -1)) // Consider only the 1st video stream reported, some formats such as TiVO have multiple video streams and WTV with newer ffmpeg have mjpeg attachments reported as video also
                     {
                         string section1 = StdOut.Substring(0, NthIndex(StdOut, ':', 1)); // Header, <Stream #0> - JUNK
                         string section2 = StdOut.Substring(NthIndex(StdOut, ':', 1) + 1, NthIndex(StdOut, ':', 2) - NthIndex(StdOut, ':', 1) - 1); // <1[0x2b](eng)>
                         string section3 = StdOut.Substring(NthIndex(StdOut, ':', 2) + 1, NthIndex(StdOut, ':', 3) - NthIndex(StdOut, ':', 2) - 1); // <Video> - JUNK
                         string section4 = StdOut.Substring(NthIndex(StdOut, ':', 3) + 1); // <the rest...>
 
-                        // Parse Section 2 to extract the stream and PID
-                        if (section2.Contains('['))
-                        {
-                            mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0, section2.IndexOf('['))); // Video stream
-                            string PID = section2.Substring(section2.IndexOf('x') + 1, section2.IndexOf(']') - (section2.IndexOf('x') + 1));
-                            mediaInfo.VideoInfo.PID = Convert.ToInt32(PID, 16); // get the video PID
-                        }
-                        else if (section2.Contains('('))
-                            mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0, section2.IndexOf('('))); // Video stream
-                        else
-                            mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0)); // Video stream
-
+                        // SANITY CHECK - Sometimes WTV has mjpeg attachments which FFMPEG (bug #2227) incorrectly reports as video streams - IGNORE THEM - DO THIS FIRST
                         // Parse section 4 to extract the remaining information
                         // First parse the codec
                         string codecString = section4.Substring(0, section4.IndexOf(','));
                         if (codecString.Contains("("))
-                            mediaInfo.VideoInfo.VideoCodec = codecString.Substring(0, codecString.IndexOf('(')).Trim(); // Video codec
+                            mediaInfo.VideoInfo.VideoCodec = codecString.Substring(0, codecString.IndexOf('(')).ToLower().Trim(); // Video codec
                         else
-                            mediaInfo.VideoInfo.VideoCodec = codecString.Substring(0).Trim(); // Video codec
+                            mediaInfo.VideoInfo.VideoCodec = codecString.Substring(0).ToLower().Trim(); // Video codec
 
-                        // Now parse the rest
-                        string restString = section4.Substring(section4.IndexOf(',') + 1);
-                        foreach (string subsection in restString.Split(','))
+                        if (mediaInfo.VideoInfo.VideoCodec != "mjpeg") // DO NOT PROCESS MJPEG AS VIDEO
                         {
-                            if (subsection.Contains("fps"))
-                                mediaInfo.VideoInfo.FPS = float.Parse(subsection.Substring(0, subsection.IndexOf("fps")).Trim(), System.Globalization.CultureInfo.InvariantCulture); // fps always comes before tbr, if tbr is corrupted we end up using fps
-
-                            else if (subsection.Contains("tbr")) // tbr wins over fps when possible (more accurate estimation, tbr always comes after fps)
+                            // Parse Section 2 to extract the stream and PID
+                            if (section2.Contains('['))
                             {
-                                if (!subsection.Contains("k")) // Sometime FFMPEG reports a faulty tbr e.g. 90k
-                                    mediaInfo.VideoInfo.FPS = float.Parse(subsection.Substring(0, subsection.IndexOf("tbr")).Trim(), System.Globalization.CultureInfo.InvariantCulture); // FPS - use tbr since this is the most accurate
+                                mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0, section2.IndexOf('['))); // Video stream
+                                string PID = section2.Substring(section2.IndexOf('x') + 1, section2.IndexOf(']') - (section2.IndexOf('x') + 1));
+                                mediaInfo.VideoInfo.PID = Convert.ToInt32(PID, 16); // get the video PID
                             }
+                            else if (section2.Contains('('))
+                                mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0, section2.IndexOf('('))); // Video stream
+                            else
+                                mediaInfo.VideoInfo.Stream = int.Parse(section2.Substring(0)); // Video stream
 
-                            else if (subsection.Contains("kb/s"))
-                                mediaInfo.VideoInfo.BitRate = int.Parse(subsection.Substring(0, subsection.IndexOf("kb/s")).Trim()) * 1000; // Bit Rate
-
-                            else if (subsection.Contains("[")) // SAR/DAR with [] and resolutions
+                            // Now parse the rest
+                            string restString = section4.Substring(section4.IndexOf(',') + 1);
+                            foreach (string subsection in restString.Split(','))
                             {
-                                mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
-                                mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1, subsection.IndexOf('[') - (subsection.IndexOf('x') + 1)).Trim()); // Height
+                                if (subsection.Contains("fps"))
+                                    mediaInfo.VideoInfo.FPS = float.Parse(subsection.Substring(0, subsection.IndexOf("fps")).Trim(), System.Globalization.CultureInfo.InvariantCulture); // fps always comes before tbr, if tbr is corrupted we end up using fps
 
-                                int sar = subsection.IndexOf("SAR");
-                                int dar = subsection.IndexOf("DAR");
-                                mediaInfo.VideoInfo.SAR = subsection.Substring(sar + 3, dar - (sar + 3)).Trim();
-                                mediaInfo.VideoInfo.DAR = subsection.Substring(dar + 3, subsection.IndexOf(']') - (dar + 3)).Trim();
-                            }
-
-                            else if (subsection.Contains("SAR") && !subsection.Contains("[")) // SAR/DAR without []
-                            {
-                                // Sometimes the resolution lies with the SAR/DAR without []
-                                if (subsection.Contains("x"))
+                                else if (subsection.Contains("tbr")) // tbr wins over fps when possible (more accurate estimation, tbr always comes after fps)
                                 {
-                                    mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
-                                    mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1, subsection.IndexOf('S') - (subsection.IndexOf('x') + 1)).Trim()); // Height
+                                    if (!subsection.Contains("k")) // Sometime FFMPEG reports a faulty tbr e.g. 90k
+                                        mediaInfo.VideoInfo.FPS = float.Parse(subsection.Substring(0, subsection.IndexOf("tbr")).Trim(), System.Globalization.CultureInfo.InvariantCulture); // FPS - use tbr since this is the most accurate
                                 }
 
-                                // SAR/DAR inside [] take preference to those without []
-                                if ((String.IsNullOrEmpty(mediaInfo.VideoInfo.SAR)) || (String.IsNullOrEmpty(mediaInfo.VideoInfo.DAR)))
+                                else if (subsection.Contains("kb/s"))
+                                    mediaInfo.VideoInfo.BitRate = int.Parse(subsection.Substring(0, subsection.IndexOf("kb/s")).Trim()) * 1000; // Bit Rate
+
+                                else if (subsection.Contains("[")) // SAR/DAR with [] and resolutions
                                 {
+                                    mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
+                                    mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1, subsection.IndexOf('[') - (subsection.IndexOf('x') + 1)).Trim()); // Height
+
                                     int sar = subsection.IndexOf("SAR");
                                     int dar = subsection.IndexOf("DAR");
                                     mediaInfo.VideoInfo.SAR = subsection.Substring(sar + 3, dar - (sar + 3)).Trim();
-                                    mediaInfo.VideoInfo.DAR = subsection.Substring(dar + 3).Trim();
+                                    mediaInfo.VideoInfo.DAR = subsection.Substring(dar + 3, subsection.IndexOf(']') - (dar + 3)).Trim();
                                 }
+
+                                else if (subsection.Contains("SAR") && !subsection.Contains("[")) // SAR/DAR without []
+                                {
+                                    // Sometimes the resolution lies with the SAR/DAR without []
+                                    if (subsection.Contains("x"))
+                                    {
+                                        mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
+                                        mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1, subsection.IndexOf('S') - (subsection.IndexOf('x') + 1)).Trim()); // Height
+                                    }
+
+                                    // SAR/DAR inside [] take preference to those without []
+                                    if ((String.IsNullOrEmpty(mediaInfo.VideoInfo.SAR)) || (String.IsNullOrEmpty(mediaInfo.VideoInfo.DAR)))
+                                    {
+                                        int sar = subsection.IndexOf("SAR");
+                                        int dar = subsection.IndexOf("DAR");
+                                        mediaInfo.VideoInfo.SAR = subsection.Substring(sar + 3, dar - (sar + 3)).Trim();
+                                        mediaInfo.VideoInfo.DAR = subsection.Substring(dar + 3).Trim();
+                                    }
+                                }
+
+                                else if (subsection.Contains("x") && !subsection.Contains("SAR")) // standalone without SAR/DAR
+                                {
+                                    mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
+                                    mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1).Trim()); // Height
+                                }
+
+                                else if (subsection.Contains("tbn")) { } // capture all events else they will end up in format
+
+                                else if (subsection.Contains("tbc")) { } // capture all events else they will end up in format
+
+                                else if (subsection.Contains("q=")) { } // capture all events else they will end up in format
+
+                                else
+                                    mediaInfo.VideoInfo.Format = subsection.Trim(); // Video format
                             }
 
-                            else if (subsection.Contains("x") && !subsection.Contains("SAR")) // standalone without SAR/DAR
-                            {
-                                mediaInfo.VideoInfo.Width = int.Parse(subsection.Substring(0, subsection.IndexOf('x')).Trim()); // Width
-                                mediaInfo.VideoInfo.Height = int.Parse(subsection.Substring(subsection.IndexOf('x') + 1).Trim()); // Height
-                            }
-
-                            else if (subsection.Contains("tbn")) { } // capture all events else they will end up in format
-
-                            else if (subsection.Contains("tbc")) { } // capture all events else they will end up in format
-
-                            else if (subsection.Contains("q=")) { } // capture all events else they will end up in format
-
-                            else
-                                mediaInfo.VideoInfo.Format = subsection.Trim(); // Video format
+                            _jobLog.WriteEntry(this, "Video stream = " + mediaInfo.VideoInfo.Stream.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video codec = " + mediaInfo.VideoInfo.VideoCodec, Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video format = " + mediaInfo.VideoInfo.Format, Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video width = " + mediaInfo.VideoInfo.Width.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video height = " + mediaInfo.VideoInfo.Height.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video SAR = " + mediaInfo.VideoInfo.SAR, Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video DAR = " + mediaInfo.VideoInfo.DAR, Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video bit rate = " + mediaInfo.VideoInfo.BitRate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video FPS = " + mediaInfo.VideoInfo.FPS.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                            _jobLog.WriteEntry(this, "Video PID = " + mediaInfo.VideoInfo.PID.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                         }
-
-                        _jobLog.WriteEntry(this, "Video stream = " + mediaInfo.VideoInfo.Stream.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video codec = " + mediaInfo.VideoInfo.VideoCodec, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video format = " + mediaInfo.VideoInfo.Format, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video width = " + mediaInfo.VideoInfo.Width.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video height = " + mediaInfo.VideoInfo.Height.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video SAR = " + mediaInfo.VideoInfo.SAR, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video DAR = " + mediaInfo.VideoInfo.DAR, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video bit rate = " + mediaInfo.VideoInfo.BitRate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video FPS = " + mediaInfo.VideoInfo.FPS.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Video PID = " + mediaInfo.VideoInfo.PID.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        else
+                            mediaInfo.VideoInfo.VideoCodec = ""; // Reset it
                     }
                 }
                 catch (Exception ex)
@@ -331,6 +341,10 @@ namespace MCEBuddy.AppWrapper
                     {
                         Array.Resize(ref mediaInfo.AudioInfo, audioTracks + 1); // Increase the array size
                         mediaInfo.AudioInfo[audioTracks] = new MediaInfo.Audio(); // Create a new Audio object for each stream we find
+
+                        if (StdOut.ToLower().Contains("impaired"))
+                            mediaInfo.AudioInfo[audioTracks].Impaired = true; // This is a visual / hearing impaired track
+
                         string[] parseChunk = StdOut.Split(':');
 
                         if (parseChunk[1].Contains('[')) // not all files contain the PID
@@ -349,9 +363,9 @@ namespace MCEBuddy.AppWrapper
 
                         string[] parseAudio = parseChunk[3].Split(',');
                         if (parseAudio[0].Contains('('))
-                            mediaInfo.AudioInfo[audioTracks].AudioCodec = parseAudio[0].Substring(0, parseAudio[0].IndexOf('(')).Trim();
+                            mediaInfo.AudioInfo[audioTracks].AudioCodec = parseAudio[0].Substring(0, parseAudio[0].IndexOf('(')).ToLower().Trim();
                         else
-                            mediaInfo.AudioInfo[audioTracks].AudioCodec = parseAudio[0].Trim();
+                            mediaInfo.AudioInfo[audioTracks].AudioCodec = parseAudio[0].ToLower().Trim();
 
                         // Parse the rest
                         string parseRest = parseChunk[3].Substring(parseChunk[3].IndexOf(',') + 1);
@@ -377,7 +391,7 @@ namespace MCEBuddy.AppWrapper
                                     // We need to keep track of 0 channel tracks for some encoders
                                     if (CheckChannels(section.Trim().ToLower()) == 0)
                                     {
-                                        _jobLog.WriteEntry(this, "0 Audio Channels reported", Log.LogEntryType.Warning);
+                                        _jobLog.WriteEntry(this, "0 channel audio track reported", Log.LogEntryType.Warning);
                                         zeroChannelTracks++; // keep track of this
                                     }
 
@@ -391,15 +405,16 @@ namespace MCEBuddy.AppWrapper
                             }
                         }
 
-                        _jobLog.WriteEntry(this, "Audio Track = " + audioTracks.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio track = " + audioTracks.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                         _jobLog.WriteEntry(this, "Audio stream = " + mediaInfo.AudioInfo[audioTracks].Stream.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                         _jobLog.WriteEntry(this, "Audio language = " + mediaInfo.AudioInfo[audioTracks].Language, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Audio Codec = " + mediaInfo.AudioInfo[audioTracks].AudioCodec, Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Audio Sampling Rate = " + mediaInfo.AudioInfo[audioTracks].Rate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio codec = " + mediaInfo.AudioInfo[audioTracks].AudioCodec, Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio sampling rate = " + mediaInfo.AudioInfo[audioTracks].Rate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                         _jobLog.WriteEntry(this, "Audio channels = " + mediaInfo.AudioInfo[audioTracks].Channels.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Audio Bits per sample = " + mediaInfo.AudioInfo[audioTracks].SamplingBits.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        _jobLog.WriteEntry(this, "Audio Bit Rate = " + mediaInfo.AudioInfo[audioTracks].BitRate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio bits per sample = " + mediaInfo.AudioInfo[audioTracks].SamplingBits.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio bit rate = " + mediaInfo.AudioInfo[audioTracks].BitRate.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                         _jobLog.WriteEntry(this, "Audio PID = " + mediaInfo.AudioInfo[audioTracks].PID.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, "Audio impaired = " + mediaInfo.AudioInfo[audioTracks].Impaired.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
                         audioTracks++; // We are done with this track
                     }
@@ -457,11 +472,13 @@ namespace MCEBuddy.AppWrapper
 
         public override void Run()
         {
+            float _percentageComplete = _jobStatus.PercentageComplete; // Save it since this function does not really do any work, just checks mediainfo
             base.Run();
 
             int i = 0;
-            while (!parseCompleted && (i++ < 20))
-                Thread.Sleep(500); // Wait for messages to be flushed and parsing completed or until 10 seconds (incase of a failure to read)
+            while (!parseCompleted && (i++ < 20) && !_jobStatus.Cancelled)
+                Thread.Sleep(500); // Wait for messages to be flushed and parsing completed or until 10 seconds (incase of a failure to read) or job cancellation
+            _jobStatus.PercentageComplete = _percentageComplete; // restore it
         }
     }
 }

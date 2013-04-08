@@ -2345,7 +2345,7 @@ namespace TagLib {
 				return Encoding.Default;
 			
 			try {
-				return Encoding.GetEncoding ("latin1");
+				return Encoding.GetEncoding (1252); // Latin-1 ACSII
 			} catch (ArgumentException) {
 				return Encoding.UTF8;
 			}

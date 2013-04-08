@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Globalization;
 
 using MCEBuddy.Util;
 using MCEBuddy.Globals;
@@ -25,6 +26,7 @@ namespace MCEBuddy.Transcode
         private string _remuxFile;
         private bool customCommandCritical = false;
         private VideoTags _metaData;
+        private string _edlFile;
 
         /// <summary>
         /// Used to execute custom commands after the conversion process is compelte just before the file is moved to the desination directory
@@ -36,7 +38,7 @@ namespace MCEBuddy.Transcode
         /// <param name="metaData">Video metadata structure for source file</param>
         /// <param name="jobStatus">ref to JobStatus</param>
         /// <param name="jobLog">JobLog</param>
-        public CustomCommand(string profile, string convertedFile, string sourceFile, string remuxFile, VideoTags metaData, ref JobStatus jobStatus, Log jobLog)
+        public CustomCommand(string profile, string convertedFile, string sourceFile, string remuxFile, string edlFile, VideoTags metaData, ref JobStatus jobStatus, Log jobLog)
         {
             _profile = profile;
             _jobLog = jobLog;
@@ -44,6 +46,7 @@ namespace MCEBuddy.Transcode
             _convertedFile = convertedFile;
             _sourceFile = sourceFile;
             _remuxFile = remuxFile;
+            _edlFile = edlFile;
             _metaData = metaData;
 
             Ini ini = new Ini(GlobalDefs.ProfileFile);
@@ -55,6 +58,8 @@ namespace MCEBuddy.Transcode
 
         public bool Run()
         {
+            string translatedCommand = "";
+
             if (commandPath == "")
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("No custom commands found"), Log.LogEntryType.Information);
@@ -76,49 +81,244 @@ namespace MCEBuddy.Transcode
                 return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
             }
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Read custom command parameters") + " CommandPath = " + commandPath + " CommandParameters = " + commandParameters + " CommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " CommandCritical = " + customCommandCritical.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, Localise.GetPhrase("Read custom command parameters") + " \nCommandPath = " + commandPath + " \nCommandParameters = " + commandParameters + " \nCommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \nCommandCritical = " + customCommandCritical.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
-            // Replace the converted file string if it exists in the commandParameters
-            commandParameters = commandParameters.Replace("%convertedfile%", Util.FilePaths.FixSpaces(_convertedFile)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%sourcefile%", Util.FilePaths.FixSpaces(_sourceFile)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%remuxfile%", Util.FilePaths.FixSpaces(_remuxFile)); // Preserve case for parameters
-            
-            // Support for Metadata in custom parameters
-            commandParameters = commandParameters.Replace("%originalfilepath%", Util.FilePaths.FixSpaces(Path.GetDirectoryName(_sourceFile))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%originalfilename%", Util.FilePaths.FixSpaces(Path.GetFileNameWithoutExtension(_sourceFile))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%showname%", Util.FilePaths.FixSpaces(_metaData.Title)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%genre%", Util.FilePaths.FixSpaces(_metaData.Genres != null ? (_metaData.Genres.Length > 0 ? _metaData.Genres[0] : "") : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%episodename%", Util.FilePaths.FixSpaces(_metaData.SubTitle)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%episodedescription%", Util.FilePaths.FixSpaces(_metaData.SubTitleDescription)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%network%", Util.FilePaths.FixSpaces(_metaData.Network)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%bannerfile%", Util.FilePaths.FixSpaces(_metaData.BannerFile)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%bannerurl%", Util.FilePaths.FixSpaces(_metaData.BannerURL)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%movieid%", Util.FilePaths.FixSpaces(_metaData.movieId)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%seriesid%", Util.FilePaths.FixSpaces(_metaData.seriesId)); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%season%", Util.FilePaths.FixSpaces((_metaData.Season == 0 ? "" : _metaData.Season.ToString(System.Globalization.CultureInfo.InvariantCulture)))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%episode%", Util.FilePaths.FixSpaces((_metaData.Episode == 0 ? "" : _metaData.Episode.ToString(System.Globalization.CultureInfo.InvariantCulture)))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%ismovie%", Util.FilePaths.FixSpaces(_metaData.IsMovie.ToString(System.Globalization.CultureInfo.InvariantCulture))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%airyear%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().Year.ToString("0000", System.Globalization.CultureInfo.InvariantCulture) : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%airmonth%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().Month.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%airmonthshort%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMM") : "")); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%airmonthlong%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMMM") : "")); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%airday%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().Day.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%airdayshort%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("ddd") : "")); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%airdaylong%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("dddd") : "")); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%airhour%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().Hour.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%airminute%", Util.FilePaths.FixSpaces((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().Minute.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : "")); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%recordyear%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().Year.ToString("0000", System.Globalization.CultureInfo.InvariantCulture) : Util.FileIO.GetFileCreationTime(_sourceFile).Year.ToString("0000", System.Globalization.CultureInfo.InvariantCulture))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%recordmonth%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().Month.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : Util.FileIO.GetFileCreationTime(_sourceFile).Month.ToString("00", System.Globalization.CultureInfo.InvariantCulture))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%recordmonthshort%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMM"))); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%recordmonthlong%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMMM"))); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%recordday%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().Day.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : Util.FileIO.GetFileCreationTime(_sourceFile).Day.ToString("00", System.Globalization.CultureInfo.InvariantCulture))); // Preserve case for parameters
-            commandParameters = commandParameters.Replace("%recorddayshort%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("ddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("ddd"))); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%recorddaylong%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("dddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("dddd"))); // Preserve case for parameters, culture sensitive
-            commandParameters = commandParameters.Replace("%recordminute%", Util.FilePaths.FixSpaces((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().Minute.ToString("00", System.Globalization.CultureInfo.InvariantCulture) : Util.FileIO.GetFileCreationTime(_sourceFile).Minute.ToString("00", System.Globalization.CultureInfo.InvariantCulture))); // Preserve case for parameters
+            // SRT and EDl files are substitued if they exist otherwise they are ""
+            string srtFile = Path.Combine(Path.GetDirectoryName(_convertedFile), (Path.GetFileNameWithoutExtension(_sourceFile) + ".srt")); // SRT file created by 3rd Party in temp working directory
+            if (!File.Exists(srtFile))
+                srtFile = "";
+            string edlFile = _edlFile;
+            if (!File.Exists(edlFile))
+                edlFile = "";
 
             try
             {
-                baseCommand = new Base(commandParameters, commandPath, ref _jobStatus, _jobLog, true, true); // send the absolute command path and by default success is true until process is terminated
+                char[] commandBytes = commandParameters.ToCharArray();
+                for (int i = 0; i < commandBytes.Length; i++)
+                {
+                    switch (commandBytes[i])
+                    {
+                        case '%':
+                            string command = "";
+                            while (commandBytes[++i] != '%')
+                                command += commandBytes[i].ToString(System.Globalization.CultureInfo.InvariantCulture).ToLower();
+
+                            string format = "";
+                            switch (command)
+                            {
+                                case "convertedfile":
+                                    translatedCommand += (_convertedFile); // Preserve case for parameters
+                                    break;
+
+                                case "sourcefile":
+                                    translatedCommand += (_sourceFile); // Preserve case for parameters
+                                    break;
+
+                                case "remuxfile":
+                                    translatedCommand += (_remuxFile); // Preserve case for parameters
+                                    break;
+
+                                case "workingpath":
+                                    translatedCommand += (Path.GetDirectoryName(_convertedFile)); // Preserve case for parameters
+                                    break;
+
+                                case "srtfile":
+                                    translatedCommand += (srtFile); // Preserve case for parameters
+                                    break;
+
+                                case "edlfile":
+                                    translatedCommand += (edlFile); // Preserve case for parameters
+                                    break;
+
+                                case "originalfilepath":
+                                    translatedCommand += (Path.GetDirectoryName(_sourceFile)); // Preserve case for parameters
+                                    break;
+
+                                case "originalfilename":
+                                    translatedCommand += (Path.GetFileNameWithoutExtension(_sourceFile)); // Preserve case for parameters
+                                    break;
+
+                                case "showname":
+                                    translatedCommand += (_metaData.Title); // Preserve case for parameters
+                                    break;
+
+                                case "genre":
+                                    translatedCommand += (_metaData.Genres != null ? (_metaData.Genres.Length > 0 ? _metaData.Genres[0] : "") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "episodename":
+                                    translatedCommand += (_metaData.SubTitle); // Preserve case for parameters
+                                    break;
+
+                                case "episodedescription":
+                                    translatedCommand += (_metaData.Description); // Preserve case for parameters
+                                    break;
+
+                                case "network":
+                                    translatedCommand += (_metaData.Network); // Preserve case for parameters
+                                    break;
+
+                                case "bannerfile":
+                                    translatedCommand += (_metaData.BannerFile); // Preserve case for parameters
+                                    break;
+
+                                case "bannerurl":
+                                    translatedCommand += (_metaData.BannerURL); // Preserve case for parameters
+                                    break;
+
+                                case "movieid":
+                                    translatedCommand += (_metaData.movieDBMovieId); // Preserve case for parameters
+                                    break;
+
+                                case "imdbmovieid":
+                                    translatedCommand += (_metaData.imdbMovieId); // Preserve case for parameters
+                                    break;
+
+                                case "seriesid":
+                                    translatedCommand += (_metaData.tvdbSeriesId); // Preserve case for parameters
+                                    break;
+
+                                case "season":
+                                    format = "";
+                                    try
+                                    {
+                                        if (commandBytes[i + 1] == '#')
+                                        {
+                                            while (commandBytes[++i] == '#')
+                                                format += "0";
+
+                                            --i; // adjust for last increment
+                                        }
+                                    }
+                                    catch { } // this is normal incase it doesn't exist
+
+                                    translatedCommand += ((_metaData.Season == 0 ? "" : _metaData.Season.ToString(format))); // Preserve case for parameters
+                                    break;
+
+                                case "episode":
+                                    format = "";
+                                    try
+                                    {
+                                        if (commandBytes[i + 1] == '#')
+                                        {
+                                            while (commandBytes[++i] == '#')
+                                                format += "0";
+
+                                            --i; // adjust for last increment
+                                        }
+                                    }
+                                    catch { } // this is normal incase it doesn't exist
+
+                                    translatedCommand += ((_metaData.Episode == 0 ? "" : _metaData.Episode.ToString(format))); // Preserve case for parameters
+                                    break;
+
+                                case "ismovie":
+                                    translatedCommand += (_metaData.IsMovie.ToString(CultureInfo.InvariantCulture)); // Preserve case for parameters
+                                    break;
+
+                                case "airyear":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("yyyy") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "airmonth":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%M") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "airmonthshort":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMM") : ""); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "airmonthlong":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMMM") : ""); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "airday":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%d") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "airdayshort":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("ddd") : ""); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "airdaylong":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("dddd") : ""); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "airhour":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%h") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "airhourampm":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("tt") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "airminute":
+                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%m") : ""); // Preserve case for parameters
+                                    break;
+
+                                case "recordyear":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("yyyy") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("yyyy")); // Preserve case for parameters
+                                    break;
+
+                                case "recordmonth":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%M") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%M")); // Preserve case for parameters
+                                    break;
+
+                                case "recordmonthshort":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMM")); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "recordmonthlong":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMMM")); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "recordday":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%d") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%d")); // Preserve case for parameters
+                                    break;
+
+                                case "recorddayshort":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("ddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("ddd")); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "recorddaylong":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("dddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("dddd")); // Preserve case for parameters, culture sensitive
+                                    break;
+
+                                case "recordhour":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%h") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%h")); // Preserve case for parameters
+                                    break;
+
+                                case "recordhourampm":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("tt") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("tt")); // Preserve case for parameters
+                                    break;
+
+                                case "recordminute":
+                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%m") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%m")); // Preserve case for parameters
+                                    break;
+
+                                default:
+                                    _jobLog.WriteEntry(Localise.GetPhrase("Invalid custom command format detected, skipping") + " : " + command, Log.LogEntryType.Warning); // We had an invalid format
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            translatedCommand += commandBytes[i];
+                            break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _jobLog.WriteEntry(this, Localise.GetPhrase("Invalid custom command. Error " + e.ToString()), (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                if (customCommandCritical)
+                    _jobStatus.ErrorMsg = Localise.GetPhrase("Invalid custom command"); // Set an error message on if we are failing the conversion
+                return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
+            }
+
+            try
+            {
+                baseCommand = new Base(true, translatedCommand, commandPath, ref _jobStatus, _jobLog); // send the absolute command path and by default success is true until process is terminated and show Window
             }
             catch (FileNotFoundException)
             {
@@ -131,7 +331,7 @@ namespace MCEBuddy.Transcode
             // Set the hang detection period
             baseCommand.HangPeriod = hangPeriod;
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("About to run custom command with parameters") + " CommandPath = " + commandPath + " CommandParameters = " + commandParameters + " CommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, Localise.GetPhrase("About to run custom command with parameters") + " \nCommandPath = " + commandPath + " \nCommandParameters = " + translatedCommand + " \nCommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
             // Run the custom command
             baseCommand.Run();

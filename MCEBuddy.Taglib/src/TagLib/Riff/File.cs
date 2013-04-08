@@ -477,7 +477,7 @@ namespace TagLib.Riff
 				bool tag_found = false;
 				
 				Seek (position);
-				string fourcc = ReadBlock (4).ToString (StringType.UTF8);
+				string fourcc = ReadBlock (4).ToString (StringType.Latin1);
 				size = ReadBlock (4).ToUInt (false);
 				
 				switch (fourcc)
@@ -524,7 +524,7 @@ namespace TagLib.Riff
 				// collections. Read the type and act on it.
 				case "LIST":
 				{
-					switch (ReadBlock (4).ToString (StringType.UTF8))
+					switch (ReadBlock (4).ToString (StringType.Latin1))
 					{
 					
 					// "hdlr" is used by AVI files to hold

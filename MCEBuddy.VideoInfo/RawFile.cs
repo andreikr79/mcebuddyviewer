@@ -7,7 +7,7 @@ namespace MCEBuddy.VideoProperties
 {
     public static class RawFile
     {
-        public static string VideoFormat( string rawFileName)
+        public static string VideoFormat(string rawFileName)
         {
             MediaInfoDll mi = new MediaInfoDll();
 
@@ -39,7 +39,6 @@ namespace MCEBuddy.VideoProperties
             }
         }
 
-
         public static float FPS(string rawFileName)
         {
             MediaInfoDll mi = new MediaInfoDll();
@@ -58,5 +57,28 @@ namespace MCEBuddy.VideoProperties
             }
         }
 
+        /// <summary>
+        /// Gets the Audio Delay from a video file
+        /// </summary>
+        /// <param name="rawFileName">Video file</param>
+        /// <returns>Audio delay in seconds</returns>
+        public static float AudioDelay(string rawFileName)
+        {
+            MediaInfoDll mi = new MediaInfoDll();
+
+            try
+            {
+                mi.Open(rawFileName);
+                mi.Option("Inform", "Audio; %Video_Delay%");
+                float audioDelay;
+                float.TryParse(mi.Inform(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out audioDelay);
+                audioDelay = (float)audioDelay / 1000; // convert to seconds
+                return audioDelay;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
     }
 }
