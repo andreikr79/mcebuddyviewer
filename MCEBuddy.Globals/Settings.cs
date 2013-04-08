@@ -28,7 +28,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-    [Serializable]
+
     public class ConversionJobOptions
     {
         public string taskName; // Name of conversion task
@@ -141,7 +141,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-    [Serializable]
+
     public class MonitorJobOptions
     {
         public string taskName; // Name of monitor task
@@ -178,7 +178,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-    [Serializable]
+
     public class EMailOptions
     {
         public string smtpServer; // Name of SMTP server
@@ -230,7 +230,7 @@ namespace MCEBuddy.Globals
         }
     }
 
-    [Serializable]
+
     public class GeneralOptions
     {
         public int wakeHour; // Hour to wake system

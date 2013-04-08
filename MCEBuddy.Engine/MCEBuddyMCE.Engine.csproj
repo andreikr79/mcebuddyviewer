@@ -114,12 +114,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -135,43 +133,39 @@
   <ItemGroup>
     <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
       <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddy.AppWrapper</Name>
+      <Name>MCEBuddyMCE.AppWrapper</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.CommercialScan\MCEBuddyMCE.CommercialScan.csproj">
       <Project>{298B38E2-57D4-459D-8EB9-529E95F41DC7}</Project>
-      <Name>MCEBuddy.CommercialScan</Name>
+      <Name>MCEBuddyMCE.CommercialScan</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
       <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
-      <Name>MCEBuddy.Configuration</Name>
+      <Name>MCEBuddyMCE.Configuration</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
       <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
-      <Name>MCEBuddy.Globals</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.ManagedUPnP\MCEBuddy.ManagedUPnP.csproj">
-      <Project>{5956DABC-C1AB-498E-B8C8-F62ED6DCD30C}</Project>
-      <Name>MCEBuddy.ManagedUPnP</Name>
+      <Name>MCEBuddyMCE.Globals</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.MetaData\MCEBuddyMCE.MetaData.csproj">
       <Project>{A3AA78D8-F912-41EC-844B-48C84E5032BB}</Project>
-      <Name>MCEBuddy.MetaData</Name>
+      <Name>MCEBuddyMCE.MetaData</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.RemuxMediaCenter\MCEBuddyMCE.RemuxMediaCenter.csproj">
       <Project>{0DF6FB06-4CD2-47BD-89D8-36BE8338673C}</Project>
-      <Name>MCEBuddy.RemuxMediaCenter</Name>
+      <Name>MCEBuddyMCE.RemuxMediaCenter</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Transcode\MCEBuddyMCE.Transcode.csproj">
       <Project>{B8799D33-24DB-4E36-8113-05BEBB7FC88B}</Project>
-      <Name>MCEBuddy.Transcode</Name>
+      <Name>MCEBuddyMCE.Transcode</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
-      <Name>MCEBuddy.Util</Name>
+      <Name>MCEBuddyMCE.Util</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
       <Project>{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}</Project>
-      <Name>MCEBuddy.VideoProperties</Name>
+      <Name>MCEBuddyMCE.VideoProperties</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

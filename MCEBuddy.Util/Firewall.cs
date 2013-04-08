@@ -49,7 +49,7 @@ namespace MCEBuddy.Util
         /// </summary>
         /// <param name="comName">The Application name of the COM Object to create.</param>
         /// <returns>The created COM object or null if not available.</returns>
-        private static dynamic CreateCOMObject(string comName)
+        private static System.Object CreateCOMObject(string comName)
         {
             // Get the type
             System.Type ltCOMType = System.Type.GetTypeFromProgID(comName);
@@ -85,30 +85,30 @@ namespace MCEBuddy.Util
             {
                 if (OSVersion.GetOSVersion() == OSVersion.OS.WIN_XP)
                 {
-                    dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
-                    dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
+                    //dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
+                    //dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
 
-                    dynamic authApp = CreateCOMObject(PROGID_AUTHORIZED_APPLICATION);
-                    authApp.Name = title;
-                    authApp.ProcessImageFileName = applicationPath;
-                    authApp.Scope = scope;
-                    authApp.IpVersion = ipVersion;
-                    authApp.Enabled = true;
+                    //dynamic authApp = CreateCOMObject(PROGID_AUTHORIZED_APPLICATION);
+                    //authApp.Name = title;
+                    //authApp.ProcessImageFileName = applicationPath;
+                    //authApp.Scope = scope;
+                    //authApp.IpVersion = ipVersion;
+                    //authApp.Enabled = true;
 
-                    profile.AuthorizedApplications.Add(authApp);
+                    //profile.AuthorizedApplications.Add(authApp);
                 }
                 else
                 {
-                    dynamic firewallRule = CreateCOMObject(PROGID_FW_RULE);
-                    firewallRule.Action = action;
-                    firewallRule.Name = title;
-                    firewallRule.ApplicationName = applicationPath;
-                    firewallRule.Enabled = true;
-                    firewallRule.InterfaceTypes = "All";
-                    firewallRule.EdgeTraversal = true;
+                    //dynamic firewallRule = CreateCOMObject(PROGID_FW_RULE);
+                    //firewallRule.Action = action;
+                    //firewallRule.Name = title;
+                    //firewallRule.ApplicationName = applicationPath;
+                    //firewallRule.Enabled = true;
+                    //firewallRule.InterfaceTypes = "All";
+                    //firewallRule.EdgeTraversal = true;
 
-                    dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
-                    firewallPolicy.Rules.Add(firewallRule);
+                    //dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
+                    //firewallPolicy.Rules.Add(firewallRule);
                 }
             }
             catch (Exception e)
@@ -135,30 +135,30 @@ namespace MCEBuddy.Util
             {
                 if (OSVersion.GetOSVersion() == OSVersion.OS.WIN_XP)
                 {
-                    dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
-                    dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
+                    //dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
+                    //dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
 
-                    dynamic port = CreateCOMObject(PROGID_OPEN_PORT);
-                    port.Name = title;
-                    port.Port = portNo;
-                    port.Scope = scope;
-                    port.Protocol = protocol;
-                    port.IpVersion = ipVersion;
+                    //dynamic port = CreateCOMObject(PROGID_OPEN_PORT);
+                    //port.Name = title;
+                    //port.Port = portNo;
+                    //port.Scope = scope;
+                    //port.Protocol = protocol;
+                    //port.IpVersion = ipVersion;
 
-                    profile.GloballyOpenPorts.Add(port);
+                    //profile.GloballyOpenPorts.Add(port);
                 }
                 else
                 {
-                    dynamic firewallRule = CreateCOMObject(PROGID_FW_RULE);
-                    firewallRule.Name = title;
-                    firewallRule.Protocol = protocol;
-                    firewallRule.LocalPorts = portNo.ToString();
-                    firewallRule.Enabled = true;
-                    firewallRule.InterfaceTypes = "All";
-                    firewallRule.EdgeTraversal = true;
+                    //dynamic firewallRule = CreateCOMObject(PROGID_FW_RULE);
+                    //firewallRule.Name = title;
+                    //firewallRule.Protocol = protocol;
+                    //firewallRule.LocalPorts = portNo.ToString();
+                    //firewallRule.Enabled = true;
+                    //firewallRule.InterfaceTypes = "All";
+                    //firewallRule.EdgeTraversal = true;
 
-                    dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
-                    firewallPolicy.Rules.Add(firewallRule);
+                    //dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
+                    //firewallPolicy.Rules.Add(firewallRule);
                 }
             }
             catch (Exception e)
@@ -182,15 +182,15 @@ namespace MCEBuddy.Util
             {
                 if (OSVersion.GetOSVersion() == OSVersion.OS.WIN_XP)
                 {
-                    dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
-                    dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
+                    //dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
+                    //dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
 
-                    profile.AuthorizedApplications.Remove(applicationPath);
+                    //profile.AuthorizedApplications.Remove(applicationPath);
                 }
                 else
                 {
-                    dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
-                    firewallPolicy.Rules.Remove(title);
+                    //dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
+                    //firewallPolicy.Rules.Remove(title);
                 }
             }
             catch (Exception e)
@@ -215,15 +215,15 @@ namespace MCEBuddy.Util
             {
                 if (OSVersion.GetOSVersion() == OSVersion.OS.WIN_XP)
                 {
-                    dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
-                    dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
+                    //dynamic fwMgr = CreateCOMObject(PROGID_FIREWALL_MANAGER);
+                    //dynamic profile = fwMgr.LocalPolicy.CurrentProfile;
 
-                    profile.GloballyOpenPorts.Remove(portNo, protocol);
+                    //profile.GloballyOpenPorts.Remove(portNo, protocol);
                 }
                 else
                 {
-                    dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
-                    firewallPolicy.Rules.Remove(title);
+                    //dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
+                    //firewallPolicy.Rules.Remove(title);
                 }
             }
             catch (Exception e)
@@ -251,32 +251,32 @@ namespace MCEBuddy.Util
                 if (OSVersion.GetOSVersion() == OSVersion.OS.WIN_XP)
                 {
                     // Windows XP always only makes one entry even if multiple calls are made to add. For some reason getting list (Item) throws an exception
-                    DeAuthorizePort(portTitle, portNo, protocol);
-                    DeAuthorizeApplication(appTitle, applicationPath);
+                    //DeAuthorizePort(portTitle, portNo, protocol);
+                    //DeAuthorizeApplication(appTitle, applicationPath);
                 }
                 else
                 {
-                    dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
+                    //dynamic firewallPolicy = CreateCOMObject(PROGID_FW_POLICY);
 
-                    try
-                    {
-                        while (true)
-                        {
-                            firewallPolicy.Rules.Item(portTitle); // Get the item
-                            firewallPolicy.Rules.Remove(portTitle); // Keep removing all entries for open ports (duplicates)
-                        }
-                    }
-                    catch { } // When the entries run out, Item throws an exception, H_RESULT_NOT_FOUND
+                    //try
+                    //{
+                    //    while (true)
+                    //    {
+                    //        firewallPolicy.Rules.Item(portTitle); // Get the item
+                    //        firewallPolicy.Rules.Remove(portTitle); // Keep removing all entries for open ports (duplicates)
+                    //    }
+                    //}
+                    //catch { } // When the entries run out, Item throws an exception, H_RESULT_NOT_FOUND
 
-                    try
-                    {
-                        while (true)
-                        {
-                            firewallPolicy.Rules.Item(appTitle); // Get the item
-                            firewallPolicy.Rules.Remove(appTitle); // Keep removing all entries for Authorized apps (duplicates)
-                        }
-                    }
-                    catch { } // When the entries run out, Item throws an exception, H_RESULT_NOT_FOUND
+                    //try
+                    //{
+                    //    while (true)
+                    //    {
+                    //        firewallPolicy.Rules.Item(appTitle); // Get the item
+                    //        firewallPolicy.Rules.Remove(appTitle); // Keep removing all entries for Authorized apps (duplicates)
+                    //    }
+                    //}
+                    //catch { } // When the entries run out, Item throws an exception, H_RESULT_NOT_FOUND
                 }
             }
             catch (Exception e)

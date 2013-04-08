@@ -54,13 +54,14 @@ namespace MCEBuddy.Util
                 eMailMessage.Subject = subject;
                 eMailMessage.Body = message;
                 eMailMessage.From = new MailAddress(fromAddress);
-                if (!String.IsNullOrWhiteSpace(toAddresses)) // Avoid an exception, since to is not mandatory
+                
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(toAddresses)) // Avoid an exception, since to is not mandatory
                 {
                     string[] addresses = toAddresses.Split(';');
                     for (int i = 0; i < addresses.Length; i++)
                         eMailMessage.To.Add(addresses[i]); // Add the To recipients
                 }
-                if (!String.IsNullOrWhiteSpace(bccAddresses)) // Avoid an exception, since bcc is not mandatory
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(bccAddresses)) // Avoid an exception, since bcc is not mandatory
                 {
                     string[] bccToAddresses = bccAddresses.Split(';');
                     for (int i = 0; i < bccToAddresses.Length; i++)
