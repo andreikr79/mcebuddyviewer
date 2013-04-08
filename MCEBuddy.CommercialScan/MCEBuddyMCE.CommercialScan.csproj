@@ -119,7 +119,6 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -132,23 +131,23 @@
   <ItemGroup>
     <ProjectReference Include="..\MCEBuddy.AppWrapper\MCEBuddyMCE.AppWrapper.csproj">
       <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
-      <Name>MCEBuddy.AppWrapper</Name>
+      <Name>MCEBuddyMCE.AppWrapper</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Definitions\MCEBuddyMCE.Configuration.csproj">
       <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
-      <Name>MCEBuddy.Configuration</Name>
+      <Name>MCEBuddyMCE.Configuration</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
       <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
-      <Name>MCEBuddy.Globals</Name>
+      <Name>MCEBuddyMCE.Globals</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
-      <Name>MCEBuddy.Util</Name>
+      <Name>MCEBuddyMCE.Util</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
       <Project>{4E7DC789-3AE0-4E19-B1D0-D9186F9F9A98}</Project>
-      <Name>MCEBuddy.VideoProperties</Name>
+      <Name>MCEBuddyMCE.VideoProperties</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -156,17 +155,6 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="ShowAnalyzerLib">
-      <Guid>{4BDF5A34-0D1C-45A3-8743-BAAA7D4E8C11}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
