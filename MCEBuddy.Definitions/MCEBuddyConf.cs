@@ -457,7 +457,7 @@ namespace MCEBuddy.Configuration
                 cjo.metaShowSelection = configIni.ReadString(conversionRecord, "MetaSelection", "");
                 cjo.metaNetworkSelection = configIni.ReadString(conversionRecord, "MetaChannelSelection", "");
                 string monitorNameList = configIni.ReadString(conversionRecord, "MonitorTaskNames", "");
-                if (String.IsNullOrWhiteSpace(monitorNameList))
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(monitorNameList))
                     cjo.monitorTaskNames = null; // list should be empty if nothing is there
                 else
                     cjo.monitorTaskNames = monitorNameList.Split(',');
