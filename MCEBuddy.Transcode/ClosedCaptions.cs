@@ -109,17 +109,34 @@ namespace MCEBuddy.Transcode
                 return false;
             }
 
+            if (Util.FileIO.FileSize(extractedSRTFile) <= 0)
+            {
+                FileIO.TryFileDelete(extractedSRTFile); // Delete the empty file
+                extractedSRTFile = ""; // no valid extraction
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No valid SRT file found"), Log.LogEntryType.Warning);
+                return true; // no error
+            }
+                
             _jobLog.WriteEntry(this, Localise.GetPhrase("Extracted closed captions to") + " " + extractedSRTFile, Log.LogEntryType.Information);
 
             return true;
         }
 
-        public bool EDLTrim(string edlFile, string srtFile, double ccOffset)
+        /// <summary>
+        /// Adjust the Subtitle file to compensate for the cut segments represented in a EDL file
+        /// </summary>
+        /// <param name="edlFile">EDL file containing segment information</param>
+        /// <param name="srtFile">Subtitle file</param>
+        /// <param name="ccOffset">Offset to shift the timebase for all subtitles (+ve or -ve)</param>
+        /// <param name="segmentOffset">Incremental offset to shift the timebase for subtitles AFTER each segment is cut (+ve or -ve). Used to compensate for progressive shifting in EDL cutting due to GOP boundary issues</param>
+        /// <returns>True if successful</returns>
+        public bool EDLTrim(string edlFile, string srtFile, double ccOffset, double segmentOffset)
         {
             _jobLog.WriteEntry(this, Localise.GetPhrase("Syncing SRT file with EDL file"), Log.LogEntryType.Information);
             _jobLog.WriteEntry(this, "EDL File " + edlFile, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "SRT File " + srtFile, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Offset : " + ccOffset.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Progressive Segment Cut Correction : " + segmentOffset.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
             if (String.IsNullOrEmpty(srtFile) || String.IsNullOrEmpty(edlFile))
                 return true; // nothing to do
@@ -215,8 +232,8 @@ namespace MCEBuddy.Transcode
                             {
                                 srt_line = new List<string>();
                                 srt_line.Add(sequence.ToString());
-                                srt_line.Add(seconds_to_hhmmss(srt_start_time - edl_array[edl_array_position][2]));
-                                srt_line.Add(seconds_to_hhmmss(srt_end_time - edl_array[edl_array_position][2]));
+                                srt_line.Add(seconds_to_hhmmss(srt_start_time - edl_array[edl_array_position][2] + (edl_array_position * segmentOffset))); // Compensate progressively for each segment
+                                srt_line.Add(seconds_to_hhmmss(srt_end_time - edl_array[edl_array_position][2] + (edl_array_position * segmentOffset))); // Compensate progressively for each segment
                                 srt_line.Add(line_text_1);
                                 srt_line.Add(line_text_2);
                                 srt_array.Add(srt_line);
@@ -302,29 +319,13 @@ namespace MCEBuddy.Transcode
             return secondsTime;
         }
 
-        private static string FormatTimeSpan(TimeSpan span, bool showSign)
-        {
-            string sign = String.Empty;
-            if (showSign && (span > TimeSpan.Zero))
-                sign = "+";
-
-            return sign +
-                   span.Hours.ToString("00") + ":" +
-                   span.Minutes.ToString("00") + ":" +
-                   span.Seconds.ToString("00") + "," +
-                   span.Milliseconds.ToString("000");
-        }
-
         private string seconds_to_hhmmss(double seconds)
         {
             TimeSpan st = TimeSpan.FromSeconds(seconds);
             if (seconds < 0)
-                //return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
-                return FormatTimeSpan(st, false);
+                return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
             else
-                return FormatTimeSpan(st, false);
-            //return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
+                return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
         }
-
     }
 }

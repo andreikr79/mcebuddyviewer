@@ -199,7 +199,6 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.conversionTasks = new List<ConversionJobOptions>();
             mceBuddyConfSettings.monitorTasks = new List<MonitorJobOptions>();
             mceBuddyConfSettings.generalOptions = new GeneralOptions();
-            mceBuddyConfSettings.generalOptions.eMailSettings = new EMailOptions();
 
             if (!String.IsNullOrEmpty(configFile))
             {
@@ -224,7 +223,6 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.conversionTasks = new List<ConversionJobOptions>();
             mceBuddyConfSettings.monitorTasks = new List<MonitorJobOptions>();
             mceBuddyConfSettings.generalOptions = new GeneralOptions();
-            mceBuddyConfSettings.generalOptions.eMailSettings = new EMailOptions();
 
             mceBuddyConfSettings.generalOptions = configOptions.generalOptions; // Copy of the General Options
 
@@ -257,7 +255,6 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.conversionTasks = new List<ConversionJobOptions>();
             mceBuddyConfSettings.monitorTasks = new List<MonitorJobOptions>();
             mceBuddyConfSettings.generalOptions = new GeneralOptions();
-            mceBuddyConfSettings.generalOptions.eMailSettings = new EMailOptions();
 
             mceBuddyConfSettings.generalOptions = go.Clone();
             
@@ -327,6 +324,7 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.generalOptions.eMailSettings.failedEvent = configIni.ReadBoolean("Engine", "eMailFailed", true);
             mceBuddyConfSettings.generalOptions.eMailSettings.cancelledEvent = configIni.ReadBoolean("Engine", "eMailCancelled", true);
             mceBuddyConfSettings.generalOptions.eMailSettings.startEvent = configIni.ReadBoolean("Engine", "eMailStart", true);
+            mceBuddyConfSettings.generalOptions.eMailSettings.downloadFailedEvent = configIni.ReadBoolean("Engine", "eMailDownloadFailed", true); 
             mceBuddyConfSettings.generalOptions.eMailSettings.userName = configIni.ReadString("Engine", "eMailUsername", "");
             mceBuddyConfSettings.generalOptions.eMailSettings.password = configIni.ReadString("Engine", "eMailPassword", "");
             if (!String.IsNullOrEmpty(mceBuddyConfSettings.generalOptions.eMailSettings.password))
@@ -346,6 +344,7 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.generalOptions.logLevel = configIni.ReadInteger("Engine", "LogLevel", 3);
             mceBuddyConfSettings.generalOptions.logKeepDays = configIni.ReadInteger("Engine", "LogKeepDays", 15);
             mceBuddyConfSettings.generalOptions.deleteOriginal = configIni.ReadBoolean("Engine", "DeleteOriginal", false);
+            mceBuddyConfSettings.generalOptions.useRecycleBin = configIni.ReadBoolean("Engine", "UseRecycleBin", false);
             mceBuddyConfSettings.generalOptions.archiveOriginal = configIni.ReadBoolean("Engine", "ArchiveOriginal", false);
             mceBuddyConfSettings.generalOptions.deleteConverted = configIni.ReadBoolean("Engine", "DeleteConverted", false); 
             mceBuddyConfSettings.generalOptions.allowSleep = configIni.ReadBoolean("Engine", "AllowSleep", true);
@@ -358,9 +357,14 @@ namespace MCEBuddy.Configuration
             mceBuddyConfSettings.generalOptions.hangTimeout = configIni.ReadInteger("Engine", "HangPeriod", 300);
             mceBuddyConfSettings.generalOptions.pollPeriod = configIni.ReadInteger("Engine", "PollPeriod", 300);
             mceBuddyConfSettings.generalOptions.processPriority = configIni.ReadString("Engine", "ProcessPriority", "Normal");
+            mceBuddyConfSettings.generalOptions.CPUAffinity = (IntPtr) configIni.ReadLong("Engine", "CPUAffinity", 0);
             mceBuddyConfSettings.generalOptions.engineRunning = configIni.ReadBoolean("Engine", "EngineRunning", false);
+            mceBuddyConfSettings.generalOptions.ignoreCopyProtection = configIni.ReadBoolean("Engine", "IgnoreCopyProtection", false);
+            mceBuddyConfSettings.generalOptions.comskipPath = configIni.ReadString("Engine", "CustomComskipPath", "");
             mceBuddyConfSettings.generalOptions.localServerPort = configIni.ReadInteger("Engine", "LocalServerPort", int.Parse(GlobalDefs.MCEBUDDY_SERVER_PORT));
             mceBuddyConfSettings.generalOptions.uPnPEnable = configIni.ReadBoolean("Engine", "UPnPEnable", false);
+            string srtSegmentOffset = configIni.ReadString("Engine", "SubtitleSegmentOffset", GlobalDefs.SEGMENT_CUT_OFFSET_GOP_COMPENSATE);
+            double.TryParse(srtSegmentOffset, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out mceBuddyConfSettings.generalOptions.subtitleSegmentOffset);
             
             ReadEMailSettings(configIni);
         }
@@ -379,6 +383,7 @@ namespace MCEBuddy.Configuration
             configIni.Write("Engine", "eMailFailed", mceBuddyConfSettings.generalOptions.eMailSettings.failedEvent);
             configIni.Write("Engine", "eMailCancelled", mceBuddyConfSettings.generalOptions.eMailSettings.cancelledEvent);
             configIni.Write("Engine", "eMailStart", mceBuddyConfSettings.generalOptions.eMailSettings.startEvent);
+            configIni.Write("Engine", "eMailDownloadFailed", mceBuddyConfSettings.generalOptions.eMailSettings.downloadFailedEvent);
             configIni.Write("Engine", "eMailUsername", mceBuddyConfSettings.generalOptions.eMailSettings.userName);
             if (!String.IsNullOrEmpty(mceBuddyConfSettings.generalOptions.eMailSettings.password))
                 configIni.Write("Engine", "eMailPassword", Util.Crypto.Encrypt(mceBuddyConfSettings.generalOptions.eMailSettings.password)); // password is stored encrypted
@@ -402,6 +407,7 @@ namespace MCEBuddy.Configuration
             configIni.Write("Engine", "LogLevel", mceBuddyConfSettings.generalOptions.logLevel);
             configIni.Write("Engine", "LogKeepDays", mceBuddyConfSettings.generalOptions.logKeepDays);
             configIni.Write("Engine", "DeleteOriginal", mceBuddyConfSettings.generalOptions.deleteOriginal);
+            configIni.Write("Engine", "UseRecycleBin", mceBuddyConfSettings.generalOptions.useRecycleBin);
             configIni.Write("Engine", "ArchiveOriginal", mceBuddyConfSettings.generalOptions.archiveOriginal);
             configIni.Write("Engine", "DeleteConverted", mceBuddyConfSettings.generalOptions.deleteConverted); 
             configIni.Write("Engine", "AllowSleep", mceBuddyConfSettings.generalOptions.allowSleep);
@@ -414,9 +420,13 @@ namespace MCEBuddy.Configuration
             configIni.Write("Engine", "HangPeriod", mceBuddyConfSettings.generalOptions.hangTimeout);
             configIni.Write("Engine", "PollPeriod", mceBuddyConfSettings.generalOptions.pollPeriod);
             configIni.Write("Engine", "ProcessPriority", mceBuddyConfSettings.generalOptions.processPriority);
+            configIni.Write("Engine", "CPUAffinity", mceBuddyConfSettings.generalOptions.CPUAffinity.ToInt32());
             configIni.Write("Engine", "EngineRunning", mceBuddyConfSettings.generalOptions.engineRunning);
+            configIni.Write("Engine", "CustomComskipPath", mceBuddyConfSettings.generalOptions.comskipPath);
+            configIni.Write("Engine", "IgnoreCopyProtection", mceBuddyConfSettings.generalOptions.ignoreCopyProtection);
             configIni.Write("Engine", "LocalServerPort", mceBuddyConfSettings.generalOptions.localServerPort);
             configIni.Write("Engine", "UPnPEnable", mceBuddyConfSettings.generalOptions.uPnPEnable);
+            configIni.Write("Engine", "SubtitleSegmentOffset", mceBuddyConfSettings.generalOptions.subtitleSegmentOffset.ToString(CultureInfo.InvariantCulture));
 
             WriteEMailSettings(configIni);
         }
@@ -442,8 +452,15 @@ namespace MCEBuddy.Configuration
                 cjo.renameBySeries = configIni.ReadBoolean(conversionRecord, "RenameBySeries", true);
                 cjo.altRenameBySeries = configIni.ReadBoolean(conversionRecord, "AltRenameBySeries", false);
                 cjo.customRenameBySeries = configIni.ReadString(conversionRecord, "CustomRenameBySeries", "");
+                cjo.renameOnly = configIni.ReadBoolean(conversionRecord, "RenameOnly", false);
                 cjo.fileSelection = configIni.ReadString(conversionRecord, "FileSelection", "");
-                cjo.metaSelection = configIni.ReadString(conversionRecord, "MetaSelection", "");
+                cjo.metaShowSelection = configIni.ReadString(conversionRecord, "MetaSelection", "");
+                cjo.metaNetworkSelection = configIni.ReadString(conversionRecord, "MetaChannelSelection", "");
+                string monitorNameList = configIni.ReadString(conversionRecord, "MonitorTaskNames", "");
+                if (String.IsNullOrWhiteSpace(monitorNameList))
+                    cjo.monitorTaskNames = null; // list should be empty if nothing is there
+                else
+                    cjo.monitorTaskNames = monitorNameList.Split(',');
                 cjo.audioLanguage = configIni.ReadString(conversionRecord, "AudioLanguage", "");
                 string audioOffsetStr = configIni.ReadString(conversionRecord, "AudioOffset", "0");
                 double.TryParse(audioOffsetStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cjo.audioOffset);
@@ -454,7 +471,9 @@ namespace MCEBuddy.Configuration
                 cjo.extractXML = configIni.ReadBoolean(conversionRecord, "ExtractXML", false);
                 cjo.disableCropping = configIni.ReadBoolean(conversionRecord, "DisableCropping", false);
                 cjo.commercialSkipCut = configIni.ReadBoolean(conversionRecord, "TaskCommercialSkipCut", false);
+                cjo.tivoMAKKey = configIni.ReadString(conversionRecord, "TiVOMAKKey", "");
                 cjo.downloadSeriesDetails = configIni.ReadBoolean(conversionRecord, "DownloadSeriesDetails", true);
+                cjo.downloadBanner = configIni.ReadBoolean(conversionRecord, "DownloadBanner", true);
                 cjo.tvdbSeriesId = configIni.ReadString(conversionRecord, "TVDBSeriesId", "");
                 cjo.imdbSeriesId = configIni.ReadString(conversionRecord, "IMDBSeriesId", "");
                 cjo.enabled = configIni.ReadBoolean(conversionRecord, "Enabled", true);
@@ -535,11 +554,15 @@ namespace MCEBuddy.Configuration
                 configIni.Write(section, "RenameBySeries", conversionTask.renameBySeries);
                 configIni.Write(section, "AltRenameBySeries", conversionTask.altRenameBySeries);
                 configIni.Write(section, "CustomRenameBySeries", conversionTask.customRenameBySeries);
+                configIni.Write(section, "RenameOnly", conversionTask.renameOnly);
                 configIni.Write(section, "DownloadSeriesDetails", conversionTask.downloadSeriesDetails);
+                configIni.Write(section, "DownloadBanner", conversionTask.downloadBanner); 
                 configIni.Write(section, "TVDBSeriesId", conversionTask.tvdbSeriesId);
                 configIni.Write(section, "IMDBSeriesId", conversionTask.imdbSeriesId);
                 configIni.Write(section, "FileSelection", conversionTask.fileSelection);
-                configIni.Write(section, "MetaSelection", conversionTask.metaSelection);
+                configIni.Write(section, "MetaSelection", conversionTask.metaShowSelection);
+                configIni.Write(section, "MetaChannelSelection", conversionTask.metaNetworkSelection);
+                configIni.Write(section, "MonitorTaskNames", (conversionTask.monitorTaskNames == null ? "" : String.Join(",", conversionTask.monitorTaskNames)));
                 configIni.Write(section, "DRC", conversionTask.drc);
                 configIni.Write(section, "AudioLanguage", conversionTask.audioLanguage);
                 configIni.Write(section, "AudioOffset", conversionTask.audioOffset.ToString(CultureInfo.InvariantCulture));
@@ -551,6 +574,7 @@ namespace MCEBuddy.Configuration
                 configIni.Write(section, "ExtractCC", conversionTask.extractCC);
                 configIni.Write(section, "CCOffset", conversionTask.ccOffset.ToString(CultureInfo.InvariantCulture));
                 configIni.Write(section, "TaskCommercialSkipCut", conversionTask.commercialSkipCut);
+                configIni.Write(section, "TiVOMAKKey", conversionTask.tivoMAKKey);
                 configIni.Write(section, "Enabled", conversionTask.enabled);
 
                 switch (conversionTask.commercialRemoval)

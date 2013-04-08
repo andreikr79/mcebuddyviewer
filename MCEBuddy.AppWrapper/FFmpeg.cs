@@ -29,6 +29,7 @@ namespace MCEBuddy.AppWrapper
         public FFmpeg(string Parameters, ref JobStatus jobStatus, Log jobLog)
             : base(Parameters, APP_PATH, ref jobStatus, jobLog )
         {
+            _Parameters = " -probesize 100M -analyzeduration 300M " + _Parameters; // We need to probe deeper into the files to get the correct audio / video track information else it can lead to incorrect channel information and failure
             _success = false; //ffmpeg looks for a +ve output so we have a false to begin with
         }
 

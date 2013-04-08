@@ -41,7 +41,7 @@ namespace MCEBuddy.Globals
             /// <summary>
             /// Duration of video in seconds
             /// </summary>
-            public float Duration = -1;
+            public float Duration = 0;
             /// <summary>
             /// Color space format
             /// </summary>
@@ -114,6 +114,10 @@ namespace MCEBuddy.Globals
             /// Audio PID for stream
             /// </summary>
             public int PID = -1; // PID for the stream
+            /// <summary>
+            /// Is this a visual / hearing impaired stream
+            /// </summary>
+            public bool Impaired = false; // This is a hearing/visual impaired stream
         }
 
         /// <summary>

@@ -17,6 +17,17 @@ namespace MCEBuddy.Util
             return Path.Combine(Path.GetDirectoryName(FileName), Path.GetFileNameWithoutExtension(FileName));
         }
 
+        public static bool IsIllegalFilePathChar(char filePathChar)
+        {
+            foreach (char lDisallowed in System.IO.Path.GetInvalidFileNameChars())
+            {
+                if ((filePathChar == lDisallowed) || (filePathChar == '[') || (filePathChar == ']')) // [ ] are used in INI section names and cannot be allowed in filenames
+                    return true;
+            }
+
+            return false;
+        }
+
         public static string RemoveIllegalFilePathChars(string filePath)
         {
             foreach (char lDisallowed in System.IO.Path.GetInvalidFileNameChars())
@@ -118,7 +129,7 @@ namespace MCEBuddy.Util
             bool returnMatch = false;
 
             // Check against wildcard -> file path regex
-            string wildcardRegex = pattern.ToLower();
+            string wildcardRegex = pattern;
             wildcardRegex = wildcardRegex.Replace("[video]", GlobalDefs.DEFAULT_VIDEO_FILE_TYPES);
             
             if (wildcardRegex.Contains("regex:")) // check if it's a RegEx pattern, then handle directly

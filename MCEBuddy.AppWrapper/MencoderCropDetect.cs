@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 
 using MCEBuddy.Globals;
 using MCEBuddy.Util;
@@ -13,6 +14,8 @@ namespace MCEBuddy.AppWrapper
         protected SortedList<string, int> _CropResults = new SortedList<string, int>();
         private int _cropHeight = -1;
         private int _cropWidth = -1;
+        private int _cropStartX = -1;
+        private int _cropStartY = -1;
         private string _cropString = "";
 
         public MencoderCropDetect(string sourceFile, string edlFile, ref JobStatus jobStatus, Log jobLog)
@@ -72,11 +75,12 @@ namespace MCEBuddy.AppWrapper
                     if (float.TryParse(StdOut.Substring(StartPos, EndPos - StartPos).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out perc))
                     {
                         _jobStatus.PercentageComplete = perc;
+                        UpdateETAByPercentageComplete();
                     }
                 }
                 
-                //Update ETA
-                if ((StdOut.Contains("Trem:")) && (StdOut.Contains("min")))
+                //Update ETA -- always 0
+                /*if ((StdOut.Contains("Trem:")) && (StdOut.Contains("min")))
                 {
                     string ETAStr = "";
                     for (int idx = StdOut.IndexOf("Trem:") + "Trem".Length + 1; idx < StdOut.Length - 1; idx++)
@@ -98,7 +102,7 @@ namespace MCEBuddy.AppWrapper
                     int Hours = ETAVal / 60;
                     int Minutes = ETAVal - (Hours * 60);
                     UpdateETA(Hours, Minutes, 0);
-                }
+                }*/
             }
         }
 
@@ -124,8 +128,25 @@ namespace MCEBuddy.AppWrapper
                     _cropString = BestCrop;
                     _cropWidth = int.Parse(BestCrop.Split(':')[0]);
                     _cropHeight = int.Parse(BestCrop.Split(':')[1]);
+                    _cropStartX = int.Parse(BestCrop.Split(':')[2]);
+                    _cropStartY = int.Parse(BestCrop.Split(':')[3]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns a crop string with the new values provided
+        /// </summary>
+        /// <param name="width">Cropped Height of video</param>
+        /// <param name="height">Cropped Width of video</param>
+        /// <param name="startX">Start from X</param>
+        /// <param name="startY">Start from Y</param>
+        /// <returns></returns>
+        public string GenerateCropString(int width, int height, int startX, int startY)
+        {
+            string ret = width.ToString(CultureInfo.InvariantCulture) + ":" + height.ToString(CultureInfo.InvariantCulture) + ":" + startX.ToString(CultureInfo.InvariantCulture) + ":" + startY.ToString(CultureInfo.InvariantCulture);
+
+            return ret;
         }
 
         public int CropHeight
@@ -136,6 +157,16 @@ namespace MCEBuddy.AppWrapper
         public int CropWidth
         {
             get { return _cropWidth; }
+        }
+
+        public int CropStartX
+        {
+            get { return _cropStartX; }
+        }
+
+        public int CropStartY
+        {
+            get { return _cropStartY; }
         }
 
         public string CropString

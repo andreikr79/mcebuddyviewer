@@ -280,7 +280,7 @@ namespace TagLib.Riff {
 					length --;
 				
 				result [i] = data
-					.ToString (StringType.UTF8, 0, length);
+					.ToString (StringType.Latin1, 0, length);
 			}
 			
 			return result;
@@ -500,7 +500,7 @@ namespace TagLib.Riff {
 					continue;
 				
 				ByteVector data = ByteVector.FromString (value,
-					StringType.UTF8);
+					StringType.Latin1);
 				data.Add (0);
 				l.Add (data);
 			}

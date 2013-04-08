@@ -46,6 +46,15 @@ namespace MCEBuddy.AppWrapper
                     _jobStatus.PercentageComplete = perc;
                     UpdateETAByPercentageComplete();
                 }
+
+                if (StdOut.Contains("Error importing"))
+                    _success = false;
+
+                if (StdOut.Contains("Error writing data (Invalid argument): -1 blocks to write but 0 blocks written"))
+                {
+                    _success = false;
+                    _unrecoverableError = true; // This is just going to hang forever in this loop, terminate the process
+                }
             }
         }
     }

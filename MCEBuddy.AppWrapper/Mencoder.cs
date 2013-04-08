@@ -49,6 +49,7 @@ namespace MCEBuddy.AppWrapper
                             _jobStatus.PercentageComplete = perc;
                     }
                 }
+
                 if ((StdOut.Contains("Trem:")) && (StdOut.Contains("min")))
                 {
                     string ETAStr = "";
@@ -68,9 +69,15 @@ namespace MCEBuddy.AppWrapper
                     }
                     int ETAVal = 0;
                     int.TryParse(ETAStr, out ETAVal);
-                    int Hours = ETAVal / 60;
-                    int Minutes = ETAVal - (Hours * 60);
-                    UpdateETA(Hours, Minutes, 0);
+
+                    if (ETAVal > 0) // sometimes it's zero in which case use by % instead
+                    {
+                        int Hours = ETAVal / 60;
+                        int Minutes = ETAVal - (Hours * 60);
+                        UpdateETA(Hours, Minutes, 0);
+                    }
+                    else
+                        UpdateETAByPercentageComplete();
                 }
 
                 if (_oldVersion) // Old Version of Mencoder uses a different output for success

@@ -84,7 +84,7 @@ namespace MCEBuddy.MetaData
         public const string Genre = "WM/Genre";
         /// <summary>The WM/Language attribute contains the language of the stream.</summary>
         public const string Language = "WM/Language";
-        /// <summary>The WM/Lyrics attribute contains the lyrics as a simple string.</summary>
+        /// <summary>The WM/Lyrics attribute contains the lyrics as a simple String.</summary>
         public const string Lyrics = "WM/Lyrics";
         /// <summary>The WM/Lyrics_Synchronised attribute contains lyrics synchronized to times in the file.</summary>
         public const string SynchronizedLyrics = "WM/Lyrics_Synchronised";
@@ -125,11 +125,11 @@ namespace MCEBuddy.MetaData
         /// <summary>Retrieves the string value of a metadata item.</summary>
         /// <param name="items">The collection of metadata items containing the item to be retrieved.</param>
         /// <param name="name">The name of the attribute value to be retrieved.</param>
-        /// <returns>The attribute value as a string.</returns>
+        /// <returns>The attribute value as a String.</returns>
         public static string GetMetadataItemAsString(IDictionary items, string name)
         {
             MetadataItem item = (MetadataItem)items[name];
-            if (item == null || item.Value == null) return string.Empty;
+            if (item == null || item.Value == null) return String.Empty;
             return item.Value.ToString().Trim();
         }
 
@@ -189,7 +189,7 @@ namespace MCEBuddy.MetaData
                 string subTitle = GetMetadataItemAsString(metadata, MetadataEditor.Subtitle);
                 if (!title.EndsWith(subTitle))
                 {
-                    title += (title.Length > 0 && subTitle.Length > 0 ? " - " : string.Empty) + subTitle;
+                    title += (title.Length > 0 && subTitle.Length > 0 ? " - " : String.Empty) + subTitle;
                 }
                 SetMetadataItemAsString(metadata, MetadataEditor.Title, title);
 

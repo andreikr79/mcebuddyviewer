@@ -8,17 +8,20 @@ namespace MCEBuddy.Util
 {
     public class FileIO
     {
-        public static void TryFileDelete(string FileName)
+        public static void TryFileDelete(string FileName, bool useRecycleBin=false)
         {
                 try
                 {
-                    File.Delete(FileName);
+                    if (useRecycleBin)
+                        Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(FileName, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                    else
+                        File.Delete(FileName);
                 }
                 catch { }
         }
 
         /// <summary>
-        /// When you have 2 files, and you want to replace the first file with the second file and delete the first
+        /// When you have 2 files move the second time to take the place of the first file and delete the first file
         /// </summary>
         /// <param name="FileName">First file</param>
         /// <param name="ReplacementFileName">Second File</param>

@@ -9,15 +9,13 @@ using System.Globalization;
 using MCEBuddy.AppWrapper;
 using MCEBuddy.Globals;
 using MCEBuddy.VideoProperties;
-
 using MCEBuddy.Util;
 
 namespace MCEBuddy.CommercialScan
 {
-    public class Remover
+    public class Remover : EDL
     {
         private string _convertedVideo;
-        private string _edlFile;
         private string _ext = "";
         private float _duration;
         private JobStatus _jobStatus;
@@ -27,9 +25,9 @@ namespace MCEBuddy.CommercialScan
         private bool _universalCommercialRemover = false;
 
         public Remover(string profile, string convertedVideo, string edlFile, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog)
+            : base(profile, convertedVideo, videoFile.Duration, edlFile, ref jobStatus, jobLog)
         {
             _videoFile = videoFile;
-            _edlFile = edlFile;
             _convertedVideo = convertedVideo;
             _ext = Util.FilePaths.CleanExt(_convertedVideo);
             _duration = _videoFile.Duration;
@@ -45,12 +43,12 @@ namespace MCEBuddy.CommercialScan
         }
 
         /// <summary>
-        /// Generic cutting algorithm for cutting any file type based on concat protocol specifications
+        /// Generic cutting algorithm for cutting any file type based on concat protocol specifications using FFMPEG
         /// </summary>
         /// <param name="filterAudioLanguage">Used to filter out a specific audio language while cutting the file. Primarily for TS file when used in pre-conversion cutting</param>
         private void CutFFMPEG(bool filterAudioLanguage=false)
         {
-            var cutList = new List<KeyValuePair<float, float>>();
+            List<KeyValuePair<float, float>> cutList = new List<KeyValuePair<float, float>>();
 
             // Read the EDL file and convert into cut structure
             if (!ParseEDLFile(ref cutList))
@@ -66,18 +64,16 @@ namespace MCEBuddy.CommercialScan
                 _jobLog.WriteEntry(this, Localise.GetPhrase("CutFFMPEG: Cutting commercials from video - segment ") + cutNumber.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
 
                 // Create the splits - reset success each time
-                FFmpeg cutFFmpeg = new FFmpeg("", ref _jobStatus, _jobLog);
-
                 string cutFileName = CutFileName(_convertedVideo, cut.Key, cut.Value);
-                cutFFmpeg.Parameters = " -y -threads 0";
+                string parameters = " -y -threads 0";
 
                 // http://ffmpeg.org/trac/ffmpeg/wiki/Seeking%20with%20FFmpeg - We use only FAST seek (since accurate seek cuts on a NON KeyFrame which causes Audio Sync Issues)
-                cutFFmpeg.Parameters += " -ss " + cut.Key.ToString(CultureInfo.InvariantCulture);
+                parameters += " -ss " + cut.Key.ToString(CultureInfo.InvariantCulture);
 
-                cutFFmpeg.Parameters += " -i " + Util.FilePaths.FixSpaces(_convertedVideo);
+                parameters += " -i " + Util.FilePaths.FixSpaces(_convertedVideo);
 
                 // how much to Cut
-                cutFFmpeg.Parameters += " -t " + (cut.Value - cut.Key).ToString(CultureInfo.InvariantCulture);
+                parameters += " -t " + (cut.Value - cut.Key).ToString(CultureInfo.InvariantCulture);
 
                 // If we are requested to filter out the selected audio language, check for it's existance and filter it
                 if (filterAudioLanguage)
@@ -85,19 +81,21 @@ namespace MCEBuddy.CommercialScan
                     if (_videoFile.AudioStream == -1)
                     {
                         _jobLog.WriteEntry("Cannot get audio stream selection details, copying all audio streams", Log.LogEntryType.Warning);
-                        cutFFmpeg.Parameters += " -map 0:a -map 0:v";
+                        parameters += " -map 0:a -map 0:v";
                     }
                     else
                     {
                         _jobLog.WriteEntry("Selecting Audio Language " + _videoFile.AudioLanguage + " Audio Stream " + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        cutFFmpeg.Parameters += " -map 0:" + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + " -map 0:v"; // Select the Audiotrack we had isolated earlier
+                        parameters += " -map 0:" + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + " -map 0:v"; // Select the Audiotrack we had isolated earlier
                     }
                 }
                 else
-                    cutFFmpeg.Parameters += " -map 0:a -map 0:v";
+                    parameters += " -map 0:a -map 0:v";
 
                 // Stream copy
-                cutFFmpeg.Parameters += " -vcodec copy -acodec copy " + Util.FilePaths.FixSpaces(cutFileName);
+                parameters += " -vcodec copy -acodec copy " + Util.FilePaths.FixSpaces(cutFileName);
+                
+                FFmpeg cutFFmpeg = new FFmpeg(parameters, ref _jobStatus, _jobLog);
                 cutFFmpeg.Run();
                 if (!cutFFmpeg.Success) // Don't check for % here since Comskip has a bug that gives EDL cut segments past the end of the file || _jobStatus.PercentageComplete < GlobObjects.ACCEPTABLE_COMPLETION) // each run resets this number or an error in the process
                 {
@@ -111,6 +109,7 @@ namespace MCEBuddy.CommercialScan
 
                     if (!cutFFmpeg.Success) //check of file is created, outputhandler reports success (Percentage not requires since Success is more accurate)
                     {
+                        CleanupCutFiles(filesFound); //Clean up cut files
                         _jobStatus.PercentageComplete = 0;
                         _jobStatus.ErrorMsg = "CutFFMPEG splitting video segments failed";
                         _jobLog.WriteEntry(this, Localise.GetPhrase("CutFFMPEG splitting video segments failed"), Log.LogEntryType.Error);
@@ -124,7 +123,7 @@ namespace MCEBuddy.CommercialScan
 
             if (cutNumber < 1)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.PercentageComplete = 100; //Set to success since sometime mp4box doesn't set to 100 if there no/incomplete pieces to strip
                 return;
             }
@@ -132,10 +131,10 @@ namespace MCEBuddy.CommercialScan
             // Create a text file with the list of all the files which need to be concatenated
             // http://ffmpeg.org/trac/ffmpeg/wiki/How%20to%20concatenate%20(join,%20merge)%20media%20files
             string concatFileList = "";
-            string concatFileName = Util.FilePaths.GetFullPathWithoutExtension(_convertedVideo) + "_ConcatList.txt";
+            string concatFileName = Util.FilePaths.GetFullPathWithoutExtension(_convertedVideo) + "_ConcatList.txt"; // Write file list to text
 
             foreach (string file in filesFound)
-                concatFileList += "file " + "'" + file + "'" + "\r\n"; // File paths are enclosed in single quotes
+                concatFileList += "file " + "'" + file.Replace("'", @"'\''") + "'" + "\r\n"; // File paths are enclosed in single quotes (compensate for ' in filenames with '\'')
 
             System.IO.File.WriteAllText(concatFileName, concatFileList); // write the text file
 
@@ -162,6 +161,7 @@ namespace MCEBuddy.CommercialScan
 
                 if (!ffmpegMerge.Success || (Util.FileIO.FileSize(tempFile) <= 0)) //check of file is created, outputhandler reports success (Percentage not requires since Success is more accurate)
                 {
+                    CleanupCutFiles(filesFound); //Clean up cut files
                     _jobStatus.PercentageComplete = 0;
                     _jobStatus.ErrorMsg = "CutFFMPEG merging video segments failed";
                     _jobLog.WriteEntry(this, Localise.GetPhrase("CutFFMPEG merging video segments failed"), Log.LogEntryType.Error); ;
@@ -175,16 +175,15 @@ namespace MCEBuddy.CommercialScan
 
             //Clean up cut files
             Util.FileIO.TryFileDelete(concatFileName);
-            foreach (string f in filesFound)
-            {
-                if (f != _convertedVideo)
-                    Util.FileIO.TryFileDelete(f);
-            }
+            CleanupCutFiles(filesFound); //Clean up cut files
         }
 
+        /// <summary>
+        /// Remove commercials from WMV files using ASFBin
+        /// </summary>
         private void CutWMV()
         {
-            var cutList = new List<KeyValuePair<float, float>>();
+            List<KeyValuePair<float, float>> cutList = new List<KeyValuePair<float, float>>();
 
             // Read the EDL file and convert into MP4Box cut structure
             if (!ParseEDLFile(ref cutList))
@@ -205,7 +204,7 @@ namespace MCEBuddy.CommercialScan
 
             if (cutNumber < 1)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.PercentageComplete = 100; //Set to success since sometime mp4box doesn't set to 100 if there no/incomplete pieces to strip
                 return;
             }
@@ -228,6 +227,10 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
         }
 
+        /// <summary>
+        /// Remove commercials using Mencoder for AVI, MPG and TS (not good for TS, last backup)
+        /// </summary>
+        /// <param name="filterTSAudioLanguage">True is want to filter out the audio language specified by the user while removing commercials from TS files only</param>
         private void CutMencoder(bool filterTSAudioLanguage=false)
         {
             string tempFile = Util.FilePaths.GetFullPathWithoutExtension(_convertedVideo) + "_CUT" + _ext;
@@ -245,7 +248,7 @@ namespace MCEBuddy.CommercialScan
                     // avoid using threads, as it may cause a problem - anyways we are only copying here
                     mencoderParams = Util.FilePaths.FixSpaces(_convertedVideo) + " -of mpeg -ovc copy -oac copy";
 
-                    mencoderParams += " -edl " + Util.FilePaths.FixSpaces(_edlFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
+                    mencoderParams += " -edl " + Util.FilePaths.FixSpaces(EDLFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
 
                     break;
                 
@@ -270,16 +273,16 @@ namespace MCEBuddy.CommercialScan
                         }
                     }
 
-                    mencoderParams += " -edl " + Util.FilePaths.FixSpaces(_edlFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
+                    mencoderParams += " -edl " + Util.FilePaths.FixSpaces(EDLFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
 
                     break;
 
                 case ".avi":
-                    // TODO: bug here for AVI files, using "-mc0 -noskip" helps initially but audio out of sync after cuts - need to figure out. Try the -ni (non interleaved) option for avi files
+                    // TODO: bug here for AVI files, using "-mc0 -noskip" helps initially but audio out of sync after cuts - need to figure out. Try the -ni (non interleaved) option for avi files, try -idx to rebuild index for audio video
                     // Do not use -hr-edl-seek as it doesn't work well with -ovc copy
                     // lavdopts supports a max of 8 threads
                     // avoid using thread to increase stability since we are only copying here
-                    mencoderParams = Util.FilePaths.FixSpaces(_convertedVideo) + " -oac copy -ovc copy -ni -edl " + Util.FilePaths.FixSpaces(_edlFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
+                    mencoderParams = Util.FilePaths.FixSpaces(_convertedVideo) + " -oac copy -ovc copy -ni -edl " + Util.FilePaths.FixSpaces(EDLFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
                     break;
 
                 default:
@@ -306,6 +309,9 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
         }
 
+        /// <summary>
+        /// Backup remove commercials from MP4 using MEncoder, not the best, limited in many ways
+        /// </summary>
         private void CutMP4Alternate()
         {
             string tempFile = CutFileName(_convertedVideo, 0, 0);
@@ -375,7 +381,7 @@ namespace MCEBuddy.CommercialScan
                     break;
             }
 
-            mencoderParams += " -edl " + Util.FilePaths.FixSpaces(_edlFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
+            mencoderParams += " -edl " + Util.FilePaths.FixSpaces(EDLFile) + " -o " + Util.FilePaths.FixSpaces(tempFile);
 
             _jobStatus.CurrentAction = Localise.GetPhrase("Merging commercial free segments into new video");
             _jobLog.WriteEntry(this, Localise.GetPhrase("CutMP4Alternate: Merging commercial free segments into new video"), Log.LogEntryType.Information);
@@ -394,17 +400,18 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
         }
 
+        /// <summary>
+        /// Remove commercials from MP4 files using MP4Box
+        /// </summary>
         private void CutMP4()
         {
-            var cutList = new List<KeyValuePair<float, float>>();
+            List<KeyValuePair<float, float>> cutList = new List<KeyValuePair<float, float>>();
 
             // Read the EDL file and convert into MP4Box cut structure
             if (!ParseEDLFile(ref cutList))
                 return;
 
             // Create the MP4 splits
-            MP4Box mp4Box = new MP4Box("", ref _jobStatus, _jobLog );
-
             //Setup the 'look for splits' variables
             string searchPattern = Path.GetFileNameWithoutExtension(_convertedVideo) + "*" + Path.GetExtension(_convertedVideo);
             string searchPath = Path.GetDirectoryName(_convertedVideo);
@@ -420,7 +427,8 @@ namespace MCEBuddy.CommercialScan
                 _jobLog.WriteEntry(this, Localise.GetPhrase("MP4Box: Cutting commercials from video - segment ") + cutNumber.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
                 string cutFileName = CutFileName(_convertedVideo, cut.Key, cut.Value);
                 Util.FileIO.TryFileDelete(cutFileName);
-                mp4Box.Parameters = " -splitx " + cut.Key.ToString(CultureInfo.InvariantCulture) + ":" + cut.Value.ToString(CultureInfo.InvariantCulture) + " " + Util.FilePaths.FixSpaces(_convertedVideo);
+                string Parameters = " -keep-all -keep-sys -splitx " + cut.Key.ToString(CultureInfo.InvariantCulture) + ":" + cut.Value.ToString(CultureInfo.InvariantCulture) + " " + Util.FilePaths.FixSpaces(_convertedVideo);
+                MP4Box mp4Box = new MP4Box(Parameters, ref _jobStatus, _jobLog);
                 mp4Box.Run();
                 if (!mp4Box.Success) // Don't check for % here since Comskip has a bug that gives EDL cut segments past the end of the file || _jobStatus.PercentageComplete < GlobObjects.ACCEPTABLE_COMPLETION) // each run resets this number or an error in the process
                 {
@@ -437,10 +445,10 @@ namespace MCEBuddy.CommercialScan
                 {
                     newFilesFound = Directory.GetFiles(searchPath, searchPattern).OrderBy(File.GetCreationTime); //put them back in the order they were split
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     _jobStatus.ErrorMsg = "MP4 Commercial cut failed trying to get list of file segments";
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("MP4 Commercial cut failed trying to get list of file segments"), Log.LogEntryType.Error);
+                    _jobLog.WriteEntry(this, Localise.GetPhrase("MP4 Commercial cut failed trying to get list of file segments") + "\r\nError : " + e.ToString(), Log.LogEntryType.Error);
                     _jobStatus.PercentageComplete = 0;
                     return;
                 }
@@ -452,14 +460,9 @@ namespace MCEBuddy.CommercialScan
                     {
                         // Build the merge cmd
                         if (cutNumber == 0)
-                        {
-                            mergeParams += " -add ";
-                        }
-                        else
-                        {
-                            mergeParams += " -cat ";
-                        }
-                        mergeParams += Util.FilePaths.FixSpaces(f);
+                            mergeParams += " -keep-all -keep-sys";
+
+                        mergeParams += " -cat " + Util.FilePaths.FixSpaces(f);
                         cutNumber++;
                         filesFound.Add(f);
                         _jobLog.WriteEntry(this, Localise.GetPhrase("MP4Box: Found a new segment to merge"), Log.LogEntryType.Information);
@@ -470,7 +473,7 @@ namespace MCEBuddy.CommercialScan
 
             if (cutNumber < 1)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.PercentageComplete = 100; //Set to success since sometime mp4box doesn't set to 100 if there no/incomplete pieces to strip
                 return;
             }
@@ -479,12 +482,15 @@ namespace MCEBuddy.CommercialScan
             string tempFile = Util.FilePaths.GetFullPathWithoutExtension(_convertedVideo) + "_MERGE" + _ext;
 
             mergeParams += " -new " + Util.FilePaths.FixSpaces(tempFile);
+            
             _jobStatus.CurrentAction = Localise.GetPhrase("Merging commercial free segments into new video");
             _jobLog.WriteEntry(this, Localise.GetPhrase("MP4Box: Merging commercial free segments into new video"), Log.LogEntryType.Information);
-            mp4Box.Parameters = mergeParams;
-            mp4Box.Run();
-            if (!mp4Box.Success || _jobStatus.PercentageComplete < GlobalDefs.ACCEPTABLE_COMPLETION || (Util.FileIO.FileSize(tempFile) <= 0)) // each run resets this number or an error in the procecss
+
+            MP4Box mp4BoxMerge = new MP4Box(mergeParams, ref _jobStatus, _jobLog);
+            mp4BoxMerge.Run();
+            if (!mp4BoxMerge.Success || _jobStatus.PercentageComplete < GlobalDefs.ACCEPTABLE_COMPLETION || (Util.FileIO.FileSize(tempFile) <= 0)) // each run resets this number or an error in the procecss
             {
+                CleanupCutFiles(filesFound); //Clean up cut files
                 _jobStatus.PercentageComplete = 0;
                 _jobStatus.ErrorMsg = "MP4Box merging video segments failed";
                 _jobLog.WriteEntry(this, Localise.GetPhrase("MP4Box merging video segments failed"), Log.LogEntryType.Error); ;
@@ -497,15 +503,15 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
 
             //Clean up cut files
-            foreach (string f in filesFound)
-            {
-                if (f != _convertedVideo) Util.FileIO.TryFileDelete(f);
-            }
+            CleanupCutFiles(filesFound);
         }
 
+        /// <summary>
+        /// Remove commercials from MKV files useing MKVMerge
+        /// </summary>
         private void CutMKV()
         {
-            var cutList = new List<KeyValuePair<float, float>>();
+            List<KeyValuePair<float, float>> cutList = new List<KeyValuePair<float, float>>();
             string tempFile = CutFileName(_convertedVideo, 0, 0);
 
             // Read the EDL file and convert into MKVMerge cut structure
@@ -513,14 +519,12 @@ namespace MCEBuddy.CommercialScan
                 return;
 
             // Create the MKV splits
-            MKVMerge mkvMerge = new MKVMerge("", ref _jobStatus, _jobLog);
-
             //Do the cuts and pick them up as we go
             int cutNumber = 0;
             IEnumerable<string> newFilesFound = new List<string>();
 
             // Build the list of timecodes to split into invidiual files
-            mkvMerge.Parameters = " --split parts:";
+            string Parameters = " --split parts:";
             foreach (KeyValuePair<float, float> cut in cutList)
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("CutMKV: Found commercials from video - segment") + " " + cutNumber.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
@@ -529,24 +533,25 @@ namespace MCEBuddy.CommercialScan
                 TimeSpan endCut = TimeSpan.FromSeconds(Convert.ToDouble(cut.Value.ToString(CultureInfo.InvariantCulture)));
 
                 if (cutNumber == 0)
-                    mkvMerge.Parameters += startCut.ToString() + "-" + endCut.ToString();
+                    Parameters += startCut.ToString() + "-" + endCut.ToString();
                 else
-                    mkvMerge.Parameters += ",+" + startCut.ToString() + "-" + endCut.ToString();
+                    Parameters += ",+" + startCut.ToString() + "-" + endCut.ToString();
 
                 cutNumber++;
             }
 
-            mkvMerge.Parameters += " " + Util.FilePaths.FixSpaces(_convertedVideo) + " -o " + Util.FilePaths.FixSpaces(tempFile);
+            Parameters += " " + Util.FilePaths.FixSpaces(_convertedVideo) + " -o " + Util.FilePaths.FixSpaces(tempFile);
 
             if (cutNumber < 1)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.PercentageComplete = 100; //Set to success since sometime mp4box doesn't set to 100 if there no/incomplete pieces to strip
                 return;
             }
 
             _jobStatus.CurrentAction = Localise.GetPhrase("Cutting commercials from video");
 
+            MKVMerge mkvMerge = new MKVMerge(Parameters, ref _jobStatus, _jobLog);
             mkvMerge.Run();
             if (!mkvMerge.Success || (Util.FileIO.FileSize(tempFile) <= 0)) // check for +ve success
             {
@@ -561,9 +566,14 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
         }
 
+        /// <summary>
+        /// Remove commercials from TS files using FFMPEG, AVIDemux and FFMPEG as backup
+        /// </summary>
+        /// <param name="filterTSAudioLanguage">True if you want to use the user selected language to filter out while cutting</param>
         private void CutTS(bool filterTSAudioLanguage)
         {
-            var cutList = new List<KeyValuePair<float, float>>();
+            bool selectedTSAudioSuccess = false; // have we successfully filtered the audio tracks
+            List<KeyValuePair<float, float>> cutList = new List<KeyValuePair<float, float>>();
             long totalSegmentSize = 0;
 
             // Read the EDL file and convert into cut structure
@@ -580,38 +590,39 @@ namespace MCEBuddy.CommercialScan
                 _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS: Cutting commercials from video - segment ") + cutNumber.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
 
                 // Create the splits - reset success each time
-                FFmpeg cutFFmpeg = new FFmpeg("", ref _jobStatus, _jobLog);
-
                 string cutFileName = CutFileName(_convertedVideo, cut.Key, cut.Value);
-                cutFFmpeg.Parameters = " -y -threads 0";
+                string Parameters = " -y -threads 0";
 
                 // http://ffmpeg.org/trac/ffmpeg/wiki/Seeking%20with%20FFmpeg - We use only FAST seek (since accurate seek cuts on a NON KeyFrame which causes Audio Sync Issues)
-                cutFFmpeg.Parameters += " -ss " + cut.Key.ToString(CultureInfo.InvariantCulture);
+                Parameters += " -ss " + cut.Key.ToString(CultureInfo.InvariantCulture);
 
-                cutFFmpeg.Parameters += " -i " + Util.FilePaths.FixSpaces(_convertedVideo);
+                Parameters += " -i " + Util.FilePaths.FixSpaces(_convertedVideo);
 
                 // how much to Cut
-                cutFFmpeg.Parameters += " -t " + (cut.Value - cut.Key).ToString(CultureInfo.InvariantCulture);
+                Parameters += " -t " + (cut.Value - cut.Key).ToString(CultureInfo.InvariantCulture);
 
                 // If we are requested to filter out the selected audio language, check for it's existance and filter it
-                if (filterTSAudioLanguage)
+                if (filterTSAudioLanguage && (_videoFile.FFMPEGStreamInfo.AudioTracks > 1))
                 {
                     if (_videoFile.AudioStream == -1)
                     {
                         _jobLog.WriteEntry("Cannot get audio stream selection details, copying all audio streams", Log.LogEntryType.Warning);
-                        cutFFmpeg.Parameters += " -map 0:a -map 0:v";
+                        Parameters += " -map 0:a -map 0:v";
                     }
                     else
                     {
                         _jobLog.WriteEntry("Selecting Audio Language " + _videoFile.AudioLanguage + " Audio Stream " + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        cutFFmpeg.Parameters += " -map 0:" + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + " -map 0:v"; // Select the Audiotrack we had isolated earlier
+                        Parameters += " -map 0:" + _videoFile.AudioStream.ToString(System.Globalization.CultureInfo.InvariantCulture) + " -map 0:v"; // Select the Audiotrack we had isolated earlier
+                        selectedTSAudioSuccess = true;
                     }
                 }
                 else
-                    cutFFmpeg.Parameters += " -map 0:a -map 0:v";
+                    Parameters += " -map 0:a -map 0:v";
 
                 // Stream copy
-                cutFFmpeg.Parameters += " -vcodec copy -acodec copy " + Util.FilePaths.FixSpaces(cutFileName);
+                Parameters += " -vcodec copy -acodec copy " + Util.FilePaths.FixSpaces(cutFileName);
+
+                FFmpeg cutFFmpeg = new FFmpeg(Parameters, ref _jobStatus, _jobLog);
                 cutFFmpeg.Run();
                 if (!cutFFmpeg.Success) // Don't check for % here since Comskip has a bug that gives EDL cut segments past the end of the file || _jobStatus.PercentageComplete < GlobObjects.ACCEPTABLE_COMPLETION) // each run resets this number or an error in the process
                 {
@@ -619,12 +630,13 @@ namespace MCEBuddy.CommercialScan
 
                     // Create the splits - reset success each time
                     // genpt is required sometimes when -ss is specified before the inputs file, see ffmpeg ticket #2054
-                    string Parameters = "-fflags +genpts " + cutFFmpeg.Parameters; // Save it
+                    Parameters = "-fflags +genpts " + cutFFmpeg.Parameters; // Save it
                     cutFFmpeg = new FFmpeg(Parameters, ref _jobStatus, _jobLog);
                     cutFFmpeg.Run();
 
                     if (!cutFFmpeg.Success) //check of file is created, outputhandler reports success (Percentage not requires since Success is more accurate)
                     {
+                        CleanupCutFiles(filesFound); //Clean up cut files
                         _jobStatus.PercentageComplete = 0;
                         _jobStatus.ErrorMsg = "CutTS splitting video segments failed";
                         _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS splitting video segments failed"), Log.LogEntryType.Error);
@@ -640,7 +652,7 @@ namespace MCEBuddy.CommercialScan
 
             if (cutNumber < 1)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("No commercials to remove from ") + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.PercentageComplete = 100; //Set to success since sometime mp4box doesn't set to 100 if there no/incomplete pieces to strip
                 return;
             }
@@ -662,9 +674,31 @@ namespace MCEBuddy.CommercialScan
             _jobStatus.CurrentAction = Localise.GetPhrase("Merging commercial free segments into new video");
             _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS: Merging commercial free segments into new video"), Log.LogEntryType.Information);
 
+            // Check if the converted file has more than 1 audio track, AVIDemux does not support merging files with > 1 audio track (it drops them randomly)
+            bool useFFMPEG = false;
+            FFmpegMediaInfo ffmpegStreamInfo = new FFmpegMediaInfo(_convertedVideo, ref _jobStatus, _jobLog);
+            ffmpegStreamInfo.Run();
+            if (!ffmpegStreamInfo.Success || ffmpegStreamInfo.ParseError)
+            {
+                CleanupCutFiles(filesFound); //Clean up cut files
+                _jobStatus.PercentageComplete = 0;
+                _jobStatus.ErrorMsg = "CutTS unable to get video info";
+                _jobLog.WriteEntry(this, _jobStatus.ErrorMsg, Log.LogEntryType.Error);
+                return;
+            }
+
             AVIDemux aviDemux = new AVIDemux(mergeParams, ref _jobStatus, _jobLog);
-            aviDemux.Run();
-            if(!aviDemux.Success || (Util.FileIO.FileSize(tempFile) < (GlobalDefs.MINIMUM_MERGED_FILE_THRESHOLD * totalSegmentSize)) || (totalSegmentSize <= 0)) // Check final merged file size as proxy, as there is not reliable way to check AVIDemux success
+
+            // If we have more than one audio track we should use FFMPEG instead of AVIDemux
+            if (ffmpegStreamInfo.AudioTracks <= 1 || selectedTSAudioSuccess) // If the source file has 1 audio track or if we have filtered the audio track while cutting the segements
+                aviDemux.Run(); // Run only if we have 1 or less audio tracks
+            else
+            {
+                _jobLog.WriteEntry(this, "More than 1 audio track detected in converted file, using FFMPEG instead of AVIDemux to merge tracks. There may be issues with the video at the merged segments", Log.LogEntryType.Warning);
+                useFFMPEG = true;
+            }
+
+            if(useFFMPEG || !aviDemux.Success || (Util.FileIO.FileSize(tempFile) < (GlobalDefs.MINIMUM_MERGED_FILE_THRESHOLD * totalSegmentSize)) || (totalSegmentSize <= 0)) // Check final merged file size as proxy, as there is not reliable way to check AVIDemux success
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS : Merged file size [KB] ") + (Util.FileIO.FileSize(tempFile) / 1024).ToString("N", CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                 _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS : Total Segements size [KB] ") + (totalSegmentSize / 1024).ToString("N", CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
@@ -676,13 +710,13 @@ namespace MCEBuddy.CommercialScan
                 string concatFileName = Util.FilePaths.GetFullPathWithoutExtension(_convertedVideo) + "_ConcatList.txt";
 
                 foreach (string file in filesFound)
-                    concatFileList += "file " + "'" + file + "'" + "\r\n"; // File paths are enclosed in single quotes
+                    concatFileList += "file " + "'" + file.Replace("'", @"'\''") + "'" + "\r\n"; // File paths are enclosed in single quotes, compensate for ' with '\'' in the filename
 
                 System.IO.File.WriteAllText(concatFileName, concatFileList); // write the text file
 
                 cutNumber = 0;
 
-                // Merge the files
+                // Merge the files using FFMPEG as a backup
                 mergeParams = "-y -f concat -i " + Util.FilePaths.FixSpaces(concatFileName) + " -vcodec copy -acodec copy -map a -map v " + Util.FilePaths.FixSpaces(tempFile); // Copy all Audio and Video streams
 
                 _jobStatus.CurrentAction = Localise.GetPhrase("Merging commercial free segments into new video");
@@ -702,6 +736,7 @@ namespace MCEBuddy.CommercialScan
 
                     if (!ffmpegMerge.Success || (Util.FileIO.FileSize(tempFile) <= 0)) //check of file is created, outputhandler reports success (Percentage not requires since Success is more accurate)
                     {
+                        CleanupCutFiles(filesFound); //Clean up cut files
                         _jobStatus.PercentageComplete = 0;
                         _jobStatus.ErrorMsg = "CutTS merging video segments failed";
                         _jobLog.WriteEntry(this, Localise.GetPhrase("CutTS merging video segments failed"), Log.LogEntryType.Error);
@@ -715,6 +750,16 @@ namespace MCEBuddy.CommercialScan
             Util.FileIO.TryFileReplace(_convertedVideo, tempFile);
 
             //Clean up cut files
+            CleanupCutFiles(filesFound);
+        }
+
+        /// <summary>
+        /// Clean up temporary file cut during the commercial removal process
+        /// </summary>
+        /// <param name="filesFound">List of files to delete</param>
+        private void CleanupCutFiles(List<string> filesFound)
+        {
+                        //Clean up cut files
             foreach (string f in filesFound)
             {
                 if (f != _convertedVideo)
@@ -723,80 +768,6 @@ namespace MCEBuddy.CommercialScan
                     Util.FileIO.TryFileDelete(f + ".idx2"); // Delete the IDX2 files also created by AVIDemux
                 }
             }
-        }
-
-        /// <summary>
-        /// Reads the EDL file and Parses the data into a KeyValuePair(float,float) list in the format: Start Time in seconds, End Time seconds
-        /// Each entry refers to the Start and End time of the video to KEEP
-        /// </summary>
-        /// <param name="cutList">Reference to KeyValue pair list to populate</param>
-        /// <returns>True if successful, false if there is an error (which is set in the JobStatus)</returns>
-        private bool ParseEDLFile(ref List<KeyValuePair<float, float>> cutList)
-        {
-            try
-            {
-                var edlS = new System.IO.StreamReader(_edlFile);
-                string line;
-                float lastCut = 0;
-                bool onlyHeadCut = false;
-                while ((line = edlS.ReadLine()) != null)
-                {
-                    string[] cuts = Regex.Split(line, @"\s+");
-                    if (cuts.Length == 3)
-                    {
-                        if (cuts[0] != cuts[1])
-                        {
-                            float cutStart, cutEnd;
-                            if ((float.TryParse(cuts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out cutStart)) && (float.TryParse(cuts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out cutEnd)))
-                            {
-                                if (cutEnd > cutStart)
-                                {
-                                    if (cutStart < 1)
-                                    {
-                                        lastCut = cutEnd;
-                                        onlyHeadCut = true; // Set this if we have a header to be cut
-                                        _jobLog.WriteEntry(this, Localise.GetPhrase("ParseEDL: Reading EDL file found entry at beginning to file") + " Start:" + lastCut.ToString(CultureInfo.InvariantCulture) + " Stop:" + cutStart.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                                    }
-                                    else if (cutStart > lastCut)
-                                    {
-                                        _jobLog.WriteEntry(this, Localise.GetPhrase("ParseEDL: Reading EDL file adding cut") + " Start:" + lastCut.ToString(CultureInfo.InvariantCulture) + " Stop:" + cutStart.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                                        cutList.Add(new KeyValuePair<float, float>(lastCut, cutStart));
-                                        lastCut = cutEnd;
-                                        onlyHeadCut = false; // we have a follow up cut
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                edlS.Close();
-                edlS.Dispose();
-                if (cutList.Count > 0 || onlyHeadCut) // check if we have just a head to be cut or more than 1 cut (the end needs to be cut)
-                {
-                    //Check for 0 file duration, since some .TS are not read by MediaInfo
-                    if (0 == _duration)
-                    {
-                        _jobStatus.ErrorMsg = "Parse EDL Failed, cannot read video length - set to 0";
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Parse EDL Failed, cannot read video length - set to 0"), Log.LogEntryType.Error);
-                        _jobStatus.PercentageComplete = 0;
-                        return false;
-                    }
-                    else
-                    {
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Parse EDL: Adding end cut") + " Start:" + lastCut.ToString(CultureInfo.InvariantCulture) + " Stop:" + _duration.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                        cutList.Add(new KeyValuePair<float, float>(lastCut, _duration));
-                    }
-                }
-            }
-            catch
-            {
-                _jobStatus.ErrorMsg = "Commercial Removal failed with EDL error";
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Commercial Removal failed with EDL error"), Log.LogEntryType.Error);
-                _jobStatus.PercentageComplete = 0;
-                return false;
-            }
-
-            return true;
         }
 
         /// <summary>
@@ -815,8 +786,9 @@ namespace MCEBuddy.CommercialScan
         /// Check if removing commercials for the specified extension is supported
         /// </summary>
         /// <param name="extension">Extension to check</param>
+        /// <param name="profile">Profile for which supported extensions for commercial removal is to be checked. If this is blank or null, then only natively supported extensions are checked and not those covered by generic commercial removal functions.</param>
         /// <returns>True if commercial stripping is support for the extension</returns>
-        public static bool IsSupportedExtension(string extension)
+        public static bool IsSupportedExtension(string extension, string profile="")
         {
             switch (extension)
             {
@@ -830,7 +802,16 @@ namespace MCEBuddy.CommercialScan
                     return true;
 
                 default:
-                    return false;
+                    if (string.IsNullOrWhiteSpace(profile)) // unknown profile
+                        return false; // Just the native supported extensions
+
+                    // If we are using the universal commercial remover, than yes ALL extensions are supported else, we use only native extensions
+                    Ini configProfileIni = new Ini(GlobalDefs.ProfileFile);
+                    bool universalCommercialRemover = configProfileIni.ReadBoolean(profile, "UniversalCommercialRemover", false); // Forcing the use of CutFFMPEG which works on all video types
+                    if (universalCommercialRemover)
+                        return true;
+                    else
+                        return false;
             }
         }
 
@@ -850,9 +831,9 @@ namespace MCEBuddy.CommercialScan
                 _jobStatus.ErrorMsg = "Strip Commercials file not found";
                 return;
             }
-            if (!File.Exists(_edlFile))
+            if (!File.Exists(EDLFile))
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("EDL file does not exist - no commercials found") + " " + _edlFile, Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, Localise.GetPhrase("EDL file does not exist - no commercials found") + " " + EDLFile, Log.LogEntryType.Information);
                 _jobStatus.ErrorMsg = "Strip commercial EDL file not found";
                 _jobStatus.PercentageComplete = 0;
                 return;

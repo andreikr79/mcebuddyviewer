@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Windows.Forms;
+using System.Globalization;
 
 using MCEBuddy.Engine;
 using MCEBuddy.Util;
@@ -39,6 +40,7 @@ namespace MCEBuddy.Engine
         volatile private ConversionJob[] _conversionJobs;
         private Util.PowerManagement.WakeUp _wakeUp;
         private bool _deleteOriginal = false;
+        private bool _useRecycleBin = false;
         private bool _archiveOriginal = false;
         private bool _allowSleep = true;
         private DateTime _lastUpdateCheck = DateTime.Now.AddDays(-1);
@@ -58,7 +60,7 @@ namespace MCEBuddy.Engine
             {
                 CreateExposedDirectory(GlobalDefs.ConfigPath); // Get admin access to the config directory so we can write to it
                 CreateExposedDirectory(GlobalDefs.LogPath); // Get admin access to the log directory so we can write to it
-                MCEBuddy.Util.FilePaths.CreateDir(GlobalDefs.LogPath); // Create log directory
+                CreateExposedDirectory(GlobalDefs.CachePath); // Artwork Cache
                 Log.AppLog = new Log(Log.LogDestination.LogFile, GlobalDefs.AppLogFile);
                 _updateCheck = new UpdateCheck(); // Create only instance of this and resuse, otherwise it fails due to embedded objects
                 MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(GlobalDefs.ConfigFile);
@@ -77,7 +79,7 @@ namespace MCEBuddy.Engine
             catch (Exception e)
             {
                 Log.AppLog.WriteEntry(this, "Unable to complete initialization of MCEBuddy Engine Core. Error: " + e.ToString(), Log.LogEntryType.Error, true); // This may or may not work depending upon whether the llog has been initialized otherwise it goes into NULL log
-                System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "Unable to complete initialization of MCEBuddy Engine Core. Error: " + e.ToString(), EventLogEntryType.Error);
+                Log.WriteSystemEventLog("Unable to complete initialization of MCEBuddy Engine Core. Error: " + e.ToString(), EventLogEntryType.Error);
                 throw e; // Continue throwing the exception so that the engine stops
             }
         }
@@ -158,6 +160,31 @@ namespace MCEBuddy.Engine
             Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
 
             return ret;
+        }
+
+        /// <summary>
+        /// Returns a List to that contains the Windows Event logs entries created by MCEBuddy
+        /// </summary>
+        public List<EventLogEntry> GetWindowsEventLogs()
+        {
+            List<EventLogEntry> retList = new List<EventLogEntry>();
+
+            try
+            {
+                EventLog eventLog = new EventLog("Application", ".", GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE);
+                foreach (EventLogEntry eventLogEntry in eventLog.Entries)
+                {
+                    if (eventLogEntry.Source == GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE)
+                        retList.Add(eventLogEntry);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.AppLog.WriteEntry(this, "Unable to get Event Log Entries", Log.LogEntryType.Error, true);
+                Log.AppLog.WriteEntry(this, "Error -> " + e.ToString(), Log.LogEntryType.Error, true);
+            }
+
+            return retList;
         }
 
         /// <summary>
@@ -585,7 +612,7 @@ namespace MCEBuddy.Engine
                 FPS = 0; // reset it
             }
 
-            FFmpegMediaInfo videoInfo = new FFmpegMediaInfo(videoFilePath, ref jobStatus, Log.AppLog);
+            FFmpegMediaInfo videoInfo = new FFmpegMediaInfo(videoFilePath, ref jobStatus, Log.AppLog, true); // cannot suspend during a UI request else it hangs
             videoInfo.Run();
             if (videoInfo.Success && !videoInfo.ParseError)
             {
@@ -623,8 +650,8 @@ namespace MCEBuddy.Engine
                 JobStatus jobStatus = new JobStatus();
                 MetaData.VideoMetaData metaData = new MetaData.VideoMetaData(file, true, ref jobStatus, Log.AppLog);
                 metaData.Extract(); // Extract and download show information
-                VideoInfo videoFile = new VideoInfo(file, ref jobStatus, Log.AppLog); // Get media properties
-                metaData.MCECreateXMLTags(file, file, videoFile); // source and target file name/directory are the same here
+                VideoInfo videoFile = new VideoInfo(file, ref jobStatus, Log.AppLog, true); // Get media properties, do not suspend since GUI will hang
+                metaData.WriteXBMCXMLTags(file, Path.GetDirectoryName(file), videoFile); // source and target file name/directory are the same here
             }
 
             return;
@@ -645,7 +672,7 @@ namespace MCEBuddy.Engine
                 }
                 catch (Exception e)
                 {
-                    System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "Unable to create directory during installation. Error:" + e.ToString(), EventLogEntryType.Error);
+                    Log.WriteSystemEventLog("Unable to create directory during installation. Error:" + e.ToString(), EventLogEntryType.Error);
                 }
             }
 
@@ -713,6 +740,7 @@ namespace MCEBuddy.Engine
             daysOfWeek = go.daysOfWeek.Split(',');
 
             _deleteOriginal = go.deleteOriginal;
+            _useRecycleBin = go.useRecycleBin;
             _archiveOriginal = go.archiveOriginal;
             _allowSleep = go.allowSleep;
 
@@ -729,13 +757,14 @@ namespace MCEBuddy.Engine
             Log.AppLog.WriteEntry(this, Localise.GetPhrase("Loaded MCEBuddy engine settings"), Log.LogEntryType.Debug, true);
             
             //Debug, dump all the settings to help with debugging
-            //Log.AppLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
-            //Log.AppLog.WriteEntry("Windows 64Bit -> " + Environment.Is64BitOperatingSystem.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            //Log.AppLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("Windows Platform -> " + (Environment.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
             string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            //Log.AppLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
-            //Log.AppLog.WriteEntry("Locale Language -> " + Localise.ThreeLetterISO().ToUpper(), Log.LogEntryType.Debug);
-            //Log.AppLog.WriteEntry(this, "MCEBuddy engine settings -> " + MCEBuddyConf.GlobalMCEConfig.ToString(), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("MCEBuddy Build Date : " + File.GetLastWriteTime(System.Reflection.Assembly.GetExecutingAssembly().Location).ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("Locale Language -> " + Localise.ThreeLetterISO().ToUpper(), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry(this, "MCEBuddy engine settings -> " + MCEBuddyConf.GlobalMCEConfig.ToString(), Log.LogEntryType.Debug);
         }
 
         /// <summary>
@@ -906,8 +935,7 @@ namespace MCEBuddy.Engine
             IEnumerable<string> foundFiles;
             try
             {
-                foundFiles = Directory.GetFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
-                //foundFiles = Directory.EnumerateFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
+                foundFiles = Directory.EnumerateFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
             }
             catch (Exception ex)
             {
@@ -935,10 +963,10 @@ namespace MCEBuddy.Engine
         /// </summary>
         private void UPnPMonitorThread()
         {
-            System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "MCEBuddy starting UPnP Monitor Thread", EventLogEntryType.Information);
+            Log.WriteSystemEventLog("MCEBuddy starting UPnP Monitor Thread", EventLogEntryType.Information);
 
             // Check/Enable UPnP - verbose
-            //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             try
             {
@@ -947,25 +975,25 @@ namespace MCEBuddy.Engine
                     Thread.Sleep(GlobalDefs.UPNP_POLL_PERIOD); // Wait for a while to repoll
 
                     // Check/Enable UPnP - non verbose
-                    //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
+                    UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
                 }
             }
             catch // Catch an Abort or Join
             {
                 // Disable UPnP Port Forwarding - verbose
-                //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+                UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
                 _uPnPCheckThread = null; // This thread is dead
-                System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "MCEBuddy exiting UPnP Monitor Thread - abort successful", EventLogEntryType.Information);
+                Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort successful", EventLogEntryType.Information);
                 return;
             }
 
             // Just incase the Abort or Join exception was not caught
             // Disable UPnP Port Forwarding - verbose
-            //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             _uPnPCheckThread = null; // This thread is dead
-            System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "MCEBuddy exiting UPnP Monitor Thread - abort Failed", EventLogEntryType.Information);
+            Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort Failed", EventLogEntryType.Information);
             return;
         }
 
@@ -1022,7 +1050,7 @@ namespace MCEBuddy.Engine
                         Monitor.Enter(_queueManager.Queue); //the lock is always on the jobQueue
                         _queueManager.ScanForFiles(); // Check for new files in the monitor folders
                         if (MCEBuddyConf.GlobalMCEConfig.GeneralOptions.deleteConverted) // check if converted files need to kept in sync with source files (deleted)
-                            _queueManager.SyncConvertedFiles();
+                            _queueManager.SyncConvertedFiles(_useRecycleBin);
                         Monitor.Exit(_queueManager.Queue);
 
                         // check for log files clean up
@@ -1049,10 +1077,21 @@ namespace MCEBuddy.Engine
                                     iniManualQueue.DeleteKey("ManualQueue", _conversionJobs[i].OriginalFileName);
                                 }
 
-                                // Delete/archive only if the conversion was successful and original marked for deletion and it is the last task for the job
-                                if ((_deleteOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1))
-                                    Util.FileIO.TryFileDelete(_conversionJobs[i].OriginalFileName);
-                                else if ((_archiveOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1))
+                                // Delete/archive only if the conversion was successful and original marked for deletion and it is the last task for the job and the original file and converted file don't have the same name+path (since it's been replaced already)
+                                if ((_deleteOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (_conversionJobs[i].OriginalFileName != _conversionJobs[i].ConvertedFile))
+                                {
+                                    // Delete the EDL, SRT, XML, NFO etc files also along with the original file if present
+                                    foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                    {
+                                        string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // support file
+
+                                        Util.FileIO.TryFileDelete(extFile, _useRecycleBin); // Delete support file
+                                    }
+
+                                    Util.FileIO.TryFileDelete(_conversionJobs[i].OriginalFileName, _useRecycleBin); // delete original file
+                                    Log.AppLog.WriteEntry(this, "Deleting original file " + _conversionJobs[i].OriginalFileName, Log.LogEntryType.Debug, true);
+                                }
+                                else if ((_archiveOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (_conversionJobs[i].OriginalFileName != _conversionJobs[i].ConvertedFile))
                                 {
                                     string pathName = Path.GetDirectoryName(_conversionJobs[i].OriginalFileName); //get the directory name
                                     if (!pathName.ToLower().Contains((string.IsNullOrEmpty(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath) ? GlobalDefs.MCEBUDDY_ARCHIVE.ToLower() : MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath.ToLower()))) //check if we are currently operating from the archive folder (manual queue), in which case don't archive
@@ -1064,11 +1103,21 @@ namespace MCEBuddy.Engine
 
                                         Util.FilePaths.CreateDir(archivePath); //create the sub-directory if required
                                         string newFilePath = Path.Combine(archivePath, Path.GetFileName(_conversionJobs[i].OriginalFileName));
-                                        
+
                                         Log.AppLog.WriteEntry(this, "Archiving original file " + _conversionJobs[i].OriginalFileName + " to Archive folder " + archivePath, Log.LogEntryType.Debug);
 
                                         try
                                         {
+                                            // Archive the EDL, SRT, XML, NFO etc files also along with the original file if present
+                                            foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                            {
+                                                string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // Saved support file
+
+                                                if (File.Exists(extFile))
+                                                    File.Move(extFile, Path.Combine(archivePath, Path.GetFileName(extFile)));
+                                            }
+
+                                            // Last file to move
                                             File.Move(_conversionJobs[i].OriginalFileName, newFilePath); //move the file into the archive folder
                                         }
                                         catch (Exception e)
@@ -1188,7 +1237,7 @@ namespace MCEBuddy.Engine
                 MCEBuddyConf.GlobalMCEConfig.UpdateGeneralOptions(go, true); // Write the stop engine settings, since it crashed
 
                 Log.AppLog.WriteEntry(this, "MCEBuddy Monitor Thread Crashed. Error: " + e.ToString(), Log.LogEntryType.Error, true); // This may or may not work depending upon whether the llog has been initialized otherwise it goes into NULL log
-                System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", "MCEBuddy Monitor Thread Crashed. Error: " + e.ToString(), EventLogEntryType.Error);
+                Log.WriteSystemEventLog("MCEBuddy Monitor Thread Crashed. Error: " + e.ToString(), EventLogEntryType.Error);
 
                 _monitorThread = null; // this thread is done
             }
@@ -1269,5 +1318,8 @@ namespace MCEBuddy.Engine
 
         [OperationContract]
         bool ShowAnalyzerInstalled();
+
+        [OperationContract]
+        List<EventLogEntry> GetWindowsEventLogs();
     }
 }

@@ -9,15 +9,16 @@ namespace MCEBuddy.Globals
     {
         public string Title = "";
         public string SubTitle = "";
-        public string SubTitleDescription = "";
+        public string Description = "";
         public string Network = "";
         public string[] Genres = null;
         public int Season = 0;
         public int Episode = 0;
         public string BannerFile = "";
         public string BannerURL = ""; 
-        public string movieId = "";
-        public string seriesId = "";
+        public string imdbMovieId = ""; // IMDB ID
+        public string movieDBMovieId = ""; // MovieDB ID
+        public string tvdbSeriesId = ""; // TVDB ID
         public bool IsMovie = false;
         public DateTime OriginalBroadcastDateTime = GlobalDefs.NO_BROADCAST_TIME;
         public DateTime RecordedDateTime = GlobalDefs.NO_BROADCAST_TIME;
@@ -28,7 +29,7 @@ namespace MCEBuddy.Globals
             string AllTags = "";
             AllTags += "Title: " + Title + "\n";
             AllTags += "SubTitle: " + SubTitle + "\n";
-            AllTags += "Description: " + SubTitleDescription + "\n";
+            AllTags += "Description: " + Description + "\n";
             AllTags += "Network: " + Network + "\n";
             AllTags += "Genres: "; 
             if (Genres != null)
@@ -44,8 +45,9 @@ namespace MCEBuddy.Globals
             AllTags += "Episode: " + Episode.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n";
             AllTags += "Banner: " + BannerFile + "\n";
             AllTags += "Banner URL: " + BannerURL + "\n";
-            AllTags += "MovieDB MovieId: " + movieId + "\n";
-            AllTags += "TVDB SeriesId: " + seriesId + "\n";
+            AllTags += "IMDB MovieId: " + imdbMovieId + "\n";
+            AllTags += "MovieDB MovieId: " + movieDBMovieId + "\n";
+            AllTags += "TVDB SeriesId: " + tvdbSeriesId + "\n";
             AllTags += "Is Show Movie: " + IsMovie.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n"; 
             AllTags += "OriginalBroadcastDateTime: " + OriginalBroadcastDateTime.ToLocalTime().ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\n";
             AllTags += "RecordedDateTime: " + RecordedDateTime.ToLocalTime().ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\n";

@@ -61,7 +61,7 @@ namespace MCEBuddy.MetaData
                     {
                         string tag;
                         tag = sr.ReadLine();
-                        while (!string.IsNullOrEmpty(tag))
+                        while (!String.IsNullOrEmpty(tag))
                         {
                             tagsForCopy.Add(tag);
                             tag = sr.ReadLine();

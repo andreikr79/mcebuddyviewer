@@ -25,6 +25,13 @@ namespace MCEBuddy.AppWrapper
             _duration = SecondsDuration; // Length of the video in seconds
         }
 
+        public Comskip(string Path, string Parameters, float SecondsDuration, ref JobStatus jobStatus, Log jobLog)
+            : base(false, Parameters, Path, ref jobStatus, jobLog)
+        {
+            _success = true; //output handlers don't look for any true, only false can be set by process issues
+            _duration = SecondsDuration; // Length of the video in seconds
+        }
+
         protected override void OutputHandler(object sendingProcess, System.Diagnostics.DataReceivedEventArgs ConsoleOutput)
         {
             string StdOut;

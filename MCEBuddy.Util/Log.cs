@@ -155,7 +155,6 @@ namespace MCEBuddy.Util
                     try
                     {
                         _logStream.WriteLine(logLines);
-                        //_logStream.Flush(); // Performance impact on Proc.StartInfo.RedirectStandardOutput not able to capture all inputs
                     }
                     catch (Exception)
                     {
@@ -173,6 +172,19 @@ namespace MCEBuddy.Util
             WriteEntry("", entryText, entryType);
         }
 
+        public void Flush()
+        {
+            if (_logStream != null)
+            {
+                try
+                {
+                    _logStream.Flush();
+                }
+                catch (Exception)
+                { }
+            }
+        }
+
         public void Close()
         {
             if (_logDestination == LogDestination.LogFile)
@@ -186,8 +198,7 @@ namespace MCEBuddy.Util
                         _logStream = null; //mark it out
                     }
                     catch (Exception)
-                    {
-                    }
+                    { }
                 }
             }
         }
@@ -196,6 +207,20 @@ namespace MCEBuddy.Util
         {
             WriteEntry(this, Localise.GetPhrase("Log Dispose function called..."), Log.LogEntryType.Warning);
             Close();
+        }
+
+        /// <summary>
+        /// Writes an entry to the event log but takes care of any exceptions (like source not found or permission issues)
+        /// </summary>
+        /// <param name="message">Message to write to log</param>
+        /// <param name="type">Type of message</param>
+        public static void WriteSystemEventLog(string message, EventLogEntryType type)
+        {
+            try
+            {
+                EventLog.WriteEntry(GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE, message, type);
+            }
+            catch { }
         }
     }
 
