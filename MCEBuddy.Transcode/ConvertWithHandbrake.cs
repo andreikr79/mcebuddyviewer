@@ -27,7 +27,7 @@ namespace MCEBuddy.Transcode
         {
             // Get the profile conversion width
             string scale = ParameterValue("-w");
-            if (!String.IsNullOrWhiteSpace(scale))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(scale))
                 return true;
             else
                 return false;
@@ -142,7 +142,7 @@ namespace MCEBuddy.Transcode
                         audioTrack++;
                 }
 
-                if (String.IsNullOrWhiteSpace(ParameterValue("-a"))) // don't override Audio track selection from profile
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(ParameterValue("-a"))) // don't override Audio track selection from profile
                     ParameterValueReplaceOrInsert("-a", audioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audiotrack we had isolated earlier (1st Audio track is 1, FFMPEGStreamInfo is 0 based)
                 else
                     _jobLog.WriteEntry(this, Localise.GetPhrase("User has specified Audio language selection in profile, continuing without Audio Language selection"), Log.LogEntryType.Warning);

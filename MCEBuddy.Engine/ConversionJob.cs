@@ -491,8 +491,10 @@ namespace MCEBuddy.Engine
             {
                 LogStatus(Localise.GetPhrase("Moving converted file to destination"), ref jobLog);
 
+                string destpath = Path.Combine(_conversionOptions.destinationPath, subDestinationPath);                                  
                 Util.FilePaths.CreateDir(Path.Combine(_conversionOptions.destinationPath, subDestinationPath)); // Create the destination directory path
-                string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                //string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                string _destinationFile = Path.Combine(destpath, Path.GetFileName(_convertedFile));
                 if (_destinationFile != _convertedFile) // If they are the same file, don't delete accidentally (TS to TS conversions in same directory are example)
                     Util.FileIO.TryFileDelete(_destinationFile); // Delete file in destination if it already exists
                 jobLog.WriteEntry(this, Localise.GetPhrase("Moving converted file") + " " + _convertedFile + " " + Localise.GetPhrase("to") + " " + _destinationFile, Log.LogEntryType.Information);
@@ -514,8 +516,10 @@ namespace MCEBuddy.Engine
                         
                         _conversionOptions.destinationPath = Path.GetDirectoryName(_originalFileName); // update the Destination Path to Source Path
 
+                        string destpath = Path.Combine(_conversionOptions.destinationPath, subDestinationPath);
                         Util.FilePaths.CreateDir(Path.Combine(_conversionOptions.destinationPath, subDestinationPath)); // Create the destination directory path
-                        string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                        //string _destinationFile = Path.Combine(_conversionOptions.destinationPath, subDestinationPath, Path.GetFileName(_convertedFile));
+                        string _destinationFile = Path.Combine(destpath, Path.GetFileName(_convertedFile));
                         if (_destinationFile != _convertedFile) // If they are the same file, don't delete accidentally (TS to TS conversions in same directory are example)
                             Util.FileIO.TryFileDelete(_destinationFile); // Delete file in destination if it already exists
                         jobLog.WriteEntry(this, Localise.GetPhrase("Moving converted file") + " " + _convertedFile + " " + Localise.GetPhrase("to") + " " + _destinationFile, Log.LogEntryType.Information);
@@ -578,7 +582,7 @@ namespace MCEBuddy.Engine
             //Debug, dump all the conversion parameter before starting to help with debugging
             jobLog.WriteEntry("Starting conversion - DEBUG MESSAGES", Log.LogEntryType.Debug);
             jobLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
-            jobLog.WriteEntry("Windows Platform -> " + (Environment.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
+            jobLog.WriteEntry("Windows Platform -> " + (MCEBuddy.Globals.GlobalDefs.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
             jobLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
             string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             jobLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
@@ -1039,7 +1043,7 @@ namespace MCEBuddy.Engine
                                     return;
                                 }
 
-                                if (!String.IsNullOrWhiteSpace(cc.SRTFile)) // If we have a valid SRT file
+                                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(cc.SRTFile)) // If we have a valid SRT file
                                 {
                                     if ((_commercialScan != null) && (!commercialSkipCut)) // Incase we asked not to cut the video, just create the EDL file, let us not cut the SRT files also
                                     {

@@ -88,7 +88,7 @@ namespace MCEBuddy.Transcode
             _videoParams = ini.ReadString(conversionOptions.profile, tool + "-video", "");
             _audioParams = ini.ReadString(conversionOptions.profile, tool + "-audio", "");
             _extension = _videoFile.Extension = ini.ReadString(conversionOptions.profile, tool + "-ext", "").ToLower().Trim();
-            if (string.IsNullOrWhiteSpace(_extension)) // Special case copy converter if there is no specified extension keep the original extension
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_extension)) // Special case copy converter if there is no specified extension keep the original extension
                 _extension = Path.GetExtension(SourceVideo);
             _remuxTo = _videoFile.RemuxTo = ini.ReadString(conversionOptions.profile, tool + "-remuxto", "").ToLower().Trim();
             _audioDelay = ini.ReadString(conversionOptions.profile, tool + "-audiodelay", "skip").ToLower().Trim();

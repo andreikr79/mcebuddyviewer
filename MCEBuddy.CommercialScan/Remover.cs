@@ -802,7 +802,7 @@ namespace MCEBuddy.CommercialScan
                     return true;
 
                 default:
-                    if (string.IsNullOrWhiteSpace(profile)) // unknown profile
+                    if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(profile)) // unknown profile
                         return false; // Just the native supported extensions
 
                     // If we are using the universal commercial remover, than yes ALL extensions are supported else, we use only native extensions

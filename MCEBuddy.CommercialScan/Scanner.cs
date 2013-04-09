@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using ShowAnalyzerLib;
+//using ShowAnalyzerLib;
 
 using MCEBuddy.Globals;
 using MCEBuddy.Util;
@@ -36,122 +36,122 @@ namespace MCEBuddy.CommercialScan
             _convOptions = conversionOptions;
 
             _customComskipPath = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.comskipPath;
-            if (!String.IsNullOrWhiteSpace(_customComskipPath))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_customComskipPath))
                 _jobLog.WriteEntry(this, "Using Custom Comskip Path -> " + MCEBuddyConf.GlobalMCEConfig.GeneralOptions.comskipPath, Log.LogEntryType.Information);
         }
 
         private void ScanWithSA()
         {
-            bool isSuspended = false;
+            //bool isSuspended = false;
 
-            try
-            {
-                _jobStatus.PercentageComplete = 0; //reset
-                _jobStatus.ETA = "";
+            //try
+            //{
+            //    _jobStatus.PercentageComplete = 0; //reset
+            //    _jobStatus.ETA = "";
 
-                int _HangPeriod = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.hangTimeout; // Default period to detect hang due to no output activity on console - 300 seconds
-                double _lastPercentage = 0;
+            //    int _HangPeriod = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.hangTimeout; // Default period to detect hang due to no output activity on console - 300 seconds
+            //    double _lastPercentage = 0;
 
-                ShowAnalyzerLib.ShowAnalyzer sa = new ShowAnalyzer();
-                string fileId = "";
-                DateTime _LastTick = DateTime.Now; ;
+            //    ShowAnalyzerLib.ShowAnalyzer sa = new ShowAnalyzer();
+            //    string fileId = "";
+            //    DateTime _LastTick = DateTime.Now; ;
 
 
-                sa.AnalyzeFile(_videoFileName, "", ref fileId);
-                //sa.ChangePriority(fileId, (int) GlobObjects.Priority); // set the priority to match the users's selection - not implemented yet, throwing exception
-                bool completed = false;
-                double percentage = 0;
-                string status;
-                while (!completed)
-                {
-                    if (_jobStatus.Cancelled)
-                    {
-                        //Cancel the running process to release file lock and free processor
-                        sa.Abort(fileId);
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Cancelled ShowAnalyzer, file ->") + " " + _videoFileName, Log.LogEntryType.Error);
-                        Util.FileIO.TryFileDelete(EDLFilePath()); // Delete the EDL file since that is used to determine success
-                        break;
-                    }
+            //    sa.AnalyzeFile(_videoFileName, "", ref fileId);
+            //    //sa.ChangePriority(fileId, (int) GlobObjects.Priority); // set the priority to match the users's selection - not implemented yet, throwing exception
+            //    bool completed = false;
+            //    double percentage = 0;
+            //    string status;
+            //    while (!completed)
+            //    {
+            //        if (_jobStatus.Cancelled)
+            //        {
+            //            //Cancel the running process to release file lock and free processor
+            //            sa.Abort(fileId);
+            //            _jobLog.WriteEntry(this, Localise.GetPhrase("Cancelled ShowAnalyzer, file ->") + " " + _videoFileName, Log.LogEntryType.Error);
+            //            Util.FileIO.TryFileDelete(EDLFilePath()); // Delete the EDL file since that is used to determine success
+            //            break;
+            //        }
 
-                    sa.GetStatus(fileId, out percentage, out status);
-                    _jobStatus.PercentageComplete = (float)(100 * percentage);
+            //        sa.GetStatus(fileId, out percentage, out status);
+            //        _jobStatus.PercentageComplete = (float)(100 * percentage);
 
-                    if (status == "done")
-                    {
-                        break;
-                    }
+            //        if (status == "done")
+            //        {
+            //            break;
+            //        }
 
-                    if (!isSuspended && GlobalDefs.Suspend) // Check if process has to be suspended (if not already)
-                    {
-                        sa.Pause(fileId); // Suspend it
-                        _jobLog.Flush(); // Flush the buffers
-                        isSuspended = true;
-                    }
+            //        if (!isSuspended && GlobalDefs.Suspend) // Check if process has to be suspended (if not already)
+            //        {
+            //            sa.Pause(fileId); // Suspend it
+            //            _jobLog.Flush(); // Flush the buffers
+            //            isSuspended = true;
+            //        }
 
-                    if (isSuspended && !GlobalDefs.Suspend) // Check if we need to resume the process
-                    {
-                        isSuspended = false;
-                        sa.Resume(fileId); // Resume it
-                    }
+            //        if (isSuspended && !GlobalDefs.Suspend) // Check if we need to resume the process
+            //        {
+            //            isSuspended = false;
+            //            sa.Resume(fileId); // Resume it
+            //        }
 
-                    if (isSuspended) _LastTick = DateTime.Now; // Since during suspension there will be no output it shouldn't terminate the process
+            //        if (isSuspended) _LastTick = DateTime.Now; // Since during suspension there will be no output it shouldn't terminate the process
 
-                    // Check if Showanalyzer has hung
-                    if (_lastPercentage != percentage) // It has progressed
-                    {
-                        if (_HangPeriod > 0) _LastTick = DateTime.Now;
-                    }
-                    else
-                    {
-                        if ((_HangPeriod > 0) && (DateTime.Now > _LastTick.AddSeconds(_HangPeriod)))
-                        {
-                            _jobLog.WriteEntry(Localise.GetPhrase("No response from process for ") + _HangPeriod + Localise.GetPhrase(" seconds, process likely hung - killing it"), Log.LogEntryType.Error);
-                            sa.Abort(fileId); // Kill it
-                            Util.FileIO.TryFileDelete(EDLFilePath()); // Delete the EDL file since that is used to determine success
-                            break;
-                        }
-                    }
+            //        // Check if Showanalyzer has hung
+            //        if (_lastPercentage != percentage) // It has progressed
+            //        {
+            //            if (_HangPeriod > 0) _LastTick = DateTime.Now;
+            //        }
+            //        else
+            //        {
+            //            if ((_HangPeriod > 0) && (DateTime.Now > _LastTick.AddSeconds(_HangPeriod)))
+            //            {
+            //                _jobLog.WriteEntry(Localise.GetPhrase("No response from process for ") + _HangPeriod + Localise.GetPhrase(" seconds, process likely hung - killing it"), Log.LogEntryType.Error);
+            //                sa.Abort(fileId); // Kill it
+            //                Util.FileIO.TryFileDelete(EDLFilePath()); // Delete the EDL file since that is used to determine success
+            //                break;
+            //            }
+            //        }
 
-                    _lastPercentage = percentage; // track the last percentage
-                    System.Threading.Thread.Sleep(100);
-                }
+            //        _lastPercentage = percentage; // track the last percentage
+            //        System.Threading.Thread.Sleep(100);
+            //    }
 
-                // Release the COM object and clean up otherwise it hangs later
-                try
-                {
-                    sa.RemoveItemFromQueue(fileId);
-                }
-                catch { }
+            //    // Release the COM object and clean up otherwise it hangs later
+            //    try
+            //    {
+            //        sa.RemoveItemFromQueue(fileId);
+            //    }
+            //    catch { }
 
-                sa = null;
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-            catch (Exception Ex)
-            {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("ShowAnalyzer failed, file ->") + " " + _videoFileName, Log.LogEntryType.Error);
-                _jobLog.WriteEntry(this, "Error -> " + Ex.ToString(), Log.LogEntryType.Debug);
-            }
+            //    sa = null;
+            //    GC.Collect();
+            //    GC.WaitForPendingFinalizers();
+            //}
+            //catch (Exception Ex)
+            //{
+            //    _jobLog.WriteEntry(this, Localise.GetPhrase("ShowAnalyzer failed, file ->") + " " + _videoFileName, Log.LogEntryType.Error);
+            //    _jobLog.WriteEntry(this, "Error -> " + Ex.ToString(), Log.LogEntryType.Debug);
+            //}
         }
 
         public static bool ShowAnalyzerInstalled()
         {
-            try
-            {
-                ShowAnalyzerLib.ShowAnalyzer sa = new ShowAnalyzer();
-                string reg = sa.GetRegistrationInfo();
-                // TODO check for unregistered use - fail
+            //try
+            //{
+            //    ShowAnalyzerLib.ShowAnalyzer sa = new ShowAnalyzer();
+            //    string reg = sa.GetRegistrationInfo();
+            //    // TODO check for unregistered use - fail
                 
-                // Release the COM object and clean up otherwise it hangs later
-                sa = null;
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                return true;
-            }
-            catch
-            {
+            //    // Release the COM object and clean up otherwise it hangs later
+            //    sa = null;
+            //    GC.Collect();
+            //    GC.WaitForPendingFinalizers();
+            //    return true;
+            //}
+            //catch
+            //{
                 return false;
-            }
+            //}
         }
 
         private void ScanWithComskip()
@@ -179,7 +179,7 @@ namespace MCEBuddy.CommercialScan
             Comskip comskip;
             
             // Check for custom version of Comskip path
-            if (!String.IsNullOrWhiteSpace(_customComskipPath))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_customComskipPath))
                 comskip = new Comskip(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.comskipPath, parameters, mediaInfo.MediaInfo.VideoInfo.Duration, ref _jobStatus, _jobLog); // Use custom comskip
             else
                 comskip = new Comskip(parameters, mediaInfo.MediaInfo.VideoInfo.Duration, ref _jobStatus, _jobLog, false); // By default use the new version or custom path

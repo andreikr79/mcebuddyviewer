@@ -167,7 +167,7 @@ namespace MCEBuddy.Engine
         {
             LatestVersion latestVersion;
 
-            if (Environment.Is64BitProcess) // if 64 bit process (not OS) then return x64 version else x86 version
+            if (MCEBuddy.Globals.GlobalDefs.Is64BitProcess) // if 64 bit process (not OS) then return x64 version else x86 version
             {
                 int x64Start = pageOutput.IndexOf("Latest Version:x64");
                 string x64VersionCode = pageOutput.Substring(x64Start, (pageOutput.IndexOf(":EOV", x64Start) - x64Start + 4));
