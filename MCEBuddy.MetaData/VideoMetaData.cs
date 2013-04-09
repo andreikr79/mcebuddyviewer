@@ -82,7 +82,7 @@ namespace MCEBuddy.MetaData
                 }
             }
 
-            if (String.IsNullOrWhiteSpace(_videoTags.Title))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("No recording meta data can be extracted, using Title extracted from file name. If you are running MCEBuddy on a Windows Server, this is normal as the Media Center filters are not available on that platfom."), Log.LogEntryType.Warning);
                 
@@ -124,7 +124,7 @@ namespace MCEBuddy.MetaData
         /// </summary>
         private void DownloadSeriesDetails()
         {
-            if ((_downloadSeriesDetails) && (!String.IsNullOrWhiteSpace(_videoTags.Title)))
+            if ((_downloadSeriesDetails) && (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)))
             {
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Downloading Series details"), Log.LogEntryType.Information);
 
@@ -256,11 +256,11 @@ namespace MCEBuddy.MetaData
                 else // Try to copy as many attributes as possible if the source is not WTV or DVRMS
                 {
                     sourceAttrs = new Hashtable();
-                    if (!String.IsNullOrWhiteSpace(_videoTags.Title)) sourceAttrs.Add("Title", new MetadataItem("Title", _videoTags.Title, DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.SubTitle)) sourceAttrs.Add("WM/SubTitle", new MetadataItem("WM/SubTitle", _videoTags.SubTitle, DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.Description)) sourceAttrs.Add("WM/SubTitleDescription", new MetadataItem("WM/SubTitleDescription", _videoTags.Description, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)) sourceAttrs.Add("Title", new MetadataItem("Title", _videoTags.Title, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) sourceAttrs.Add("WM/SubTitle", new MetadataItem("WM/SubTitle", _videoTags.SubTitle, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description)) sourceAttrs.Add("WM/SubTitleDescription", new MetadataItem("WM/SubTitleDescription", _videoTags.Description, DirectShowLib.SBE.StreamBufferAttrDataType.String));
                     if (_videoTags.Genres != null) if (_videoTags.Genres.Length > 0) sourceAttrs.Add("WM/Genre", new MetadataItem("WM/Genre", _videoTags.Genres[0], DirectShowLib.SBE.StreamBufferAttrDataType.String));
-                    if (!String.IsNullOrWhiteSpace(_videoTags.Network)) sourceAttrs.Add("WM/MediaStationName", new MetadataItem("WM/MediaStationName", _videoTags.Network, DirectShowLib.SBE.StreamBufferAttrDataType.String));
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network)) sourceAttrs.Add("WM/MediaStationName", new MetadataItem("WM/MediaStationName", _videoTags.Network, DirectShowLib.SBE.StreamBufferAttrDataType.String));
                     if (_videoTags.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) sourceAttrs.Add("WM/MediaOriginalBroadcastDateTime", new MetadataItem("WM/MediaOriginalBroadcastDateTime", _videoTags.OriginalBroadcastDateTime.ToString("s") + "Z", DirectShowLib.SBE.StreamBufferAttrDataType.String)); // It is stored a UTC value, we just need to add "Z" at the end to indicate it
                     if (_videoTags.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) sourceAttrs.Add("WM/WMRVEncodeTime", new MetadataItem("WM/WMRVEncodeTime", _videoTags.RecordedDateTime.Ticks, DirectShowLib.SBE.StreamBufferAttrDataType.QWord));
                     sourceAttrs.Add("WM/MediaIsMovie", new MetadataItem("WM/MediaIsMovie", _videoTags.IsMovie, DirectShowLib.SBE.StreamBufferAttrDataType.Bool));
@@ -486,7 +486,7 @@ namespace MCEBuddy.MetaData
 
             string tivoMetaParams = "";
 
-            if (String.IsNullOrWhiteSpace(_tivoMAKKey))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_tivoMAKKey))
             {
                 _jobLog.WriteEntry(this, "No TiVO MAK key found, cannot extract TiVO Metadata", Log.LogEntryType.Error);
                 return false;
@@ -548,15 +548,15 @@ namespace MCEBuddy.MetaData
                     while (Itr.MoveNext())
                     {
                         string showType = XML.GetXMLTagValue("showType", Itr.Current.OuterXml);
-                        if (!String.IsNullOrWhiteSpace(showType))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(showType))
                             if (showType.ToLower().Contains("movie"))
                                 _videoTags.IsMovie = true;
                         string movieYear = XML.GetXMLTagValue("movieYear", Itr.Current.OuterXml).ToLower().Trim();
-                        if (!String.IsNullOrWhiteSpace(movieYear)) // Use the movie year to set the original broadcast date as YYYY-05-05 (mid year to avoid timezone issues)
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(movieYear)) // Use the movie year to set the original broadcast date as YYYY-05-05 (mid year to avoid timezone issues)
                             DateTime.TryParse(movieYear + "-05-05", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out _videoTags.OriginalBroadcastDateTime);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("title", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("episodeTitle", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("description", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("title", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("episodeTitle", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("description", Itr.Current.OuterXml);
                         if (_videoTags.Genres == null) _videoTags.Genres = XML.GetXMLSubTagValues("vProgramGenre", "element", Itr.Current.OuterXml);
                         if (_videoTags.OriginalBroadcastDateTime <= GlobalDefs.NO_BROADCAST_TIME)
                         {
@@ -607,12 +607,12 @@ namespace MCEBuddy.MetaData
                     XPathNodeIterator Itr = Nav.Select(Exp);
                     while (Itr.MoveNext())
                     {
-                        if (String.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("Title", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("SubTitle", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("Description", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("Title", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("SubTitle", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("Description", Itr.Current.OuterXml);
                         if (_videoTags.Episode == 0) int.TryParse(XML.GetXMLTagValue("EpisodeNumber", Itr.Current.OuterXml), out _videoTags.Episode);
                         if (_videoTags.Season == 0) int.TryParse(XML.GetXMLTagValue("SeriesNumber", Itr.Current.OuterXml), out _videoTags.Season);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Network)) _videoTags.Network = XML.GetXMLTagValue("ChannelDisplayName", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network)) _videoTags.Network = XML.GetXMLTagValue("ChannelDisplayName", Itr.Current.OuterXml);
                         if (_videoTags.RecordedDateTime <= GlobalDefs.NO_BROADCAST_TIME)
                         {
                             string recordedDateTime = XML.GetXMLTagValue("RecordingStartTime", Itr.Current.OuterXml);
@@ -662,10 +662,10 @@ namespace MCEBuddy.MetaData
                     XPathNodeIterator Itr = Nav.Select(Exp);
                     while (Itr.MoveNext())
                     {
-                        if (String.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("title", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("subtitle", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("description", Itr.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(_videoTags.Network)) _videoTags.Network = XML.GetXMLTagValue("channel", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title)) _videoTags.Title = XML.GetXMLTagValue("title", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) _videoTags.SubTitle = XML.GetXMLTagValue("subtitle", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description)) _videoTags.Description = XML.GetXMLTagValue("description", Itr.Current.OuterXml);
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network)) _videoTags.Network = XML.GetXMLTagValue("channel", Itr.Current.OuterXml);
                         if (_videoTags.Episode == 0) int.TryParse(XML.GetXMLTagValue("episode", Itr.Current.OuterXml), out _videoTags.Episode);
                         if (_videoTags.Season == 0) int.TryParse(XML.GetXMLTagValue("season", Itr.Current.OuterXml), out _videoTags.Season);
                         if (_videoTags.Genres == null) _videoTags.Genres = XML.GetXMLSubTagValues("genres", "genre", Itr.Current.OuterXml);
@@ -728,19 +728,19 @@ namespace MCEBuddy.MetaData
                         CurrValue = XML.GetXMLTagValue("value", Itr.Current.OuterXml);
                         if ((CurrName != "") & (CurrValue != "") & (CurrValue != "-"))
                         {
-                            if ((CurrName.ToLower() == "title") && (String.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue;
-                            else if ((CurrName.ToLower() == "seriesname") && (String.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // sometimes it is stores as series name
-                            else if ((CurrName.ToLower() == "origname") && (String.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // If this isn't a series, check if it's a movie (use original name is possible)
-                            else if ((CurrName.ToLower() == "moviename") && (String.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // Last chance use localized name
+                            if ((CurrName.ToLower() == "title") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue;
+                            else if ((CurrName.ToLower() == "seriesname") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // sometimes it is stores as series name
+                            else if ((CurrName.ToLower() == "origname") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // If this isn't a series, check if it's a movie (use original name is possible)
+                            else if ((CurrName.ToLower() == "moviename") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))) _videoTags.Title = CurrValue; // Last chance use localized name
 
-                            if ((CurrName.ToLower() == "episodename") && (String.IsNullOrWhiteSpace(_videoTags.SubTitle))) _videoTags.SubTitle = CurrValue;
-                            else if ((CurrName.ToLower() == "tagline") && (String.IsNullOrWhiteSpace(_videoTags.SubTitle))) _videoTags.SubTitle = CurrValue; // movies info is stores in tagline
+                            if ((CurrName.ToLower() == "episodename") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle))) _videoTags.SubTitle = CurrValue;
+                            else if ((CurrName.ToLower() == "tagline") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle))) _videoTags.SubTitle = CurrValue; // movies info is stores in tagline
 
-                            if ((CurrName.ToLower() == "comment") && (String.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue;
-                            else if ((CurrName.ToLower() == "tagline") && (String.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue; // movies info is stores in tagline
-                            else if ((CurrName.ToLower() == "storyplot") && (String.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue; // sometimes info is stores in story plot
+                            if ((CurrName.ToLower() == "comment") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue;
+                            else if ((CurrName.ToLower() == "tagline") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue; // movies info is stores in tagline
+                            else if ((CurrName.ToLower() == "storyplot") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description))) _videoTags.Description = CurrValue; // sometimes info is stores in story plot
 
-                            if ((CurrName.ToLower() == "channel_name") && (String.IsNullOrWhiteSpace(_videoTags.Network)))
+                            if ((CurrName.ToLower() == "channel_name") && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network)))
                                 _videoTags.Network = CurrValue;
 
                             if (CurrName.ToLower() == "genre")
@@ -787,7 +787,7 @@ namespace MCEBuddy.MetaData
                         // Read the artwork
                         TagLib.File file = TagLib.File.Create(_videoFileName);
                         TagLib.IPicture pic = file.Tag.Pictures[0];  //pic contains data for image.
-                        if (pic != null && !String.IsNullOrWhiteSpace(_videoTags.Title))
+                        if (pic != null && !MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Title))
                         {
                             _jobLog.WriteEntry(this, "Trying to extract Artwork from file", Log.LogEntryType.Information);
                             using (MemoryStream stream = new MemoryStream(pic.Data.Data))  //create an in memory stream
@@ -872,7 +872,7 @@ namespace MCEBuddy.MetaData
                         RiffTag.Disc = (uint)_videoTags.Season;
                         RiffTag.Track = (uint)_videoTags.Episode;
                         RiffTag.SetValue("ISFT", "MCEBuddy2x"); // Software
-                        if (!String.IsNullOrWhiteSpace(_videoTags.BannerFile))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.BannerFile))
                         {
                             TagLib.Picture VideoPicture = new TagLib.Picture(_videoTags.BannerFile);
                             RiffTag.Pictures = new TagLib.Picture[] { VideoPicture };
@@ -895,7 +895,7 @@ namespace MCEBuddy.MetaData
                         AsfTag.SetDescriptorString(_videoTags.OriginalBroadcastDateTime.ToString("s") + "Z", "WM/MediaOriginalBroadcastDateTime");
                         AsfTag.SetDescriptors("WM/WMRVEncodeTime", new TagLib.Asf.ContentDescriptor("WM/WMRVEncodeTime", (ulong)_videoTags.RecordedDateTime.Ticks));
 
-                        if (!String.IsNullOrWhiteSpace(_videoTags.BannerFile))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.BannerFile))
                         {
                             TagLib.Picture VideoPicture = new TagLib.Picture(_videoTags.BannerFile);
                             AsfTag.Pictures = new TagLib.Picture[] { VideoPicture };
@@ -905,7 +905,7 @@ namespace MCEBuddy.MetaData
                     case ".mp3":
                         _jobLog.WriteEntry(this, "Write Tags: MP3 file detected using ID3v2", Log.LogEntryType.Information);
                         TagLib.Id3v2.Tag MP3Tag = NewTagFile.GetTag(TagLib.TagTypes.Id3v2) as TagLib.Id3v2.Tag;
-                        if (!String.IsNullOrWhiteSpace(_videoTags.SubTitle))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle))
                             MP3Tag.Title = _videoTags.SubTitle;
                         else
                             MP3Tag.Title = _videoTags.Title;
@@ -914,7 +914,7 @@ namespace MCEBuddy.MetaData
                         MP3Tag.Genres = _videoTags.Genres;
                         MP3Tag.Disc = (uint)_videoTags.Season;
                         MP3Tag.Track = (uint)_videoTags.Episode;
-                        if (!String.IsNullOrWhiteSpace(_videoTags.BannerFile))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.BannerFile))
                         {
                             TagLib.Picture VideoPicture = new TagLib.Picture(_videoTags.BannerFile);
                             MP3Tag.Pictures = new TagLib.Picture[] { VideoPicture };
@@ -930,7 +930,7 @@ namespace MCEBuddy.MetaData
                         NewTagFile.Tag.Genres = _videoTags.Genres;
                         NewTagFile.Tag.Disc = (uint)_videoTags.Season;
                         NewTagFile.Tag.Track = (uint)_videoTags.Episode;
-                        if (!String.IsNullOrWhiteSpace(_videoTags.BannerFile))
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.BannerFile))
                         {
                             TagLib.Picture VideoPicture = new TagLib.Picture(_videoTags.BannerFile);
                             NewTagFile.Tag.Pictures = new TagLib.Picture[] { VideoPicture };
@@ -976,21 +976,21 @@ namespace MCEBuddy.MetaData
             if (_videoTags.IsMovie == false || _videoTags.Season != 0) // TV show
             {
                     cmdLine += " --TVShowName " + Util.FilePaths.FixSpaces(_videoTags.Title) + " --stik \"TV Show\"";
-                    if (!String.IsNullOrWhiteSpace(_videoTags.SubTitle)) cmdLine += " --TVEpisode " + Util.FilePaths.FixSpaces(_videoTags.SubTitle);
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.SubTitle)) cmdLine += " --TVEpisode " + Util.FilePaths.FixSpaces(_videoTags.SubTitle);
                     if (_videoTags.Season > 0) cmdLine += " --TVSeasonNum " + Util.FilePaths.FixSpaces(_videoTags.Season.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     if (_videoTags.Episode > 0) cmdLine += " --TVEpisodeNum " + Util.FilePaths.FixSpaces(_videoTags.Episode.ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
             else
                 cmdLine += " --stik \"Movie\"";
 
-            if (!String.IsNullOrWhiteSpace(_videoTags.Network))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Network))
                 cmdLine += " --TVNetwork " + Util.FilePaths.FixSpaces(_videoTags.Network);
 
             if (_videoTags.Genres != null)
                 if (_videoTags.Genres.Length > 0) // Check if number of elements is > 0, check for null does not work snice sometimes there is a null array present
                     cmdLine += " --genre " + Util.FilePaths.FixSpaces(_videoTags.Genres[0]);
 
-            if (!String.IsNullOrWhiteSpace(_videoTags.Description))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_videoTags.Description))
             {
                 cmdLine += " --description " + Util.FilePaths.FixSpaces(_videoTags.Description);
                 cmdLine += " --longdesc " + Util.FilePaths.FixSpaces(_videoTags.Description);                
@@ -1055,7 +1055,7 @@ namespace MCEBuddy.MetaData
             if (!File.Exists(targetFile))
                 return false;
 
-            if (String.IsNullOrWhiteSpace(xmlChapterFile) && String.IsNullOrWhiteSpace(neroChapterFile) && String.IsNullOrWhiteSpace(srtFile)) // Atleast one file should be there to proceeed
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(xmlChapterFile) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(neroChapterFile) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(srtFile)) // Atleast one file should be there to proceeed
                 return true; // nothing to do
 
             if ((FileIO.FileSize(xmlChapterFile) <= 0) && (FileIO.FileSize(neroChapterFile) <= 0) && (FileIO.FileSize(srtFile) < 0)) // Atleast one file should be valid to proceeed
@@ -1134,15 +1134,15 @@ namespace MCEBuddy.MetaData
         {
             try
             {
-                if (!String.IsNullOrWhiteSpace(videoTags.BannerFile))
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.BannerFile))
                 {
-                    if ((!File.Exists(videoTags.BannerFile)) && (!String.IsNullOrWhiteSpace(bannerUrl)))
+                    if ((!File.Exists(videoTags.BannerFile)) && (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(bannerUrl)))
                     {
                         Util.Internet.WGet(bannerUrl, videoTags.BannerFile);
                         if (File.Exists(videoTags.BannerFile))
                             videoTags.BannerURL = bannerUrl;
                     }
-                    else if (!String.IsNullOrWhiteSpace(bannerUrl) && String.IsNullOrWhiteSpace(videoTags.BannerURL))
+                    else if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(bannerUrl) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.BannerURL))
                         videoTags.BannerURL = bannerUrl;
                 }
             }

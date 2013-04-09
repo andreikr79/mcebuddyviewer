@@ -31,11 +31,11 @@ namespace MCEBuddy.MetaData
             // ******************
             try
             {
-                if (!String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // If we have a specific IMDB movieId specified, look up the movie details on TVDB
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // If we have a specific IMDB movieId specified, look up the movie details on TVDB
                 {
                     Xp = new XPathDocument("http://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid=" + videoTags.imdbMovieId);
                 }
-                else if (!String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) // If we have a specific TVDB seriesId specified, look up the series details
+                else if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) // If we have a specific TVDB seriesId specified, look up the series details
                 {
                     // First try to match by Episode name, many time broadcasters mess up the Original Broadcast date or TVDB has the wrong date (user submitted)
                     if (MatchByEpisodeName(ref videoTags, videoTags.tvdbSeriesId) == true)
@@ -70,7 +70,7 @@ namespace MCEBuddy.MetaData
                 if (String.Compare(seriesTitle.ToLower().Trim(), videoTags.Title.ToLower().Trim(), CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) != 0)
                     continue; // Name mismatch
 
-                if (String.IsNullOrWhiteSpace(seriesID)) continue; // can't do anything without seriesID
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(seriesID)) continue; // can't do anything without seriesID
 
                 // First try to match by Episode name, many time broadcasters mess up the Original Broadcast date or TVDB has the wrong date (user submitted)
                 if (MatchByEpisodeName(ref videoTags, seriesID) == true)
@@ -134,9 +134,9 @@ namespace MCEBuddy.MetaData
                 bannerUrl = XML.GetXMLTagValue("banner", ItrS.Current.OuterXml);
                 imdbID = XML.GetXMLTagValue("IMDB_ID", ItrS.Current.OuterXml);
                 string genreValue = XML.GetXMLTagValue("Genre", ItrS.Current.OuterXml);
-                if (!String.IsNullOrWhiteSpace(genreValue))
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(genreValue))
                     foreach (string genre in genreValue.Split('|'))
-                        if (!String.IsNullOrWhiteSpace(genre)) genres.Add(genre);
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(genre)) genres.Add(genre);
 
                 // Get the Episode information
                 XpS = new XPathDocument(queryUrl);
@@ -160,7 +160,7 @@ namespace MCEBuddy.MetaData
                     if (firstAired.Date == dt.Date) // TVDB only reports the date not the time
                     {
                         episodeName = XML.GetXMLTagValue("EpisodeName", ItrS.Current.OuterXml);
-                        if (String.IsNullOrWhiteSpace(episodeName))
+                        if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(episodeName))
                             return false; // WRONG series, if there is no name we're in the incorrect series (probably wrong country)
 
                         int.TryParse(XML.GetXMLTagValue("SeasonNumber", ItrS.Current.OuterXml), out seasonNo);
@@ -174,11 +174,11 @@ namespace MCEBuddy.MetaData
 
                         if ((episodeNo != 0) && (videoTags.Episode == 0)) videoTags.Episode = episodeNo;
                         if ((seasonNo != 0) && (videoTags.Season == 0)) videoTags.Season = seasonNo;
-                        if (!String.IsNullOrWhiteSpace(episodeName) && String.IsNullOrWhiteSpace(videoTags.SubTitle)) videoTags.SubTitle = episodeName;
-                        if (!String.IsNullOrWhiteSpace(episodeOverview) && String.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
-                            else if (!String.IsNullOrWhiteSpace(overview) && (String.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
-                        if (!String.IsNullOrWhiteSpace(seriesID) && String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
-                        if (!String.IsNullOrWhiteSpace(imdbID) && String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(episodeName) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.SubTitle)) videoTags.SubTitle = episodeName;
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(episodeOverview) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
+                            else if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(overview) && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(seriesID) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(imdbID) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
                         if (genres.Count > 0)
                         {
                             if (videoTags.Genres != null)
@@ -204,7 +204,7 @@ namespace MCEBuddy.MetaData
         private static bool MatchByEpisodeName(ref VideoTags videoTags, string seriesID)
         {
 
-            if (String.IsNullOrWhiteSpace(videoTags.SubTitle))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.SubTitle))
                 return false; //Nothing to match here
 
             // **************************************
@@ -240,9 +240,9 @@ namespace MCEBuddy.MetaData
                     bannerUrl = XML.GetXMLTagValue("banner", ItrS.Current.OuterXml);
                     imdbID = XML.GetXMLTagValue("IMDB_ID", ItrS.Current.OuterXml);
                     string genreValue = XML.GetXMLTagValue("Genre", ItrS.Current.OuterXml);
-                    if (!String.IsNullOrWhiteSpace(genreValue))
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(genreValue))
                         foreach (string genre in genreValue.Split('|'))
-                            if (!String.IsNullOrWhiteSpace(genre)) genres.Add(genre);
+                            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(genre)) genres.Add(genre);
 
                     // Get the episode information
                     XpS = new XPathDocument(queryUrl);
@@ -259,7 +259,7 @@ namespace MCEBuddy.MetaData
                 while (ItrS.MoveNext())
                 {
                     episodeName = XML.GetXMLTagValue("EpisodeName", ItrS.Current.OuterXml);
-                    if (!String.IsNullOrWhiteSpace(episodeName))
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(episodeName))
                     {
 
                         if (String.Compare(videoTags.SubTitle.Trim().ToLower(), episodeName.Trim().ToLower(), CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) == 0) // Compare the episode names (case / special characters / whitespace can change very often)
@@ -275,10 +275,10 @@ namespace MCEBuddy.MetaData
 
                             if ((episodeNo != 0) && (videoTags.Episode == 0)) videoTags.Episode = episodeNo;
                             if ((seasonNo != 0) && (videoTags.Season == 0)) videoTags.Season = seasonNo;
-                            if (!String.IsNullOrWhiteSpace(episodeOverview) && String.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
-                            else if (!String.IsNullOrWhiteSpace(overview) && (String.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
-                            if (!String.IsNullOrWhiteSpace(seriesID) && String.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
-                            if (!String.IsNullOrWhiteSpace(imdbID) && String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
+                            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(episodeOverview) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.Description)) videoTags.Description = episodeOverview;
+                            else if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(overview) && (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.Description))) videoTags.Description = overview;
+                            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(seriesID) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.tvdbSeriesId)) videoTags.tvdbSeriesId = seriesID;
+                            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(imdbID) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.imdbMovieId)) videoTags.imdbMovieId = imdbID;
                             if (genres.Count > 0)
                             {
                                 if (videoTags.Genres != null)

@@ -758,7 +758,7 @@ namespace MCEBuddy.Engine
             
             //Debug, dump all the settings to help with debugging
             Log.AppLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
-            Log.AppLog.WriteEntry("Windows Platform -> " + (Environment.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("Windows Platform -> " + (MCEBuddy.Globals.GlobalDefs.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
             Log.AppLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
             string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
             Log.AppLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
@@ -935,7 +935,8 @@ namespace MCEBuddy.Engine
             IEnumerable<string> foundFiles;
             try
             {
-                foundFiles = Directory.EnumerateFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
+                //foundFiles = Directory.EnumerateFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
+                foundFiles = Directory.GetFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
             }
             catch (Exception ex)
             {
@@ -966,7 +967,7 @@ namespace MCEBuddy.Engine
             Log.WriteSystemEventLog("MCEBuddy starting UPnP Monitor Thread", EventLogEntryType.Information);
 
             // Check/Enable UPnP - verbose
-            UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             try
             {
@@ -975,13 +976,13 @@ namespace MCEBuddy.Engine
                     Thread.Sleep(GlobalDefs.UPNP_POLL_PERIOD); // Wait for a while to repoll
 
                     // Check/Enable UPnP - non verbose
-                    UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
+                    //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
                 }
             }
             catch // Catch an Abort or Join
             {
                 // Disable UPnP Port Forwarding - verbose
-                UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+                //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
                 _uPnPCheckThread = null; // This thread is dead
                 Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort successful", EventLogEntryType.Information);
@@ -990,7 +991,7 @@ namespace MCEBuddy.Engine
 
             // Just incase the Abort or Join exception was not caught
             // Disable UPnP Port Forwarding - verbose
-            UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             _uPnPCheckThread = null; // This thread is dead
             Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort Failed", EventLogEntryType.Information);

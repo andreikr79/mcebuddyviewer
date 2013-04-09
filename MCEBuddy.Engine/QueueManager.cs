@@ -122,7 +122,7 @@ namespace MCEBuddy.Engine
                 conversionTask.sourceVideo = filePath;
 
                 // Monitor Task name matching if not empty
-                if (!String.IsNullOrWhiteSpace(monitorTaskName) && (conversionTask.monitorTaskNames != null))
+                if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(monitorTaskName) && (conversionTask.monitorTaskNames != null))
                 {
                     bool foundMatch = false;
                     foreach (string matchMonitorTaskName in conversionTask.monitorTaskNames)
@@ -149,7 +149,7 @@ namespace MCEBuddy.Engine
                 }
 
                 // Filename pattern match from conversion task
-                if ((Util.FilePaths.WildcardVideoMatch(Path.GetFileName(filePath), conversionTask.fileSelection)) || (String.IsNullOrWhiteSpace(conversionTask.fileSelection))) // only add files that match the conversion task file pattern or have a blanket file pattern
+                if ((Util.FilePaths.WildcardVideoMatch(Path.GetFileName(filePath), conversionTask.fileSelection)) || (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(conversionTask.fileSelection))) // only add files that match the conversion task file pattern or have a blanket file pattern
                 {
                     Log.AppLog.WriteEntry(this, Localise.GetPhrase("Added new job to queue for") + " " + filePath, Log.LogEntryType.Debug, true);
                     ConversionJob job = new ConversionJob(conversionTask);
@@ -247,7 +247,7 @@ namespace MCEBuddy.Engine
                 IEnumerable<string> foundFiles = null;
                 try
                 {
-                    foundFiles = Directory.EnumerateFiles(monitorTask.searchPath, "*.*", (monitorTask.monitorSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time when scanning and adding (oldest to newest)
+                    foundFiles = Directory.GetFiles(monitorTask.searchPath, "*.*", (monitorTask.monitorSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time when scanning and adding (oldest to newest)
                 }
                 catch (Exception ex)
                 {
@@ -303,7 +303,7 @@ namespace MCEBuddy.Engine
         /// <param name="filePath">File name with complete path to scan recursively up the parent chain of directories</param>
         private void DeleteParentDirectoryChainIfEmpty(string filePath)
         {
-            if (String.IsNullOrWhiteSpace(filePath))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(filePath))
                 return;
 
             if (!Directory.Exists(Path.GetDirectoryName(filePath)))
@@ -311,7 +311,7 @@ namespace MCEBuddy.Engine
 
             try
             {
-                if (Directory.EnumerateFiles(Path.GetDirectoryName(filePath), "*.*", SearchOption.TopDirectoryOnly).ToList<string>().Count == 0) // there are no files in the directory
+                if (Directory.GetFiles(Path.GetDirectoryName(filePath), "*.*", SearchOption.TopDirectoryOnly).ToList<string>().Count == 0) // there are no files in the directory
                 {
                     Log.AppLog.WriteEntry(this, "Deleting directory " + Path.GetDirectoryName(filePath), Log.LogEntryType.Debug);
                     Directory.Delete(Path.GetDirectoryName(filePath)); // Delete the directory
@@ -337,7 +337,7 @@ namespace MCEBuddy.Engine
                 IEnumerable<string> foundFiles = null;
                 try
                 {
-                    foundFiles = Directory.EnumerateFiles(monitorTask.searchPath, "*.*", (monitorTask.monitorSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)); // We sort the files by last modified time when scanning and adding (get all files for now)
+                    foundFiles = Directory.GetFiles(monitorTask.searchPath, "*.*", (monitorTask.monitorSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)); // We sort the files by last modified time when scanning and adding (get all files for now)
                 }
                 catch (Exception ex)
                 {

@@ -52,7 +52,7 @@ namespace MCEBuddy.Transcode
         {
             // Get the profile conversion width
             string scale = ParameterSubValue("-vf", "scale");
-            if (!String.IsNullOrWhiteSpace(scale))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(scale))
                 return true;
             else
                 return false;
@@ -194,7 +194,7 @@ namespace MCEBuddy.Transcode
                 _jobLog.WriteEntry(this, Localise.GetPhrase("Cannot get Audio and Video stream details, continuing with default Audio Language selection"), Log.LogEntryType.Warning);
             else
             {
-                if (String.IsNullOrWhiteSpace(ParameterValue("-aid")))
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(ParameterValue("-aid")))
                     ParameterValueReplaceOrInsert("-aid", (_videoFile.AudioPID).ToString(System.Globalization.CultureInfo.InvariantCulture)); // Select the Audio track PID we had isolated earlier
                 else
                     _jobLog.WriteEntry(this, Localise.GetPhrase("User has specified Audio language selection in profile, continuing without Audio Language selection"), Log.LogEntryType.Warning);

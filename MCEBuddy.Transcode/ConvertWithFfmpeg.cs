@@ -27,7 +27,7 @@ namespace MCEBuddy.Transcode
         {
             // Get the profile conversion width
             string scale = ParameterSubValue("-vf", "scale");
-            if (!String.IsNullOrWhiteSpace(scale))
+            if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(scale))
                 return true;
             else
                 return false;

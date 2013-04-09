@@ -22,7 +22,7 @@ namespace MCEBuddy.MetaData
 
             try
             {
-                if (String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // If dont' have a specific movieId specified, look up the movie details
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // If dont' have a specific movieId specified, look up the movie details
                 {
                     if (videoTags.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME)
                     {
@@ -49,14 +49,14 @@ namespace MCEBuddy.MetaData
                 {
                     // Get and match Movie name
                     string movieName = XML.GetXMLTagValue("original_name", Itr.Current.OuterXml);
-                    if (String.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // Match names only if the movie imdb id is not forced, else take what is returned by moviedb
+                    if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.imdbMovieId)) // Match names only if the movie imdb id is not forced, else take what is returned by moviedb
                     {
                         if (String.Compare(movieName.ToLower().Trim(), videoTags.Title.ToLower().Trim(), CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols) != 0) // ignore white space and special characters
                             continue; // No match in name
 
                         videoTags.imdbMovieId = XML.GetXMLTagValue("imdb_id", Itr.Current.OuterXml); // since IMDB movie is not forced, get it here
                     }
-                    else if (!String.IsNullOrWhiteSpace(movieName)) // make sure there is actually something returned here otherwise use default title
+                    else if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(movieName)) // make sure there is actually something returned here otherwise use default title
                         videoTags.Title = movieName; // Take what is forced for the imdb movie id
 
                     // Get Movie Id
@@ -66,7 +66,7 @@ namespace MCEBuddy.MetaData
 
                     // Get Overview
                     string overview = XML.GetXMLTagValue("overview", Itr.Current.OuterXml);
-                    if (!String.IsNullOrWhiteSpace(overview) && String.IsNullOrWhiteSpace(videoTags.Description))
+                    if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(overview) && MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(videoTags.Description))
                         videoTags.Description = overview;
 
                     // Get original release date
@@ -86,7 +86,7 @@ namespace MCEBuddy.MetaData
                     while (ItrG.MoveNext())
                     {
                         string genre = ItrG.Current.GetAttribute("name", "");
-                        if (!String.IsNullOrWhiteSpace(genre)) genres.Add(genre);
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(genre)) genres.Add(genre);
                     }
                     if (genres.Count > 0)
                     {
@@ -106,7 +106,7 @@ namespace MCEBuddy.MetaData
                     while (ItrI.MoveNext())
                     {
                         bannerUrl = ItrI.Current.GetAttribute("url", "");
-                        if (!String.IsNullOrWhiteSpace(bannerUrl)) break;
+                        if (!MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(bannerUrl)) break;
                     }
 
                     // Download the banner file

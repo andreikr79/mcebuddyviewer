@@ -194,7 +194,7 @@ namespace MCEBuddy.RemuxMediaCenter
             string tivoRemuxParams = "";
             string mpgFile = Path.Combine(_destinationPath, Path.GetFileNameWithoutExtension(_RecordingFile) + ".mpg"); // Intermediate file from TiVODecode
 
-            if (String.IsNullOrWhiteSpace(_tivoMAKKey))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_tivoMAKKey))
             {
                 _jobLog.WriteEntry(this, "No TiVO MAK key found", Log.LogEntryType.Error);
                 _jobStatus.ErrorMsg = "No TiVO MAK key found";
@@ -348,7 +348,7 @@ namespace MCEBuddy.RemuxMediaCenter
             // First try to copy all the streams directly (read parmeters for copy profile)
             string baseRemuxParams = configProfileIni.ReadString(profile, "Remux", "");
 
-            if (String.IsNullOrWhiteSpace(baseRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(baseRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
             {
                 _jobLog.WriteEntry(Localise.GetPhrase("DVRMS Remuxing disabled in config file, no parameters"), Log.LogEntryType.Error);
                 Util.FileIO.TryFileDelete(RemuxedFile);
@@ -645,7 +645,7 @@ namespace MCEBuddy.RemuxMediaCenter
                     // First try to copy all the streams directly (read parmeters for copy profile)
                     string copyRemuxParams = configProfileIni.ReadString(profile, "CopyRemux" + profileCount.ToString(CultureInfo.InvariantCulture), "");
 
-                    if (String.IsNullOrWhiteSpace(copyRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
+                    if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(copyRemuxParams)) // Have we used up all the CopyRemux profiles, then we're done here - try something else
                         break;
 
                     // Some files have zero channel audio tracks in them, if so then copying all audio track will fails
@@ -671,7 +671,7 @@ namespace MCEBuddy.RemuxMediaCenter
                     // Now try to copy audio and transcode video (read parameters for Slow Remux profile)
                     string slowRemuxParams = configProfileIni.ReadString(profile, "SlowRemux"+profileCount.ToString(CultureInfo.InvariantCulture), "");
 
-                    if (String.IsNullOrWhiteSpace(slowRemuxParams)) // Have we used up all the SlowRemux profiles, then we're done here
+                    if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(slowRemuxParams)) // Have we used up all the SlowRemux profiles, then we're done here
                         break;
 
                     // Some files have zero channel audio tracks in them, if so then copying all audio track will fails
@@ -707,7 +707,7 @@ namespace MCEBuddy.RemuxMediaCenter
             _jobLog.WriteEntry("Audio Delay : " + audioDelay.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
             string vcodec = VideoProperties.RawFile.VideoFormat(_extract.VideoPart).ToLower();
-            if (String.IsNullOrWhiteSpace(vcodec))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(vcodec))
             {
                 _jobStatus.ErrorMsg = "No Video Codec detected in raw stream";
                 _jobLog.WriteEntry(_jobStatus.ErrorMsg, Log.LogEntryType.Error);
@@ -796,7 +796,7 @@ namespace MCEBuddy.RemuxMediaCenter
 
             // Setup the Video
             string vcodec = VideoProperties.RawFile.VideoFormat(_extract.VideoPart).ToLower();
-            if (String.IsNullOrWhiteSpace(vcodec))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(vcodec))
             {
                 _jobStatus.ErrorMsg = "No Video Codec detected in raw stream";
                 _jobLog.WriteEntry(_jobStatus.ErrorMsg, Log.LogEntryType.Error);
@@ -824,7 +824,7 @@ namespace MCEBuddy.RemuxMediaCenter
             foreach (string AudioPart in _extract.AudioParts)
             {
                 string acodec = VideoProperties.RawFile.AudioFormat(AudioPart).ToLower();
-                if (String.IsNullOrWhiteSpace(acodec))
+                if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(acodec))
                 {
                     _jobStatus.ErrorMsg = "No Audio Codec detected in raw stream";
                     _jobLog.WriteEntry(_jobStatus.ErrorMsg, Log.LogEntryType.Error);
@@ -938,7 +938,7 @@ namespace MCEBuddy.RemuxMediaCenter
             }
 
             // Atleast 1 audio and 1 video channel should be there
-            if (String.IsNullOrWhiteSpace(_extract.VideoPart) || (_extract.AudioParts.Count < 1))
+            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_extract.VideoPart) || (_extract.AudioParts.Count < 1))
             {
                 try
                 {

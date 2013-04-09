@@ -322,10 +322,14 @@ namespace MCEBuddy.Transcode
         private string seconds_to_hhmmss(double seconds)
         {
             TimeSpan st = TimeSpan.FromSeconds(seconds);
+            //if (seconds < 0)
+            //    return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
+            //else
+            //    return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
             if (seconds < 0)
-                return st.ToString(@"\-hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //-00:25:30,978
+                return MCEBuddy.Globals.GlobalDefs.FormatTimeSpan(st, false, ':', ',');
             else
-                return st.ToString(@"hh\:mm\:ss\,fff", System.Globalization.CultureInfo.InvariantCulture); //00:25:30,978
+                return MCEBuddy.Globals.GlobalDefs.FormatTimeSpan(st, false, ':', ',');
         }
     }
 }
