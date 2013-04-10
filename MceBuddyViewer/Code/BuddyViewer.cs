@@ -45,6 +45,7 @@ namespace MceBuddyViewer
         private TreeView _treeView_videofile = new TreeView();
         private EditableText _editableItem = new EditableText();
         private const float NullPercent = 0;
+        private volatile bool _versionMismatch = false;
 
         public TreeView TreeViewVideoFile
         {
@@ -456,6 +457,11 @@ namespace MceBuddyViewer
                     ICore tempPipeProxy = pipeFactory.CreateChannel();
                     MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(tempPipeProxy.GetConfigParameters()); // Get the parameters from the Engine we are connected to
                     GlobalDefs.profilesSummary = tempPipeProxy.GetProfilesSummary(); // Get a list of all the profiles and descriptions
+                    try
+                    {
+                        GlobalDefs.showAnalyzerInstalled = tempPipeProxy.ShowAnalyzerInstalled();
+                    }
+                    catch { }
                     Monitor.Exit(_configLock);
 
                     SetUserLocale(); // ReInitialize MCEBuddy (we may have been disconnected and parameters changed, connected to a new engine etc)
@@ -465,8 +471,14 @@ namespace MceBuddyViewer
                     _engineConnected = true;
                     ProgressChanged();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    // Check for version mistmatch
+                    if (e.InnerException is System.Runtime.Serialization.SerializationException)
+                        _versionMismatch = true;
+                    else
+                        _versionMismatch = false;
+
                     //System.Diagnostics.EventLog.WriteEntry("MCEBuddy2x", Localise.GetPhrase("MCEBuddy GUI: Unable to create pipe to MCEBuddy service"), EventLogEntryType.Warning); //not required since this call will fail when MCEBuddy Service has not started and will overflow the eventlog. The message will be shown on the GUI
                     if (configLockTaken)
                     {
@@ -492,7 +504,10 @@ namespace MceBuddyViewer
         {            
             if (!_engineConnected)
             {
-                Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.NotAvailable);
+                if (_versionMismatch)
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.VersionMismatch);
+                else
+                    Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackEngineStatus, EngineStatusEnum.NotAvailable);
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackNumWorks, 0);
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackChangedJobsList, "");
                 Microsoft.MediaCenter.UI.Application.DeferredInvoke(BackCurrentWorkName, "");
@@ -773,7 +788,7 @@ namespace MceBuddyViewer
 
         private void addFileToQueue(string videoFile)
         {
-            if (MCEBuddy.Util.Net.IsUNCPath(videoFile))
+            //if (MCEBuddy.Util.Net.IsUNCPath(videoFile))
                 videoFile = MCEBuddy.Util.Net.GetUNCPath(videoFile);
 
             try
@@ -869,7 +884,8 @@ namespace MceBuddyViewer
             Started,
             Stopped,
             Paused,
-            NotAvailable
+            NotAvailable,
+            VersionMismatch
         }
 
     }
