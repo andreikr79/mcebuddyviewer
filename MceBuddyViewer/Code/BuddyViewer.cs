@@ -474,7 +474,7 @@ namespace MceBuddyViewer
                 catch (Exception e)
                 {
                     // Check for version mistmatch
-                    if (e.InnerException is System.Runtime.Serialization.SerializationException)
+                    if ((e.InnerException is System.Runtime.Serialization.SerializationException) || (e is System.ServiceModel.ActionNotSupportedException))                    
                         _versionMismatch = true;
                     else
                         _versionMismatch = false;
