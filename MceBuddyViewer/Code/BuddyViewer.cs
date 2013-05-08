@@ -42,12 +42,12 @@ namespace MceBuddyViewer
         private ArrayListDataSet _jobslist;
         private int _jobitemselected = -1;
         private string _estimatedtime;
-        private TreeView _treeView_videofile = new TreeView();
+        private MSTreeView _treeView_videofile = new MSTreeView();
         private EditableText _editableItem = new EditableText();
         private const float NullPercent = 0;
         private volatile bool _versionMismatch = false;
 
-        public TreeView TreeViewVideoFile
+        public MSTreeView TreeViewVideoFile
         {
             get { return _treeView_videofile; }
             set { _treeView_videofile = value; }
@@ -735,6 +735,7 @@ namespace MceBuddyViewer
             EditableItem.Value = "File Name";
             string[] drives = Environment.GetLogicalDrives();            
             TreeViewVideoFile.ChildNodes.Clear();
+            TreeViewVideoFile.CheckedNodes.Clear();            
             TreeViewVideoFile.CheckedNode = null;
             string VideoFilesFilter="*.wtv;*.dvr-ms;*.asf;*.avi;*.divx;*.dv;*.flv;*.gxf;*.m1v;*.m2v;*.m2ts;*.m4v;*.mkv;*.mov;*.mp2;*.mp4;*.mpeg;*.mpeg1;*.mpeg2;*.mpeg4;*.mpg;*.mts;*.mxf;*.ogm;*.ts;*.vob;*.wmv;*.tp";
 
@@ -759,14 +760,18 @@ namespace MceBuddyViewer
 
         public void FileSelected()
         {
-            if (TreeViewVideoFile.CheckedNode.Checked.Value)
+            if (TreeViewVideoFile.CheckedNodes.Count > 0)
             {
-                string videofile = TreeViewVideoFile.CheckedNode.ToString();
-                if (MCEBuddy.Util.Net.IsUNCPath(videofile))
+                foreach (FileTreeNode chnodes in TreeViewVideoFile.CheckedNodes)
                 {
-                    Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(Localise.GetPhrase("Warning: Networked files will be accessed using the logon credentials of the MCEBuddy Service, not the currently logged on user. Ensure the MCEBuddy service uses a user account that has local administrative access and access to the remote file [Control Panel -> Administrative Tools -> Services -> MCEBuddy]"), Localise.GetPhrase("Credential Warning"), (DialogButtons)1, 0, true);
+                    string videofile = chnodes.FullPath;
+                    if (MCEBuddy.Util.Net.IsUNCPath(videofile))
+                    {
+                        Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(Localise.GetPhrase("Warning: Networked files will be accessed using the logon credentials of the MCEBuddy Service, not the currently logged on user. Ensure the MCEBuddy service uses a user account that has local administrative access and access to the remote file [Control Panel -> Administrative Tools -> Services -> MCEBuddy]"), Localise.GetPhrase("Credential Warning"), (DialogButtons)1, 0, true);
+                    }
+                    addFileToQueue(videofile);
                 }
-                addFileToQueue(videofile);
+                Rescan();
             }
             if (session != null)
             {
@@ -794,7 +799,7 @@ namespace MceBuddyViewer
             try
             {
                 _pipeProxy.AddManualJob(videoFile);
-                _pipeProxy.Rescan();
+                //_pipeProxy.Rescan();
             }
             catch (Exception)
             {

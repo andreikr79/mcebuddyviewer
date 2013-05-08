@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Microsoft.MediaCenter.UI;
 
 namespace MceBuddyViewer
 {
-    public class TreeView : ModelItem
+    public class MSTreeView : TreeView
     {
-        public virtual event EventHandler<TreeNodeEventArgs> CheckedNodeChanged;
-
-        public virtual TreeNode CheckedNode
+        private ArrayListDataSet _checkedNodes=new ArrayListDataSet();
+        public ArrayListDataSet CheckedNodes
+        {
+            get { return _checkedNodes; }
+            set { _checkedNodes = value; }
+        }
+        public override event EventHandler<TreeNodeEventArgs> CheckedNodeChanged;
+        public override TreeNode CheckedNode
         {
             get
             {
@@ -25,24 +32,11 @@ namespace MceBuddyViewer
                     FirePropertyChanged("CheckedNode");
                     if (CheckedNodeChanged != null)
                     {
-                        TreeNodeEventArgs e = new TreeNodeEventArgs(CheckedNode);
+                        TreeNodeEventArgs e = new TreeNodeEventArgs(CheckedNode, true);
                         CheckedNodeChanged(this, e);
                     }
                 }
             }
         }
-        public ArrayListDataSet ChildNodes
-        {
-            get { return _childNodes; }
-            set { _childNodes = value; }
-        }
-
-        #region Fields
-
-        private ArrayListDataSet _childNodes = new ArrayListDataSet();
-        protected TreeNode _checkedNode = null;
-
-        #endregion
-
     }
 }

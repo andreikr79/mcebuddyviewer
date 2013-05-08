@@ -113,6 +113,7 @@
     <Compile Include="Code\Launch.cs" />
     <Compile Include="Code\ListItemNode.cs" />
     <Compile Include="Code\ListSelection.cs" />
+    <Compile Include="Code\MSTreeView.cs" />
     <Compile Include="Code\TreeNode.cs" />
     <Compile Include="Code\TreeNodeEventArgs.cs" />
     <Compile Include="Code\TreeView.cs" />
@@ -189,8 +190,12 @@
     <Content Include="Markup\Controls\SimpleButton.mcml">
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Markup\Controls\TreeNodeItem.mcml" />
-    <Content Include="Markup\Controls\TreeViewHost.mcml" />
+    <Content Include="Markup\Controls\TreeNodeItem.mcml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Markup\Controls\TreeViewHost.mcml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Markup\MainForm.mcml">
       <SubType>Designer</SubType>
     </Content>

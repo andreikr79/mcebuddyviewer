@@ -53,6 +53,23 @@ namespace MceBuddyViewer
         {
             FullPath = fullPath;
             TreeView = treeView;
+            MSTreeView mstreeview = treeView as MSTreeView;
+            if (mstreeview != null)
+            {
+                Checked.ChosenChanged += new EventHandler(delegate(object sender, EventArgs e)
+                {
+                    if (Checked.Value)
+                    {
+                        // Add checked node to List
+                        mstreeview.CheckedNodes.Add(this);
+                    }
+                    else
+                    {
+                        // Remove checked node from List
+                        mstreeview.CheckedNodes.Remove(this);
+                    }
+                });
+            }
             TreeView.CheckedNodeChanged += new EventHandler<TreeNodeEventArgs>(TreeView_OnCheckedNodeChanged);
         }
 
@@ -145,7 +162,7 @@ namespace MceBuddyViewer
 
         private void TreeView_OnCheckedNodeChanged(object sender, TreeNodeEventArgs e)
         {
-            Checked.Value = (e.Node == this);
+            if (!e.MultiSelect) Checked.Value = (e.Node == this);
         }
 
         #region

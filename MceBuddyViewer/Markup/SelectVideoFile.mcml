@@ -19,12 +19,12 @@
     </Locals>
 
     <Rules>
-      <Condition Source="[BuddyViewer.TreeViewVideoFile.CheckedNode.Checked.Value]" SourceValue="true">
+      <Condition ConditionOp="GreaterThan" Source="[BuddyViewer.TreeViewVideoFile.CheckedNodes.Count]" SourceValue="0">
         <Actions>
           <Set Target="[OkButton.Command.Available]" Value="true" />          
         </Actions>
       </Condition>
-      <Condition Source="[BuddyViewer.TreeViewVideoFile.CheckedNode.Checked.Value]" SourceValue="false">
+      <Condition ConditionOp="LessThanOrEquals" Source="[BuddyViewer.TreeViewVideoFile.CheckedNodes.Count]" SourceValue="0">
         <Actions>
           <Set Target="[OkButton.Command.Available]" Value="false" />
         </Actions>
