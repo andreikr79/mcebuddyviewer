@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<language name="english">
+  <item name="OK" value="OK" />
+  <item name="Cancel" Value="Cancel" />
+  <item name="Rescan" Value="Rescan" />
+</language>

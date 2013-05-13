@@ -46,6 +46,15 @@ namespace MceBuddyViewer
         private EditableText _editableItem = new EditableText();
         private const float NullPercent = 0;
         private volatile bool _versionMismatch = false;
+        private Localization language;
+
+        public Localization Language
+        {
+            get
+            {
+                return language;
+            }
+        }
 
         public MSTreeView TreeViewVideoFile
         {
@@ -270,6 +279,7 @@ namespace MceBuddyViewer
             _status = RunningStatus.Stopped;
             _jobslist = new ArrayListDataSet(this);
             MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(); // Initialize with default parameters for now, we will get the config file from the server and then re-initialize (don't use null as it keeps accessing win.ini) - this is never written to a file (just a memory object)            
+            language = new Localization();
         }
 
         public MediaCenterEnvironment MediaCenterEnvironment

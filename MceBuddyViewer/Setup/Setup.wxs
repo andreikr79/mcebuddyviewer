@@ -77,8 +77,11 @@
       </Directory>
       <Directory Id="ProgramFilesFolder"
                  Name="Program Files">
-          <Directory Id="APPROOTDIRECTORY"
-                     Name="MceBuddyViewer"/>        
+        <Directory Id="APPROOTDIRECTORY"
+                   Name="MceBuddyViewer">
+          <Directory Id="LOCALIZATIONDIRECTORY"
+                     Name="localization"/>
+        </Directory>        
       </Directory>
     </Directory>
 
@@ -248,6 +251,25 @@
               Source="..\Images\Application.png"
               Checksum="no" />
       </Component>
+      <Component Id="RegistryEntries"
+                 Guid="1F91E7F8-C9AA-42EA-A2C1-B10227581F32">
+        <RegistryKey Root="HKCU"
+                     Key="Software\MCEBuddyViewer"
+                     Action="createAndRemoveOnUninstall">
+          <RegistryValue Type="string" Name="Install Folder" Value="[APPROOTDIRECTORY]" KeyPath="yes"/>          
+        </RegistryKey>                     
+      </Component>                 
+    </DirectoryRef>
+
+    <DirectoryRef Id="LOCALIZATIONDIRECTORY">
+      <Component Id="english.xml"
+                 Guid="5EEAC5B9-781B-494D-932F-85CB77EB5A7C"
+                 DiskId="1">
+        <File Id="english.xml"
+              Name="english.xml"
+              Source="..\Localization\english.xml"
+              Checksum="no" />
+      </Component>                 
     </DirectoryRef>
 
     <!-- This is a list of features that are installed as a part of this product. In this case, there is -->
@@ -271,6 +293,8 @@
       <ComponentRef Id="MCEBuddyMCE.VideoProperties.dll" />
       <ComponentRef Id="Registration.xml" />
       <ComponentRef Id="Application.png" />
+      <ComponentRef Id="RegistryEntries" />
+      <ComponentRef Id="english.xml" />
     </Feature>
 
     <!-- The media table defines the location that the MSI will look to find source files during         -->

@@ -1,6 +1,7 @@
 <Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
       xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
       xmlns:cor="assembly://MScorLib/System"
+      xmlns:coll="assembly://MsCorLib/System.Collections"
       xmlns:addin="assembly://Microsoft.MediaCenter/Microsoft.MediaCenter.Hosting"
       xmlns:me="Me">
 
