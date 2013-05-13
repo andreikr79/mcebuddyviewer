@@ -1,6 +1,7 @@
 <Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
       xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
       xmlns:cor="assembly://MScorLib/System"
+      xmlns:coll="assembly://MsCorLib/System.Collections"
       xmlns:addin="assembly://Microsoft.MediaCenter/Microsoft.MediaCenter.Hosting"
       xmlns:me="Me">
 
@@ -110,7 +111,7 @@
                   <FlowLayout Orientation="Vertical" Spacing="20,0" />
                 </Layout>
                 <Children>
-                  <me:SimpleButton Text="Rescan" Size="235,51" Margins="10,0,0,0">
+                  <me:SimpleButton Text="[BuddyViewer.Language.Translate!coll:IDictionary.#Rescan]" Size="235,51" Margins="10,0,0,0">
                     <Command>
                       <InvokeCommand Target="[BuddyViewer.Rescan]" />
                     </Command>
