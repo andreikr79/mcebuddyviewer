@@ -44,7 +44,7 @@ namespace MceBuddyViewer
                 viewerkey = viewerkey.OpenSubKey(@"SOFTWARE\MCEBuddyViewer");
                 if (viewerkey.GetValue("Install Folder") != null)
                 {
-                    LocalFolderPath = (string)viewerkey.GetValue("Install Folder")+"\\localization";
+                    LocalFolderPath = (string)viewerkey.GetValue("Install Folder")+"localization";
                 }
                 if (viewerkey.GetValue("Language") != null)
                 {
@@ -94,7 +94,7 @@ namespace MceBuddyViewer
                 viewerkey = viewerkey.OpenSubKey(@"SOFTWARE\MCEBuddyViewer");
                 if (viewerkey.GetValue("Install Folder") != null)
                 {
-                    LocalFolderPath = (string)viewerkey.GetValue("Install Folder") + "\\localization";
+                    LocalFolderPath = (string)viewerkey.GetValue("Install Folder") + "localization";
                 }
             }
             catch
@@ -143,7 +143,7 @@ namespace MceBuddyViewer
                 Translate.Clear();
                 foreach (XmlNode itemnode in langnode.ChildNodes)
                 {
-                    Translate.Add(itemnode.Attributes.GetNamedItem("name").Value, itemnode.Attributes.GetNamedItem("value").Value);
+                    Translate.Add(itemnode.Attributes.GetNamedItem("name").Value, itemnode.Attributes.GetNamedItem("value").Value);                    
                 }
             }
             catch
