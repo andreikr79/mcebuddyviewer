@@ -265,6 +265,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] SettingsForm {
+            get {
+                object obj = ResourceManager.GetObject("SettingsForm", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static byte[] SimpleButton {
             get {
                 object obj = ResourceManager.GetObject("SimpleButton", resourceCulture);

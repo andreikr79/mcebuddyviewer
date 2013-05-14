@@ -208,6 +208,10 @@
   <data name="SelectVideoFile" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\SelectVideoFile.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="SettingsForm" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>Markup\SettingsForm.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="SimpleButton" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Markup\Controls\SimpleButton.mcml;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

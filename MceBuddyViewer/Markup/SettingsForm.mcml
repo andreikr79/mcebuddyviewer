@@ -1,0 +1,36 @@
+<Mcml xmlns="http://schemas.microsoft.com/2008/mcml"
+      xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"
+      xmlns:cor="assembly://MScorLib/System"
+      xmlns:coll="assembly://MsCorLib/System.Collections"
+      xmlns:addin="assembly://Microsoft.MediaCenter/Microsoft.MediaCenter.Hosting"
+      xmlns:me="Me">
+
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Controls" />
+  
+  <UI Name="SettingsForm">
+    <Properties>
+      <a:BuddyViewer Name="BuddyViewer" BuddyViewer="$Required" />
+    </Properties>
+
+    <Locals>
+      <addin:AddInHost Name="AddInHost" />
+      <Color Name="TextColor" Color="White" />
+      <Font Name="TextFont" Font="Arial,20" />
+    </Locals>
+
+    <Content>
+      <Panel Layout="Form">
+        <Children>
+          <me:HeaderText Name="Header" Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#MCEBuddyViewer.ToString]">
+            <LayoutInput>
+              <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
+            </LayoutInput>
+          </me:HeaderText>
+        </Children>
+      </Panel>
+    </Content>
+
+  </UI>
+
+</Mcml>
