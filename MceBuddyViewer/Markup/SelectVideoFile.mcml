@@ -35,7 +35,7 @@
     <Content>
       <Panel Layout="Form">
         <Children>
-          <me:HeaderText Name="Header" Text="[BuddyViewer.Language.Translate!coll:IDictionary.#MCEBuddyViewer.ToString]">
+          <me:HeaderText Name="Header" Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#MCEBuddyViewer.ToString]">
             <LayoutInput>
               <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
             </LayoutInput>
@@ -53,12 +53,12 @@
                   <FlowLayout Orientation="Vertical" Spacing="20,0" />
                 </Layout>
                 <Children>
-                  <me:SimpleButton Name="OkButton" Text="[BuddyViewer.Language.Translate!coll:IDictionary.#OK.ToString]" Size="180,51" Margins="10,0,0,0">
+                  <me:SimpleButton Name="OkButton" Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#OK.ToString]" Size="180,51" Margins="10,0,0,0">
                     <Command>
                       <InvokeCommand Target="[BuddyViewer.FileSelected]" />
                     </Command>
                   </me:SimpleButton>
-                  <me:SimpleButton Text="[BuddyViewer.Language.Translate!coll:IDictionary.#Cancel.ToString]" Size="180,51" Margins="10,0,0,0">
+                  <me:SimpleButton Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#Cancel.ToString]" Size="180,51" Margins="10,0,0,0">
                     <Command>
                       <InvokeCommand Target="[BuddyViewer.CancelSelectFile]" />
                     </Command>

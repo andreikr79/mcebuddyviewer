@@ -24,5 +24,6 @@
   <item name="JobStatus" value="Job status: " />
   <item name="PercentComplete" value="Percent complete: " />
   <item name="EstimatedTime" value="Estimated time: " />
-  <item name="FileName" value="File Name" />  
+  <item name="FileName" value="File Name" />
+  <item name="Settings" value="Settings" />
 </language>
