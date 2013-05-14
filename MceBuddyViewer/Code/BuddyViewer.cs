@@ -46,14 +46,12 @@ namespace MceBuddyViewer
         private EditableText _editableItem = new EditableText();
         private const float NullPercent = 0;
         private volatile bool _versionMismatch = false;
-        private Localization language;
+        private Settings _viewersettings = new Settings();
 
-        public Localization Language
+        public Settings ViewerSettings
         {
-            get
-            {
-                return language;
-            }
+            get { return _viewersettings; }
+            set { _viewersettings = value; }
         }
 
         public MSTreeView TreeViewVideoFile
@@ -278,8 +276,7 @@ namespace MceBuddyViewer
             this.host = host;
             _status = RunningStatus.Stopped;
             _jobslist = new ArrayListDataSet(this);
-            MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(); // Initialize with default parameters for now, we will get the config file from the server and then re-initialize (don't use null as it keeps accessing win.ini) - this is never written to a file (just a memory object)            
-            language = new Localization();
+            MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(); // Initialize with default parameters for now, we will get the config file from the server and then re-initialize (don't use null as it keeps accessing win.ini) - this is never written to a file (just a memory object)                        
         }
 
         public MediaCenterEnvironment MediaCenterEnvironment
@@ -309,7 +306,7 @@ namespace MceBuddyViewer
 
         public void RemoveHistory()
         {
-            if (Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(Language.Translate["ClearHistoryQuestion"], Language.Translate["ClearHistoryQuestionTitle"], (DialogButtons)12, 0, true) == DialogResult.Yes)
+            if (Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(ViewerSettings.Language.Translate["ClearHistoryQuestion"], ViewerSettings.Language.Translate["ClearHistoryQuestionTitle"], (DialogButtons)12, 0, true) == DialogResult.Yes)
             {
                 try
                 {
@@ -742,7 +739,7 @@ namespace MceBuddyViewer
 
         public void AddFileCmd()
         {
-            EditableItem.Value = Language.Translate["FileName"];
+            EditableItem.Value = ViewerSettings.Language.Translate["FileName"];
             string[] drives = Environment.GetLogicalDrives();            
             TreeViewVideoFile.ChildNodes.Clear();
             TreeViewVideoFile.CheckedNodes.Clear();            
@@ -766,6 +763,10 @@ namespace MceBuddyViewer
             {
                 Debug.WriteLine("GoToMenu");
             }
+        }
+
+        public void SettingsCmd()
+        {
         }
 
         public void FileSelected()

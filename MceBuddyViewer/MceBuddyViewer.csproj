@@ -117,6 +117,7 @@
     <Compile Include="Code\ListSelection.cs" />
     <Compile Include="Code\Localization.cs" />
     <Compile Include="Code\MSTreeView.cs" />
+    <Compile Include="Code\Settings.cs" />
     <Compile Include="Code\TreeNode.cs" />
     <Compile Include="Code\TreeNodeEventArgs.cs" />
     <Compile Include="Code\TreeView.cs" />

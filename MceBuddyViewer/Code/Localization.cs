@@ -10,26 +10,26 @@ namespace MceBuddyViewer
 {
     public sealed class Localization
     {
-        List<string> languages = new List<string>();        
+        List<string> languages = new List<string>();
+
+        private string _currentlanguage;
+
+        public string CurrentLanguage
+        {
+            get { return _currentlanguage; }
+            set 
+            {
+                if (_currentlanguage != value)
+                {
+                    if (ChangeLanguage(value)) _currentlanguage = value;
+                }
+            }
+        }
 
         private Dictionary<string, string> _translate = new Dictionary<string, string>();
         public Dictionary<string, string> Translate
         {
             get { return _translate; }
-        }
-
-        private string _currentlanguage;
-        public string CurrentLanguage
-        {
-            get
-            {
-                return _currentlanguage;
-            }
-            set
-            {                
-                // Add code for load language file
-                _currentlanguage = value;
-            }
         }
 
         public Localization()
@@ -116,8 +116,7 @@ namespace MceBuddyViewer
                         {
                             Translate.Clear();
                             if (LoadLanguageFromXML(xmlfile))
-                            {
-                                CurrentLanguage = langname;
+                            {                                
                                 return true;
                             }
                         }
@@ -133,7 +132,7 @@ namespace MceBuddyViewer
             return false;
         }
 
-        private bool LoadLanguageFromXML(string xmlfile)
+        public bool LoadLanguageFromXML(string xmlfile)
         {
             try
             {
