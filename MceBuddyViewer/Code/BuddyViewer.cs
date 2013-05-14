@@ -309,7 +309,7 @@ namespace MceBuddyViewer
 
         public void RemoveHistory()
         {
-            if (Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog("Are you sure you want to clear history file?", "Clear history", (DialogButtons)12, 0, true) == DialogResult.Yes)
+            if (Microsoft.MediaCenter.Hosting.AddInHost.Current.MediaCenterEnvironment.Dialog(Language.Translate["ClearHistoryQuestion"], Language.Translate["ClearHistoryQuestionTitle"], (DialogButtons)12, 0, true) == DialogResult.Yes)
             {
                 try
                 {
@@ -742,7 +742,7 @@ namespace MceBuddyViewer
 
         public void AddFileCmd()
         {
-            EditableItem.Value = "File Name";
+            EditableItem.Value = Language.Translate["FileName"];
             string[] drives = Environment.GetLogicalDrives();            
             TreeViewVideoFile.ChildNodes.Clear();
             TreeViewVideoFile.CheckedNodes.Clear();            
