@@ -737,6 +737,20 @@ namespace MceBuddyViewer
             }
         }
 
+        public void SettingsCmd()
+        {
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            properties["BuddyViewer"] = this;
+            if (session != null)
+            {
+                session.GoToPage("resx://MceBuddyViewer/MceBuddyViewer.Resources/SettingsForm", properties);
+            }
+            else
+            {
+                Debug.WriteLine("GoToMenu");
+            }
+        }
+
         public void AddFileCmd()
         {
             EditableItem.Value = ViewerSettings.Language.Translate["FileName"];
@@ -763,10 +777,6 @@ namespace MceBuddyViewer
             {
                 Debug.WriteLine("GoToMenu");
             }
-        }
-
-        public void SettingsCmd()
-        {
         }
 
         public void FileSelected()
