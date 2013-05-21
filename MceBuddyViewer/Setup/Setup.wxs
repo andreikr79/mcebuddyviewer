@@ -269,7 +269,15 @@
               Name="english.xml"
               Source="..\Localization\english.xml"
               Checksum="no" />
-      </Component>                 
+      </Component>
+      <Component Id="russian.xml"
+           Guid="5118D3C6-8225-417C-A41C-EB25D0F3C041"
+           DiskId="1">
+        <File Id="russian.xml"
+              Name="russian.xml"
+              Source="..\Localization\russian.xml"
+              Checksum="no" />
+      </Component>
     </DirectoryRef>
 
     <!-- This is a list of features that are installed as a part of this product. In this case, there is -->
@@ -295,6 +303,7 @@
       <ComponentRef Id="Application.png" />
       <ComponentRef Id="RegistryEntries" />
       <ComponentRef Id="english.xml" />
+      <ComponentRef Id="russian.xml" />
     </Feature>
 
     <!-- The media table defines the location that the MSI will look to find source files during         -->

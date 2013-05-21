@@ -17,6 +17,7 @@
       <addin:AddInHost Name="AddInHost" />
       <Color Name="TextColor" Color="White" />
       <Font Name="TextFont" Font="Arial,20" />
+      <IntRangedValue Name="FontSizeRange" MinValue="8" MaxValue="30" Step="2" Value="24"/>     
     </Locals>
 
     <Content>
@@ -27,6 +28,58 @@
               <FormLayoutInput Right="Parent,1,-30" Top="Parent,0,20" />
             </LayoutInput>
           </me:HeaderText>
+          <Panel Layout="HorizontalFlow">
+            <LayoutInput>
+              <FormLayoutInput Top="Header,1,20" Left="Parent,0,20"/>
+            </LayoutInput>
+            <Layout>
+              <FlowLayout Orientation="Horizontal" Spacing="20,0" />
+            </Layout>
+            <Children>
+              <Panel>
+                <Layout>
+                  <FlowLayout Orientation="Vertical" Spacing="20,0" />
+                </Layout>
+                <Children>
+                  <me:SimpleButton Name="SaveButton" Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#SaveSettings.ToString]" Size="180,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.SaveSettings]" />
+                    </Command>
+                  </me:SimpleButton>
+                  <me:SimpleButton Name="CancelButton" Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#Cancel.ToString]" Size="180,51" Margins="10,0,0,0">
+                    <Command>
+                      <InvokeCommand Target="[BuddyViewer.CancelSettingsCmd]" />
+                    </Command>
+                  </me:SimpleButton>
+                </Children>
+              </Panel>
+              <Panel>
+                <Layout>
+                  <FlowLayout Orientation="Vertical" Spacing="5,0" />
+                </Layout>
+                <Children>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#LanguageTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
+                      <me:SimpleSpinner Name="SpinnerLanguage" Model="[BuddyViewer.SpinnerLanguages]" LabelMinSize="200,51" LabelMaxSize="200,51" NoFocusImage="null" FocusImage="null" DisabledImage="null" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#FontNameTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
+                      <me:SimpleSpinner Name="SpinnerFontName" Model="[BuddyViewer.SpinnerFontNames]" LabelMinSize="200,51" LabelMaxSize="200,51" NoFocusImage="null" FocusImage="null" DisabledImage="null" />
+                    </Children>
+                  </Panel>
+                  <Panel Layout="HorizontalFlow">
+                    <Children>
+                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#FontSizeTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
+                      <me:SimpleSpinner Name="SpinnerFontSize" Model="[FontSizeRange]" LabelMinSize="200,51" LabelMaxSize="200,51" NoFocusImage="null" FocusImage="null" DisabledImage="null" />
+                    </Children>
+                  </Panel>
+                </Children>
+              </Panel>
+            </Children>
+          </Panel>
         </Children>
       </Panel>
     </Content>

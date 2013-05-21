@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<language name="Русский">
+  <item name="MCEBuddyViewer" value="MCEBuddy Viewer" />
+  <item name="OK" value="OK" />
+  <item name="Cancel" value="Отмена" />
+  <item name="Rescan" value="Пересканировать" />
+  <item name="Running" value="Запущен" />
+  <item name="Pause" value="Пауза" />
+  <item name="Stopped" value="Остановлен" />
+  <item name="Paused" value="Пауза" />
+  <item name="Resume" value="Продолжить" />
+  <item name="ServiceNotAvailable" value="Сервис не доступен" />
+  <item name="Start" value="Пуск" />
+  <item name="VersionMismatch" value="Несовместимость версий" />
+  <item name="Stop" value="Остановить" />
+  <item name="AddFiles" value="Добавить" />
+  <item name="SaveSettings" value="Записать" />
+  <item name="Exit" value="Выход" />
+  <item name="ClearHistory" value="Очистить историю" />
+  <item name="ClearHistoryQuestionTitle" value="Очистить историю" />
+  <item name="ClearHistoryQuestion" value="Вы уверены что хотите очистить файл истории?" />
+  <item name="ServiceStatus" value="Состояние сервиса: " />
+  <item name="JobsCount" value="Количество заданий: " />
+  <item name="CurrentJob" value="Текущее задание: " />
+  <item name="JobStatus" value="Состояние задания: " />
+  <item name="PercentComplete" value="Процент выполнения: " />
+  <item name="EstimatedTime" value="Оставшееся время: " />
+  <item name="FileName" value="Имя файла" />
+  <item name="Settings" value="Настройки" />
+  <item name="LanguageTitle" value="Язык " />
+  <item name="FontNameTitle" value="Шрифт " />
+  <item name="FontSizeTitle" value="Размер шрифта " />
+</language>

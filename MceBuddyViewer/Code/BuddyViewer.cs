@@ -15,7 +15,7 @@ using System.IO;
 using System.Text;
 using System.ServiceModel;
 using System.ComponentModel;
-
+using Microsoft.Win32;
 
 
 namespace MceBuddyViewer
@@ -47,6 +47,42 @@ namespace MceBuddyViewer
         private const float NullPercent = 0;
         private volatile bool _versionMismatch = false;
         private Settings _viewersettings = new Settings();
+        private Choice _spinnerFontNames;
+        private Choice _spinnerLanguages;
+
+        public Choice SpinnerLanguages
+        {
+            get
+            {
+                if (_spinnerLanguages == null)
+                {
+                    _spinnerLanguages = new Choice();
+                    _spinnerLanguages.Options = ViewerSettings.Language.languages;
+                    _spinnerLanguages.Default = ViewerSettings.Language.CurrentLanguage;
+                }
+                return _spinnerLanguages;
+            }
+        }
+
+        public Choice SpinnerFontNames
+        {
+            get
+            {
+                if (_spinnerFontNames == null)
+                {
+                    _spinnerFontNames = new Choice();
+                    List<string> stringItems = new List<string>();
+                    stringItems.Add("Segoe Media Center");
+                    stringItems.Add("Arial");
+                    stringItems.Add("Courier");
+                    stringItems.Add("Times New Roman");                                        
+                    _spinnerFontNames.Options = stringItems;
+                }
+                return _spinnerFontNames;
+            }
+            set { _spinnerFontNames = value; }
+        }
+
 
         public Settings ViewerSettings
         {
@@ -800,7 +836,17 @@ namespace MceBuddyViewer
             }
         }
 
-        public void CancelSelectFile()
+        public void CancelFileCmd()
+        {
+            BackPage();
+        }
+
+        public void CancelSettingsCmd()
+        {
+            BackPage();
+        }
+
+        public void BackPage()
         {
             if (session != null)
             {
@@ -808,8 +854,15 @@ namespace MceBuddyViewer
             }
         }
 
-        public void DeleteFileCmd()
+        public void SaveSettings()
         {
+            string _newlanguage = (string)SpinnerLanguages.Chosen;
+            if (ViewerSettings.Language.CurrentLanguage != _newlanguage)
+            {
+                ViewerSettings.Language.CurrentLanguage = _newlanguage;                
+            }
+            ViewerSettings.SaveSettings();
+            BackPage();            
         }
 
         private void addFileToQueue(string videoFile)

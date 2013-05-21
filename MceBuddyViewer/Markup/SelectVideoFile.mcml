@@ -60,7 +60,7 @@
                   </me:SimpleButton>
                   <me:SimpleButton Text="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#Cancel.ToString]" Size="180,51" Margins="10,0,0,0">
                     <Command>
-                      <InvokeCommand Target="[BuddyViewer.CancelSelectFile]" />
+                      <InvokeCommand Target="[BuddyViewer.CancelFileCmd]" />
                     </Command>
                   </me:SimpleButton>
                 </Children>

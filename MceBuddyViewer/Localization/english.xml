@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<language name="english">
+<language name="English">
   <item name="MCEBuddyViewer" value="MCEBuddy Viewer" />
   <item name="OK" value="OK" />
   <item name="Cancel" value="Cancel" />
@@ -14,6 +14,7 @@
   <item name="VersionMismatch" value="Version Mismatch" />  
   <item name="Stop" value="Stop" />
   <item name="AddFiles" value="Add" />
+  <item name="SaveSettings" value="Save" />
   <item name="Exit" value="Exit" />
   <item name="ClearHistory" value="Clear history" />
   <item name="ClearHistoryQuestionTitle" value="Clear history" />
@@ -26,4 +27,7 @@
   <item name="EstimatedTime" value="Estimated time: " />
   <item name="FileName" value="File Name" />
   <item name="Settings" value="Settings" />
+  <item name="LanguageTitle" value="Language " />
+  <item name="FontNameTitle" value="Font Name " />
+  <item name="FontSizeTitle" value="Font Size " />
 </language>

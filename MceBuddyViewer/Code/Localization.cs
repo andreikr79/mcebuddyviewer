@@ -10,7 +10,7 @@ namespace MceBuddyViewer
 {
     public sealed class Localization
     {
-        List<string> languages = new List<string>();
+        public List<string> languages = new List<string>();
 
         private string _currentlanguage;
 
@@ -35,7 +35,7 @@ namespace MceBuddyViewer
         public Localization()
         {
             // default language english
-            string defaultlanguage = "english";
+            string defaultlanguage = "English";
             string LocalFolderPath = "";
             // get install folder from registry
             try
