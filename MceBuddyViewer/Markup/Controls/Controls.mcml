@@ -6,6 +6,7 @@
 
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/HeaderText" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleButton" />
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleSpinner" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleListBox" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/ExpandCollapseButton" />
   <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/SimpleCheckbox" />

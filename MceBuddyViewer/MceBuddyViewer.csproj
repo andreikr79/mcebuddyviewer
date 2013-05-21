@@ -149,6 +149,7 @@
   <ItemGroup>
     <None Include="DevInstall.cmd" />
     <None Include="Localization\english.xml" />
+    <None Include="Localization\russian.xml" />
     <Content Include="Markup\Controls\ExpandCollapseButton.mcml" />
     <Content Include="Markup\Controls\ListBoxItem.mcml">
       <SubType>Designer</SubType>
@@ -195,6 +196,7 @@
     <Content Include="Markup\Controls\SimpleButton.mcml">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Markup\Controls\SimpleSpinner.mcml" />
     <Content Include="Markup\Controls\TreeNodeItem.mcml">
       <SubType>Designer</SubType>
     </Content>

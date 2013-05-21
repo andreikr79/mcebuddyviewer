@@ -293,6 +293,13 @@ namespace MceBuddyViewer {
             }
         }
         
+        internal static byte[] SimpleSpinner {
+            get {
+                object obj = ResourceManager.GetObject("SimpleSpinner", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
         internal static byte[] Sounds {
             get {
                 object obj = ResourceManager.GetObject("Sounds", resourceCulture);
