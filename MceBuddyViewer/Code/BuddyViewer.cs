@@ -48,7 +48,7 @@ namespace MceBuddyViewer
         private volatile bool _versionMismatch = false;
         private Settings _viewersettings = new Settings();
         private Choice _spinnerFontNames;
-        private Choice _spinnerLanguages;
+        private Choice _spinnerLanguages;        
 
         public Choice SpinnerLanguages
         {
@@ -59,6 +59,7 @@ namespace MceBuddyViewer
                     _spinnerLanguages = new Choice();
                     _spinnerLanguages.Options = ViewerSettings.Language.languages;
                     _spinnerLanguages.Default = ViewerSettings.Language.CurrentLanguage;
+                    _spinnerLanguages.Chosen = ViewerSettings.Language.CurrentLanguage;
                 }
                 return _spinnerLanguages;
             }
@@ -71,12 +72,13 @@ namespace MceBuddyViewer
                 if (_spinnerFontNames == null)
                 {
                     _spinnerFontNames = new Choice();
-                    List<string> stringItems = new List<string>();
-                    stringItems.Add("Segoe Media Center");
-                    stringItems.Add("Arial");
-                    stringItems.Add("Courier");
-                    stringItems.Add("Times New Roman");                                        
+                    List<Settings.FontType> stringItems = new List<Settings.FontType>();
+                    stringItems.Add(Settings.FontType.Small);
+                    stringItems.Add(Settings.FontType.Normal);                    
+                    stringItems.Add(Settings.FontType.Large);                    
                     _spinnerFontNames.Options = stringItems;
+                    _spinnerFontNames.Default = ViewerSettings.FontName;
+                    _spinnerFontNames.Chosen = ViewerSettings.FontName;
                 }
                 return _spinnerFontNames;
             }
@@ -779,6 +781,8 @@ namespace MceBuddyViewer
             properties["BuddyViewer"] = this;
             if (session != null)
             {
+                SpinnerFontNames.Chosen = ViewerSettings.FontName;
+                SpinnerLanguages.Chosen = ViewerSettings.Language.CurrentLanguage;
                 session.GoToPage("resx://MceBuddyViewer/MceBuddyViewer.Resources/SettingsForm", properties);
             }
             else
@@ -838,6 +842,8 @@ namespace MceBuddyViewer
 
         public void CancelFileCmd()
         {
+            SpinnerLanguages.Chosen = ViewerSettings.Language.CurrentLanguage;
+            SpinnerFontNames.Chosen = ViewerSettings.FontName;            
             BackPage();
         }
 
@@ -857,10 +863,15 @@ namespace MceBuddyViewer
         public void SaveSettings()
         {
             string _newlanguage = (string)SpinnerLanguages.Chosen;
+            Settings.FontType _newfontname = (Settings.FontType)SpinnerFontNames.Chosen;            
             if (ViewerSettings.Language.CurrentLanguage != _newlanguage)
             {
                 ViewerSettings.Language.CurrentLanguage = _newlanguage;                
             }
+            if (ViewerSettings.FontName != _newfontname)
+            {
+                ViewerSettings.FontName = _newfontname;
+            }            
             ViewerSettings.SaveSettings();
             BackPage();            
         }

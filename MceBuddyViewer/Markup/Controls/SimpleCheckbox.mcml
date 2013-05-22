@@ -9,6 +9,7 @@
 
     <Properties>
       <BooleanChoice Name="Checked" BooleanChoice="$Required" />
+      <Font Name="Font" Font="font://me:Font" />
     </Properties>
 
     <Locals>
@@ -99,7 +100,7 @@
             <Children>
 
               <Graphic Name="Background" Content="image://me:FirstRunCheckBoxUncheckedNoFocus" Margins="0,0,0,0" MaximumSize="34,34" />
-              <Text Name="Label" Color="White" Font="font://me:Font" Margins="10,0,0,10" />
+              <Text Name="Label" Color="White" Font="[Font]" Margins="10,0,0,10" />
 
             </Children>
           </Panel>

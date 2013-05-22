@@ -12,7 +12,8 @@
     <Properties>
 
       <a:TreeNode Name="TreeNode" TreeNode="$Required" />
-      <Command Name="Focused" />      
+      <Command Name="Focused" />
+      <Font Name="Font" Font="font://me:Font" />
 
     </Properties>
 
@@ -89,7 +90,7 @@
                 <Children>
 
                   <me:ExpandCollapseButton Name="Button" Command="[cmdExpandCollapse]" />
-                  <Text Name="Label" Content="[TreeNode.Title]" Color="[TreeNode.NodeColor]" Font="font://me:Font" Margins="0,7,0,0" />
+                  <Text Name="Label" Content="[TreeNode.Title]" Color="[TreeNode.NodeColor]" Font="[Font]" Margins="0,7,0,0" />
 
                 </Children>
               </Panel>

@@ -3,35 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Win32;
+using Microsoft.MediaCenter.UI;
+using Microsoft.MediaCenter;
+using Microsoft.MediaCenter.Hosting;
 
 namespace MceBuddyViewer
 {
-    public class Settings
+    public class Settings : ModelItem
     {        
         private Localization _language = new Localization();
-        private string _fontname;
-        private int _fontsize;
+        private FontType _fontname;       
 
         public Settings()
         {
             // Звгружаем из реестра данные о шрифте
             RegistryKey viewerkey = Registry.CurrentUser;
-            viewerkey = viewerkey.OpenSubKey(@"SOFTWARE\MCEBuddyViewer", false);
-            if (viewerkey.GetValue("Font Name") != null)
+            viewerkey = viewerkey.OpenSubKey(@"SOFTWARE\MCEBuddyViewer", false);            
+            if (viewerkey.GetValue("Font") != null)
             {
-                FontName = (string)viewerkey.GetValue("Font Name");
+                string fontname=(string)viewerkey.GetValue("Font");
+                if (Enum.IsDefined(typeof(FontType), fontname))
+                    FontName = (FontType)Enum.Parse(typeof(FontType), fontname, true);                
             }
             else
             {
-                FontName = "Segoe Media Center";
-            }
-            if (viewerkey.GetValue("Font Size") != null)
-            {
-                FontSize = (int)viewerkey.GetValue("Font Size");
-            }
-            else
-            {
-                FontSize = 24;
+                FontName = FontType.Normal;
             }
         }
 
@@ -42,8 +38,7 @@ namespace MceBuddyViewer
                 RegistryKey viewerkey = Registry.CurrentUser;
                 viewerkey = viewerkey.OpenSubKey(@"SOFTWARE\MCEBuddyViewer", true);
                 viewerkey.SetValue("Language", Language.CurrentLanguage);
-                viewerkey.SetValue("Font Name", FontName);
-                viewerkey.SetValue("Font Size", FontSize);
+                viewerkey.SetValue("Font", FontName.ToString());
             }
             catch
             {
@@ -55,15 +50,25 @@ namespace MceBuddyViewer
             get { return _language; }
             set { _language = value; }
         }
-        public string FontName
+
+        public FontType FontName
         {
             get { return _fontname; }
-            set { _fontname = value; }
+            set 
+            {
+                if (_fontname != value)
+                {
+                    _fontname = value;
+                    FirePropertyChanged("FontName");
+                }
+            }
         }
-        public int FontSize
+
+        public enum FontType
         {
-            get { return _fontsize; }
-            set { _fontsize = value; }
+            Small,
+            Normal,
+            Large
         }
     }
 }

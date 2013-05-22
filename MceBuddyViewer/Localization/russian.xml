@@ -28,6 +28,5 @@
   <item name="FileName" value="Имя файла" />
   <item name="Settings" value="Настройки" />
   <item name="LanguageTitle" value="Язык " />
-  <item name="FontNameTitle" value="Шрифт " />
-  <item name="FontSizeTitle" value="Размер шрифта " />
+  <item name="FontTitle" value="Шрифт " />
 </language>

@@ -16,8 +16,7 @@
     <Locals>
       <addin:AddInHost Name="AddInHost" />
       <Color Name="TextColor" Color="White" />
-      <Font Name="TextFont" Font="Arial,20" />
-      <IntRangedValue Name="FontSizeRange" MinValue="8" MaxValue="30" Step="2" Value="24"/>     
+      <Font Name="TextFont" Font="Arial,20" />           
     </Locals>
 
     <Content>
@@ -66,14 +65,8 @@
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#FontNameTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
+                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#FontTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
                       <me:SimpleSpinner Name="SpinnerFontName" Model="[BuddyViewer.SpinnerFontNames]" LabelMinSize="200,51" LabelMaxSize="200,51" NoFocusImage="null" FocusImage="null" DisabledImage="null" />
-                    </Children>
-                  </Panel>
-                  <Panel Layout="HorizontalFlow">
-                    <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#FontSizeTitle.ToString]" Color="White" Font="[TextFont]" MinimumSize="250,51" />
-                      <me:SimpleSpinner Name="SpinnerFontSize" Model="[FontSizeRange]" LabelMinSize="200,51" LabelMaxSize="200,51" NoFocusImage="null" FocusImage="null" DisabledImage="null" />
                     </Children>
                   </Panel>
                 </Children>

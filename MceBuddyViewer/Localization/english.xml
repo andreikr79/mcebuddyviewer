@@ -28,6 +28,5 @@
   <item name="FileName" value="File Name" />
   <item name="Settings" value="Settings" />
   <item name="LanguageTitle" value="Language " />
-  <item name="FontNameTitle" value="Font Name " />
-  <item name="FontSizeTitle" value="Font Size " />
+  <item name="FontTitle" value="Font " />
 </language>
