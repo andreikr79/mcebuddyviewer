@@ -51,7 +51,7 @@
     <Content>
       <Panel Layout="HorizontalFlow">
         <Children>
-          <me:ProgressBar Name="ProgressBar" Size="100,30" />
+          <me:ProgressBar Name="ProgressBar" Size="100,30" Font="[Font]" />
           <me:SimpleButton Name="DelButton" Command="[Command]" NoFocusImage="image://me:DelButtonNoFocus" FocusImage="image://me:DelButtonFocus" Size="30,30">            
           </me:SimpleButton>
           <me:ClickedText Name="TextItem" Command="[TextCommand]" Content="[Item.ToString]" Font="[Font]" Color="White" />
