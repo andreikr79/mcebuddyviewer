@@ -1,32 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<language name="Spanish">
+<language name="Español">
   <item name="MCEBuddyViewer" value="MCEBuddy Viewer" />
-  <item name="OK" value="OK" />
-  <item name="Cancel" value="Cancel" />
+  <item name="OK" value="Bueno" />
+  <item name="Cancel" value="Cancelar" />
   <item name="Rescan" value="Rescan" />
-  <item name="Running" value="Running" />
-  <item name="Pause" value="Pause" />
-  <item name="Stopped" value="Stopped" />
-  <item name="Paused" value="Paused" />
-  <item name="Resume" value="Resume" />
-  <item name="ServiceNotAvailable" value="Service Not Available" />
-  <item name="Start" value="Start" />
-  <item name="VersionMismatch" value="Version Mismatch" />
-  <item name="Stop" value="Stop" />
-  <item name="AddFiles" value="Add" />
-  <item name="SaveSettings" value="Save" />
-  <item name="Exit" value="Exit" />
-  <item name="ClearHistory" value="Clear history" />
-  <item name="ClearHistoryQuestionTitle" value="Clear history" />
-  <item name="ClearHistoryQuestion" value="Are you sure you want to clear history file?" />
-  <item name="ServiceStatus" value="Service status: " />
-  <item name="JobsCount" value="Jobs count: " />
-  <item name="CurrentJob" value="Current job: " />
-  <item name="JobStatus" value="Job status: " />
-  <item name="PercentComplete" value="Percent complete: " />
-  <item name="EstimatedTime" value="Estimated time: " />
-  <item name="FileName" value="File Name" />
-  <item name="Settings" value="Settings" />
-  <item name="LanguageTitle" value="Language " />
-  <item name="FontTitle" value="Font " />
+  <item name="Running" value="Funcionamiento" />
+  <item name="Pause" value="Pausa" />
+  <item name="Stopped" value="Detenido" />
+  <item name="Paused" value="En pausa" />
+  <item name="Resume" value="Reanudar" />
+  <item name="ServiceNotAvailable" value="Servicio no disponible" />
+  <item name="Start" value="Iniciar" />
+  <item name="VersionMismatch" value="Discrepancia version" />
+  <item name="Stop" value="Deténgase" />
+  <item name="AddFiles" value="Añadir" />
+  <item name="SaveSettings" value="Guardar" />
+  <item name="Exit" value="Salida" />
+  <item name="ClearHistory" value="Borrar el historial" />
+  <item name="ClearHistoryQuestionTitle" value="Borrar el historial" />
+  <item name="ClearHistoryQuestion" value="¿Está seguro de que desea borrar archivo histórico?" />
+  <item name="ServiceStatus" value="Estado del servicio: " />
+  <item name="JobsCount" value="Jobs cuenta: " />
+  <item name="CurrentJob" value="Trabajo actual: " />
+  <item name="JobStatus" value="Tipo de trabajo: " />
+  <item name="PercentComplete" value="Porcentaje completo: " />
+  <item name="EstimatedTime" value="Tiempo estimado: " />
+  <item name="FileName" value="Nombre del archivo" />
+  <item name="Settings" value="Configuración" />
+  <item name="LanguageTitle" value="Idioma " />
+  <item name="FontTitle" value="Fuente " />
 </language>
