@@ -4,6 +4,8 @@
       xmlns:a="assembly://MceBuddyViewer/MceBuddyViewer"  
       xmlns:me="Me">
 
+  <Aggregate Source="resx://MceBuddyViewer/MceBuddyViewer.Resources/Base" />
+  
   <UI Name="ProgressBar">
 
     <Properties>
@@ -13,6 +15,8 @@
 
       <!--size of the progress bar-->
       <Size Name="Size" Size="400,50" />
+
+      <Font Name="Font" Font="font://me:Font" />
 
     </Properties>
 
@@ -39,7 +43,7 @@
         <Children>
 
           <!--percentage text-->
-          <Text Name="ProgressPercent" Font="Segoe Media Center,20" Color="White" />
+          <Text Name="ProgressPercent" Font="[Font]" Color="White" />
 
           <!--empty/full parts of the bar-->
           <Panel Layout="Fill" MinimumSize="[Size]" MaximumSize="[Size]" Padding="3,3,3,3">
@@ -57,5 +61,5 @@
     </Content>
 
   </UI>
-
+  <Font Name="Font" FontName="global://me:RegularFontName" FontSize="20" />
 </Mcml>

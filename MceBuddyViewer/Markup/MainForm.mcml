@@ -12,16 +12,72 @@
   <UI Name="MainForm">
 
     <Properties>
-      <a:BuddyViewer Name="BuddyViewer" BuddyViewer="$Required" />
+      <a:BuddyViewer Name="BuddyViewer" BuddyViewer="$Required" />      
     </Properties>
 
     <Locals>
       <addin:AddInHost Name="AddInHost" />
       <Color Name="TextColor" Color="White" />
-      <Font Name="TextFont" Font="Arial,20" />      
+      <Font Name="TextFont" FontName="Arial" FontSize="20" />
+      <Font Name="TextFontSmall" FontName="Arial" FontSize="16" />
+      <Font Name="TextFontLarge" FontName="Arial" FontSize="24" />
     </Locals>
 
     <Rules>
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Normal" Target="[EngineStatus.Font]" Value="[TextFont]" />
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Small" Target="[EngineStatus.Font]" Value="[TextFontSmall]" />
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Large" Target="[EngineStatus.Font]" Value="[TextFontLarge]" />
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Normal">
+        <Actions>
+          <Set Target="[EngineStatus.Font]" Value="[TextFont]" />
+          <Set Target="[NumWorks.Font]" Value="[TextFont]" />
+          <Set Target="[CurrentWorkName.Font]" Value="[TextFont]" />
+          <Set Target="[CurrentWorkStatus.Font]" Value="[TextFont]" />
+          <Set Target="[ProcentComplete.Font]" Value="[TextFont]" />
+          <Set Target="[EstimatedTime.Font]" Value="[TextFont]" />
+          <Set Target="[tEngineStatus.Font]" Value="[TextFont]" />
+          <Set Target="[tNumWorks.Font]" Value="[TextFont]" />
+          <Set Target="[tCurrentWorkName.Font]" Value="[TextFont]" />
+          <Set Target="[tCurrentWorkStatus.Font]" Value="[TextFont]" />
+          <Set Target="[tProcentComplete.Font]" Value="[TextFont]" />
+          <Set Target="[tEstimatedTime.Font]" Value="[TextFont]" />          
+          <Set Target="[JobsListBox.Font]" Value="[TextFont]" />
+        </Actions>
+      </Condition>
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Small">
+        <Actions>
+          <Set Target="[EngineStatus.Font]" Value="[TextFontSmall]" />
+          <Set Target="[NumWorks.Font]" Value="[TextFontSmall]" />
+          <Set Target="[CurrentWorkName.Font]" Value="[TextFontSmall]" />
+          <Set Target="[CurrentWorkStatus.Font]" Value="[TextFontSmall]" />
+          <Set Target="[ProcentComplete.Font]" Value="[TextFontSmall]" />
+          <Set Target="[EstimatedTime.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tEngineStatus.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tNumWorks.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tCurrentWorkName.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tCurrentWorkStatus.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tProcentComplete.Font]" Value="[TextFontSmall]" />
+          <Set Target="[tEstimatedTime.Font]" Value="[TextFontSmall]" />
+          <Set Target="[JobsListBox.Font]" Value="[TextFontSmall]" />
+        </Actions>
+      </Condition>
+      <Condition Source="[BuddyViewer.ViewerSettings.FontName]" SourceValue="Large">
+        <Actions>
+          <Set Target="[EngineStatus.Font]" Value="[TextFontLarge]" />
+          <Set Target="[NumWorks.Font]" Value="[TextFontLarge]" />
+          <Set Target="[CurrentWorkName.Font]" Value="[TextFontLarge]" />
+          <Set Target="[CurrentWorkStatus.Font]" Value="[TextFontLarge]" />
+          <Set Target="[ProcentComplete.Font]" Value="[TextFontLarge]" />
+          <Set Target="[EstimatedTime.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tEngineStatus.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tNumWorks.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tCurrentWorkName.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tCurrentWorkStatus.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tProcentComplete.Font]" Value="[TextFontLarge]" />
+          <Set Target="[tEstimatedTime.Font]" Value="[TextFontLarge]" />
+          <Set Target="[JobsListBox.Font]" Value="[TextFontLarge]" />
+        </Actions>
+      </Condition>
       <Condition Source="[BuddyViewer.EngineStatus]" SourceValue="Started">
         <Actions>
           <Set Target="[EngineStatus.Content]" Value="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#Running.ToString]" />
@@ -81,7 +137,7 @@
         </Transformer>
       </Binding>
       <Binding Source="[JobsListBox.SelectedIndex]" Target="[BuddyViewer.JobItemSelected]" />
-      <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />     
+      <Binding Source="[BuddyViewer.EstimatedTime]" Target="[EstimatedTime.Content]" />      
     </Rules>
     
     <Content>
@@ -157,37 +213,37 @@
                 <Children>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#ServiceStatus.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tEngineStatus" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#ServiceStatus.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="EngineStatus" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#JobsCount.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tNumWorks" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#JobsCount.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="NumWorks" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#CurrentJob.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tCurrentWorkName" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#CurrentJob.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="CurrentWorkName" Color="White" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#JobStatus.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tCurrentWorkStatus" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#JobStatus.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="CurrentWorkStatus" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#PercentComplete.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tProcentComplete" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#PercentComplete.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="ProcentComplete" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>
                   <Panel Layout="HorizontalFlow">
                     <Children>
-                      <Text Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#EstimatedTime.ToString]" Color="White" Font="[TextFont]" />
+                      <Text Name="tEstimatedTime" Content="[BuddyViewer.ViewerSettings.Language.Translate!coll:IDictionary.#EstimatedTime.ToString]" Color="White" Font="[TextFont]" />
                       <Text Name="EstimatedTime" Color="LightGreen" Font="[TextFont]" />
                     </Children>
                   </Panel>

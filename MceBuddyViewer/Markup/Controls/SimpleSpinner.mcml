@@ -29,8 +29,8 @@
       <InvokeCommand Name="NextValue" Target="[Model.NextValue]" Description="+"/>
     </Locals>
     <Rules>
-      <Binding Source="[Model.HasNextValue]" Target="[NextValue.Available]"/>
-      <Binding Source="[Model.HasPreviousValue]" Target="[PreviousValue.Available]"/>
+      <!--<Binding Source="[Model.HasNextValue]" Target="[NextValue.Available]"/>
+      <Binding Source="[Model.HasPreviousValue]" Target="[PreviousValue.Available]"/>-->
       <Condition Source="[Input.Enabled]" SourceValue="false" Target="[Label.Color]" Value="[DisabledColor]"/>
       <Condition Source="[Input.DeepKeyFocus]" SourceValue="true" Target="[Label.Color]" Value="[FocusColor]"/>
       <Condition Source="[Input.Enabled]" SourceValue="false" Target="[ValueLabel.Color]" Value="[DisabledColor]"/>
