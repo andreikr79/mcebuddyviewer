@@ -1,32 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<language name="French">
+<language name="Français">
   <item name="MCEBuddyViewer" value="MCEBuddy Viewer" />
   <item name="OK" value="OK" />
-  <item name="Cancel" value="Cancel" />
+  <item name="Cancel" value="Résilier" />
   <item name="Rescan" value="Rescan" />
-  <item name="Running" value="Running" />
+  <item name="Running" value="Courir" />
   <item name="Pause" value="Pause" />
-  <item name="Stopped" value="Stopped" />
-  <item name="Paused" value="Paused" />
-  <item name="Resume" value="Resume" />
-  <item name="ServiceNotAvailable" value="Service Not Available" />
-  <item name="Start" value="Start" />
+  <item name="Stopped" value="Arrêté" />
+  <item name="Paused" value="Pause" />
+  <item name="Resume" value="Reprendre" />
+  <item name="ServiceNotAvailable" value="Service non disponible" />
+  <item name="Start" value="Démarrer" />
   <item name="VersionMismatch" value="Version Mismatch" />
-  <item name="Stop" value="Stop" />
-  <item name="AddFiles" value="Add" />
-  <item name="SaveSettings" value="Save" />
-  <item name="Exit" value="Exit" />
-  <item name="ClearHistory" value="Clear history" />
-  <item name="ClearHistoryQuestionTitle" value="Clear history" />
-  <item name="ClearHistoryQuestion" value="Are you sure you want to clear history file?" />
-  <item name="ServiceStatus" value="Service status: " />
-  <item name="JobsCount" value="Jobs count: " />
-  <item name="CurrentJob" value="Current job: " />
-  <item name="JobStatus" value="Job status: " />
-  <item name="PercentComplete" value="Percent complete: " />
-  <item name="EstimatedTime" value="Estimated time: " />
-  <item name="FileName" value="File Name" />
-  <item name="Settings" value="Settings" />
-  <item name="LanguageTitle" value="Language " />
+  <item name="Stop" value="Arrêter" />
+  <item name="AddFiles" value="Ajouter" />
+  <item name="SaveSettings" value="Sauvegarder" />
+  <item name="Exit" value="Quitter" />
+  <item name="ClearHistory" value="Effacer l'historique" />
+  <item name="ClearHistoryQuestionTitle" value="Effacer l'historique" />
+  <item name="ClearHistoryQuestion" value="Etes-vous sûr de vouloir effacer le fichier historique?" />
+  <item name="ServiceStatus" value="Statut du service: " />
+  <item name="JobsCount" value="Emploi compte: " />
+  <item name="CurrentJob" value="Emploi actuel: " />
+  <item name="JobStatus" value="Statut d'emploi: " />
+  <item name="PercentComplete" value="Pour cent complète: " />
+  <item name="EstimatedTime" value="Temps estimé: " />
+  <item name="FileName" value="Nom du fichier" />
+  <item name="Settings" value="Réglages" />
+  <item name="LanguageTitle" value="Langue " />
   <item name="FontTitle" value="Font " />
 </language>
