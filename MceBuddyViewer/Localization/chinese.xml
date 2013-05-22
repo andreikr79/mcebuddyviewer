@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<language name="中国的">
+  <item name="MCEBuddyViewer" value="MCEBuddy Viewer" />
+  <item name="OK" value="行" />
+  <item name="Cancel" value="取消" />
+  <item name="Rescan" value="重新扫描" />
+  <item name="Running" value="运行" />
+  <item name="Pause" value="暂停" />
+  <item name="Stopped" value="停止" />
+  <item name="Paused" value="暂停" />
+  <item name="Resume" value="恢复" />
+  <item name="ServiceNotAvailable" value="服务不可用" />
+  <item name="Start" value="开始" />
+  <item name="VersionMismatch" value="版本不匹配" />
+  <item name="Stop" value="停止" />
+  <item name="AddFiles" value="加" />
+  <item name="SaveSettings" value="节省" />
+  <item name="Exit" value="出口" />
+  <item name="ClearHistory" value="清除历史记录" />
+  <item name="ClearHistoryQuestionTitle" value="清除历史记录" />
+  <item name="ClearHistoryQuestion" value="你确定要清除历史记录文件？" />
+  <item name="ServiceStatus" value="服务状态： " />
+  <item name="JobsCount" value="职位数：" />
+  <item name="CurrentJob" value="工作电流： " />
+  <item name="JobStatus" value="工作状态： " />
+  <item name="PercentComplete" value="完成百分比： " />
+  <item name="EstimatedTime" value="预计时间： " />
+  <item name="FileName" value="文件名" />
+  <item name="Settings" value="设置" />
+  <item name="LanguageTitle" value="语 " />
+  <item name="FontTitle" value="字形 " />
+</language>
