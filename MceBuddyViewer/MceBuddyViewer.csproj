@@ -150,6 +150,11 @@
     <None Include="DevInstall.cmd" />
     <None Include="Localization\english.xml" />
     <None Include="Localization\russian.xml" />
+    <None Include="Localization\chinese.xml" />
+    <None Include="Localization\french.xml" />
+    <None Include="Localization\german.xml" />
+    <None Include="Localization\portuguese.xml" />
+    <None Include="Localization\spanish.xml" />
     <Content Include="Markup\Controls\ExpandCollapseButton.mcml" />
     <Content Include="Markup\Controls\ListBoxItem.mcml">
       <SubType>Designer</SubType>
