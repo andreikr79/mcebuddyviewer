@@ -278,6 +278,46 @@
               Source="..\Localization\russian.xml"
               Checksum="no" />
       </Component>
+      <Component Id="chinese.xml"
+     Guid="C116BAEB-E797-4EBB-B000-AC565D401EB4"
+     DiskId="1">
+        <File Id="chinese.xml"
+              Name="chinese.xml"
+              Source="..\Localization\chinese.xml"
+              Checksum="no" />
+      </Component>
+      <Component Id="french.xml"
+     Guid="CC20ACAF-8C36-4F2B-8713-36264AE35854"
+     DiskId="1">
+        <File Id="french.xml"
+              Name="french.xml"
+              Source="..\Localization\french.xml"
+              Checksum="no" />
+      </Component>
+      <Component Id="german.xml"
+     Guid="516B69D4-4C52-477C-AE6E-4501A70C9BBC"
+     DiskId="1">
+        <File Id="german.xml"
+              Name="german.xml"
+              Source="..\Localization\german.xml"
+              Checksum="no" />
+      </Component>
+      <Component Id="portuguese.xml"
+     Guid="A62E8A45-F18B-4246-B12B-6D61FDB44E5E"
+     DiskId="1">
+        <File Id="portuguese.xml"
+              Name="portuguese.xml"
+              Source="..\Localization\portuguese.xml"
+              Checksum="no" />
+      </Component>
+      <Component Id="spanish.xml"
+     Guid="CD1AF9B9-C2D6-49D9-9AD2-0C206D7E35C5"
+     DiskId="1">
+        <File Id="spanish.xml"
+              Name="spanish.xml"
+              Source="..\Localization\spanish.xml"
+              Checksum="no" />
+      </Component>
     </DirectoryRef>
 
     <!-- This is a list of features that are installed as a part of this product. In this case, there is -->
@@ -303,7 +343,12 @@
       <ComponentRef Id="Application.png" />
       <ComponentRef Id="RegistryEntries" />
       <ComponentRef Id="english.xml" />
+      <ComponentRef Id="chinese.xml" />
+      <ComponentRef Id="french.xml" />
+      <ComponentRef Id="german.xml" />
+      <ComponentRef Id="portuguese.xml" />
       <ComponentRef Id="russian.xml" />
+      <ComponentRef Id="spanish.xml" />
     </Feature>
 
     <!-- The media table defines the location that the MSI will look to find source files during         -->
