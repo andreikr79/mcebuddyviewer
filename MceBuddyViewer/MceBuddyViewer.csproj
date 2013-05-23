@@ -155,6 +155,7 @@
     <None Include="Localization\german.xml" />
     <None Include="Localization\portuguese.xml" />
     <None Include="Localization\spanish.xml" />
+    <Content Include="Localization\readme.txt" />
     <Content Include="Markup\Controls\ExpandCollapseButton.mcml" />
     <Content Include="Markup\Controls\ListBoxItem.mcml">
       <SubType>Designer</SubType>

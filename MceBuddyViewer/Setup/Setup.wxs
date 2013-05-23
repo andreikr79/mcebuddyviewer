@@ -10,7 +10,7 @@
 
 <!-- These variables define the Windows Installer product version, product code and upgrade code. They   -->
 <!-- will be used later on in this file.                                                                 -->
-<?define Property_ProductVersion = "1.0.7.0" ?>
+<?define Property_ProductVersion = "1.0.8.0" ?>
 <?define Property_ProductCode = "4e04a84e-d4ee-4555-b5b1-c850889f6ffa" ?>
 <?define Property_UpgradeCode = "b6312c5d-2112-4aa6-afe1-4aeeaf1abc7e" ?>
 
@@ -318,6 +318,14 @@
               Source="..\Localization\spanish.xml"
               Checksum="no" />
       </Component>
+      <Component Id="readme.txt"
+     Guid="7F3E74A1-F4A3-4D4D-854F-176DBFC33F60"
+     DiskId="1">
+        <File Id="readme.txt"
+              Name="readme.txt"
+              Source="..\Localization\readme.txt"
+              Checksum="no" />
+      </Component>
     </DirectoryRef>
 
     <!-- This is a list of features that are installed as a part of this product. In this case, there is -->
@@ -349,6 +357,7 @@
       <ComponentRef Id="portuguese.xml" />
       <ComponentRef Id="russian.xml" />
       <ComponentRef Id="spanish.xml" />
+      <ComponentRef Id="readme.txt" />
     </Feature>
 
     <!-- The media table defines the location that the MSI will look to find source files during         -->
