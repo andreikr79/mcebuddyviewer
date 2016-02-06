@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MceBuddyViewer", "MceBuddyViewer\MceBuddyViewer.csproj", "{F7EBD1A3-A617-419B-B0ED-260AA59A0C2B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0DF6FB06-4CD2-47BD-89D8-36BE8338673C} = {0DF6FB06-4CD2-47BD-89D8-36BE8338673C}
@@ -247,5 +249,50 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 14
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs12
+		SccProjectUniqueName0 = MCEBuddy.Globals\\MCEBuddyMCE.Globals.csproj
+		SccProjectName0 = MCEBuddy.Globals
+		SccLocalPath0 = MCEBuddy.Globals
+		SccProjectUniqueName1 = MCEBuddy.Util\\MCEBuddyMCE.Util.csproj
+		SccProjectName1 = MCEBuddy.Util
+		SccLocalPath1 = MCEBuddy.Util
+		SccProjectUniqueName2 = MCEBuddy.Definitions\\MCEBuddyMCE.Configuration.csproj
+		SccProjectName2 = MCEBuddy.Definitions
+		SccLocalPath2 = MCEBuddy.Definitions
+		SccProjectUniqueName3 = MCEBuddy.AppWrapper\\MCEBuddyMCE.AppWrapper.csproj
+		SccProjectName3 = MCEBuddy.AppWrapper
+		SccLocalPath3 = MCEBuddy.AppWrapper
+		SccProjectUniqueName4 = MCEBuddy.VideoInfo\\MCEBuddyMCE.VideoProperties.csproj
+		SccProjectName4 = MCEBuddy.VideoInfo
+		SccLocalPath4 = MCEBuddy.VideoInfo
+		SccProjectUniqueName5 = MCEBuddy.CommercialScan\\MCEBuddyMCE.CommercialScan.csproj
+		SccProjectName5 = MCEBuddy.CommercialScan
+		SccLocalPath5 = MCEBuddy.CommercialScan
+		SccProjectUniqueName6 = MCEBuddy.DirectShowLib\\MCEBuddyMCE.DirectShowLib.csproj
+		SccProjectName6 = MCEBuddy.DirectShowLib
+		SccLocalPath6 = MCEBuddy.DirectShowLib
+		SccProjectUniqueName7 = MCEBuddy.Taglib\\MCEBuddyMCE.TagLib.csproj
+		SccProjectName7 = MCEBuddy.Taglib
+		SccLocalPath7 = MCEBuddy.Taglib
+		SccProjectUniqueName8 = MCEBuddy.MetaData\\MCEBuddyMCE.MetaData.csproj
+		SccProjectName8 = MCEBuddy.MetaData
+		SccLocalPath8 = MCEBuddy.MetaData
+		SccProjectUniqueName9 = MCEBuddy.RemuxMediaCenter\\MCEBuddyMCE.RemuxMediaCenter.csproj
+		SccProjectName9 = MCEBuddy.RemuxMediaCenter
+		SccLocalPath9 = MCEBuddy.RemuxMediaCenter
+		SccProjectUniqueName10 = MCEBuddy.Transcode\\MCEBuddyMCE.Transcode.csproj
+		SccProjectName10 = MCEBuddy.Transcode
+		SccLocalPath10 = MCEBuddy.Transcode
+		SccProjectUniqueName11 = MCEBuddy.Engine\\MCEBuddyMCE.Engine.csproj
+		SccProjectName11 = MCEBuddy.Engine
+		SccLocalPath11 = MCEBuddy.Engine
+		SccProjectUniqueName12 = MceBuddyViewer\\MceBuddyViewer.csproj
+		SccProjectName12 = MceBuddyViewer
+		SccLocalPath12 = MceBuddyViewer
+		SccLocalPath13 = .
 	EndGlobalSection
 EndGlobal
