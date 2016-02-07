@@ -240,6 +240,10 @@
       <Project>{9db8e317-c643-4dbc-8ebe-b44570f74428}</Project>
       <Name>MCEBuddyMCE.AppWrapper</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.BaseClasses.NET\MCEBuddyMCE.BaseClasses.csproj">
+      <Project>{2a8e8af5-74e7-49db-a42e-9360fa7a6cc4}</Project>
+      <Name>MCEBuddyMCE.BaseClasses</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.CommercialScan\MCEBuddyMCE.CommercialScan.csproj">
       <Project>{298b38e2-57d4-459d-8eb9-529e95f41dc7}</Project>
       <Name>MCEBuddyMCE.CommercialScan</Name>

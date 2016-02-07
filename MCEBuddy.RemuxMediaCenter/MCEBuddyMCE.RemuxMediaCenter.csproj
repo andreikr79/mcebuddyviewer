@@ -77,9 +77,9 @@
       <Project>{9DB8E317-C643-4DBC-8EBE-B44570F74428}</Project>
       <Name>MCEBuddyMCE.AppWrapper</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MCEBuddy.BaseClasses.NET\MCEBuddy.BaseClasses.csproj">
+    <ProjectReference Include="..\MCEBuddy.BaseClasses.NET\MCEBuddyMCE.BaseClasses.csproj">
       <Project>{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}</Project>
-      <Name>MCEBuddy.BaseClasses</Name>
+      <Name>MCEBuddyMCE.BaseClasses</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Configuration\MCEBuddyMCE.Configuration.csproj">
       <Project>{EA3FAF4F-610D-4394-9BF6-75798AA17541}</Project>
@@ -88,6 +88,10 @@
     <ProjectReference Include="..\MCEBuddy.Globals\MCEBuddyMCE.Globals.csproj">
       <Project>{582764CD-025E-4CB1-B2C4-0C52A59BE74E}</Project>
       <Name>MCEBuddyMCE.Globals</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.Transcode\MCEBuddyMCE.Transcode.csproj">
+      <Project>{b8799d33-24db-4e36-8113-05bebb7fc88b}</Project>
+      <Name>MCEBuddyMCE.Transcode</Name>
     </ProjectReference>
     <ProjectReference Include="..\MCEBuddy.Util\MCEBuddyMCE.Util.csproj">
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>

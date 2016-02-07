@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.TMDbLib", "TMDb
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.RestSharp", "RestSharp\MCEBuddyMCE.RestSharp.csproj", "{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.BaseClasses", "MCEBuddy.BaseClasses.NET\MCEBuddyMCE.BaseClasses.csproj", "{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -329,12 +331,28 @@ Global
 		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x64.Build.0 = Release|Any CPU
 		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x86.ActiveCfg = Release|Any CPU
 		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x86.Build.0 = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|x64.Build.0 = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Debug|x86.Build.0 = Debug|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|x64.ActiveCfg = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|x64.Build.0 = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|x86.ActiveCfg = Release|Any CPU
+		{2A8E8AF5-74E7-49DB-A42E-9360FA7A6CC4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 18
+		SccNumberOfProjects = 19
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs12
 		SccLocalPath0 = .
@@ -389,5 +407,8 @@ Global
 		SccProjectUniqueName17 = RestSharp\\MCEBuddyMCE.RestSharp.csproj
 		SccProjectName17 = RestSharp
 		SccLocalPath17 = RestSharp
+		SccProjectUniqueName18 = MCEBuddy.BaseClasses.NET\\MCEBuddyMCE.BaseClasses.csproj
+		SccProjectName18 = MCEBuddy.BaseClasses.NET
+		SccLocalPath18 = MCEBuddy.BaseClasses.NET
 	EndGlobalSection
 EndGlobal
