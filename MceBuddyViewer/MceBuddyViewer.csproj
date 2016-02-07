@@ -280,9 +280,17 @@
       <Project>{4e7dc789-3ae0-4e19-b1d0-d9186f9f9a98}</Project>
       <Name>MCEBuddyMCE.VideoProperties</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RestSharp\MCEBuddyMCE.RestSharp.csproj">
+      <Project>{2ececfbf-5f3e-40ee-a963-72336dc7abe2}</Project>
+      <Name>MCEBuddyMCE.RestSharp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TagLibSharp\MCEBuddyMCE.TagLibSharp.csproj">
       <Project>{6b143a39-c7b2-4743-9917-92262c60e9a6}</Project>
       <Name>MCEBuddyMCE.TagLibSharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TMDbLib\MCEBuddyMCE.TMDbLib.csproj">
+      <Project>{c0006f17-212a-474f-983e-7da2f91e0233}</Project>
+      <Name>MCEBuddyMCE.TMDbLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />
