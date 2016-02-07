@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Security.AccessControl;
 
 namespace MCEBuddy.Util
 {
@@ -33,7 +34,7 @@ namespace MCEBuddy.Util
                 // Rename the original file to a temp file
                 try
                 {
-                    File.Move(FileName, tempFile);
+                    FileIO.MoveAndInheritPermissions(FileName, tempFile);
                 }
                 catch
                 {
@@ -42,13 +43,13 @@ namespace MCEBuddy.Util
                 // Rename the replacement file to the same as the original and revert if this fails
                 try
                 {
-                    File.Move(ReplacementFileName, FileName);
+                    FileIO.MoveAndInheritPermissions(ReplacementFileName, FileName);
                 }
                 catch
                 {
                     try
                     {
-                        File.Move(tempFile, FileName);
+                        FileIO.MoveAndInheritPermissions(tempFile, FileName);
                     }
                     catch { }
                     return;
@@ -66,8 +67,11 @@ namespace MCEBuddy.Util
             }
         }
 
-        public static long FileSize( string FileName)
+        public static long FileSize(string FileName)
         {
+            if (!String.IsNullOrWhiteSpace(FileName)) // Check if the filename is enclosed in quotes ("), if so remove it before checking
+                FileName = FileName.Replace("\"", ""); // Remove the quotes (quotes are in valid filename character anyways)
+
             if (File.Exists( FileName))
             {
                 try
@@ -201,6 +205,30 @@ namespace MCEBuddy.Util
             {
                 return DateTime.Parse("1900-01-01T00:00:00Z");
             }
+        }
+
+        /// <summary>
+        /// Moves the file from source to destination and inherits the access control from the destination folder. This does NOT reset the explicit permissions from the source folder
+        /// </summary>
+        /// <returns>NULL if successful, error message if inheriting the permissions failed</returns>
+        public static string MoveAndInheritPermissions(string source, string destination)
+        {
+            File.Move(source, destination); //  Move the file
+
+            try
+            {
+                // Inherit the Access Control from destination
+                // NOTE: Do we need to remove the permissions from the source location (explicit)? http://stackoverflow.com/questions/12811850/setting-a-files-acl-to-be-inherited
+                FileSecurity fileSecurity = File.GetAccessControl(destination);
+                fileSecurity.SetAccessRuleProtection(false, true);
+                File.SetAccessControl(destination, fileSecurity);
+            }
+            catch (Exception e)
+            {
+                return e.ToString();
+            }
+
+            return null;
         }
     }
 }

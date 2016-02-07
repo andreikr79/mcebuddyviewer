@@ -8,10 +8,13 @@ using System.Diagnostics;
 
 namespace MCEBuddy.Globals
 {
+    // Refer to http://msdn.microsoft.com/en-us/library/windows/desktop/ms685100(v=vs.85).aspx
+
     /// <summary>
     /// I/O scheduling priority
     /// </summary>
-    public enum PriorityTypes
+    [Flags]
+    public enum ProcessPriority : uint
     {
         ABOVE_NORMAL_PRIORITY_CLASS = 0x00008000,
         BELOW_NORMAL_PRIORITY_CLASS = 0x00004000,
@@ -23,14 +26,36 @@ namespace MCEBuddy.Globals
         REALTIME_PRIORITY_CLASS = 0x00000100
     }
 
+    /// <summary>
+    /// Thread Priority
+    /// </summary>
+    public enum ThreadsPriority : int
+    {
+        THREAD_MODE_BACKGROUND_BEGIN = 0x00010000,
+        THREAD_MODE_BACKGROUND_END = 0x00020000,
+        THREAD_PRIORITY_ABOVE_NORMAL = 1,
+        THREAD_PRIORITY_BELOW_NORMAL = -1,
+        THREAD_PRIORITY_HIGHEST = 2,
+        THREAD_PRIORITY_IDLE = -15,
+        THREAD_PRIORITY_LOWEST = -2,
+        THREAD_PRIORITY_NORMAL = 0,
+        THREAD_PRIORITY_TIME_CRITICAL = 15
+    }
+
     public class IOPriority
     {
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetCurrentThread();
+        
+        [DllImport("kernel32.dll")]
         private static extern IntPtr GetCurrentProcess();
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern bool SetPriorityClass(IntPtr handle, uint priorityClass);
+        private static extern bool SetPriorityClass(IntPtr handle, ProcessPriority priorityClass);
 
+        [DllImport("kernel32.dll")]
+        static extern bool SetThreadPriority(IntPtr hThread, ThreadsPriority nPriority);
+        
         [DllImport("kernel32.dll")]
         static extern IntPtr OpenThread(ThreadAccess dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
         
@@ -106,23 +131,47 @@ namespace MCEBuddy.Globals
         /// Change the scheduling priority for the I/O operations for the current process
         /// </summary>
         /// <param name="priority">I/O Priority</param>
-        public static void SetPriority(PriorityTypes priority)
+        public static void SetPriority(ProcessPriority priority)
         {
-            try { SetPriorityClass(GetCurrentProcess(), (uint)priority); }
+            try { SetPriorityClass(GetCurrentProcess(), priority); }
             catch { }
         }
 
         /// <summary>
         /// Change the scheduling priority for the I/O operations for a specific process
         /// </summary>
-        /// <param name="process">Pointer to the process</param>
+        /// <param name="process">Handle to the process</param>
         /// <param name="priority">I/O Priority</param>
-        public static void SetPriority(IntPtr process, PriorityTypes priority)
+        public static void SetPriority(IntPtr process, ProcessPriority priority)
         {
-            if (priority == PriorityTypes.PROCESS_MODE_BACKGROUND_BEGIN || priority == PriorityTypes.PROCESS_MODE_BACKGROUND_END)
+            if (priority == ProcessPriority.PROCESS_MODE_BACKGROUND_BEGIN || priority == ProcessPriority.PROCESS_MODE_BACKGROUND_END)
                 throw new ArgumentException("Process mode background can only set for current process");
 
-            try { SetPriorityClass(process, (uint)priority); }
+            try { SetPriorityClass(process, priority); }
+            catch { }
+        }
+
+        /// <summary>
+        /// Change the scheduling priority for the I/O operations for the current thread
+        /// </summary>
+        /// <param name="priority">I/O Priority</param>
+        public static void SetPriority(ThreadsPriority priority)
+        {
+            try { SetThreadPriority(GetCurrentThread(), priority); }
+            catch { }
+        }
+
+        /// <summary>
+        /// Change the scheduling priority for the I/O operations for a specific thread
+        /// </summary>
+        /// <param name="thread">Handle to the thread</param>
+        /// <param name="priority">I/O Priority</param>
+        public static void SetPriority(IntPtr thread, ThreadsPriority priority)
+        {
+            if (priority == ThreadsPriority.THREAD_MODE_BACKGROUND_BEGIN || priority == ThreadsPriority.THREAD_MODE_BACKGROUND_END)
+                throw new ArgumentException("Process mode background can only set for current process");
+
+            try { SetThreadPriority(thread, priority); }
             catch { }
         }
     }

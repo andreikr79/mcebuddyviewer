@@ -3,37 +3,37 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Globalization;
+
 using MCEBuddy.AppWrapper;
 using MCEBuddy.Util;
 using MCEBuddy.Util.Combinatorics;
-
 using MCEBuddy.Globals;
 using MCEBuddy.VideoProperties;
 using MCEBuddy.CommercialScan;
 
 namespace MCEBuddy.Transcode
 {
-    public abstract class ConvertBase
+    public abstract class ConvertBase : FFMpegMEncoderParams
     {
         protected const int DEFAULT_VIDEO_WIDTH = 720;
 
         protected string _generalParams = "";
         protected string _videoParams = "";
         protected string _audioParams = "";
+
         protected string _extension = "";
         protected string _remuxTo = "";
-        protected string _cmdParams = "";
-        protected double _toolAudioDelay = 0;
-        protected string _audioDelay = "";
-
-        protected string _audioStream = "";
         protected string _convertedFile = "";
         protected string _workingPath = "";
 
         protected VideoInfo _videoFile;
         protected Scanner _commercialScan;
         protected int _maxWidth = 1000000;
-        protected double _quality = 1;
+        protected double _bitrateResolutionQuality = 1; // Quality adjustment to bitrate by changing the resolution
+        protected double _userQuality = 1; // Quality as set bthe user
+        protected bool _videoOptimized = false;
+        protected bool _audioOptimized = false;
         protected bool _fixedResolution = false;
         protected bool _skipCropping = false;
         protected bool _2Pass = false;
@@ -42,56 +42,97 @@ namespace MCEBuddy.Transcode
         protected double _volume = 1;
         protected int _startTrim = 0;
         protected int _endTrim = 0;
-
-        protected char _separator = ':';
-        protected bool _caseSensitive = true;
+        protected bool _encoderChooseBestAudioTrack = false;
+        protected bool _autoDeInterlacing = false;
+        protected bool _commercialSkipCut = false;
+        protected double _toolAudioDelay = 0;
+        protected string _audioDelay = "";
+        protected string _fps = ""; // output framerate
 
         protected bool _unsupported = false;
         protected bool _removedAds = false;
         protected bool _isPresetVideoWidth = false;
+        protected bool _subtitleBurned = false;
+        protected bool _preferHardwareEncoding = false;
 
         protected JobStatus _jobStatus;
         protected Log _jobLog;
 
         private string _renameConvertedFileWithOriginalName = ""; // Keep track incase of filename conflict
 
-        protected ConvertBase(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan)
+        protected ConvertBase(ConversionJobOptions conversionOptions, string tool, VideoInfo videoFile, JobStatus jobStatus, Log jobLog, Scanner commercialScan)
+            : base (true)
         {
             //Setup log and status
             _jobStatus = jobStatus;
             _jobLog = jobLog;
-            
+
+            //Set the destination paths
+            _workingPath = conversionOptions.workingPath;
+            Util.FilePaths.CreateDir(_workingPath);
+
             // Check first up to see if the source video uses an unsupported combination for this profile
             // Container, Video Codec, Audio Codec and whether it was originally a Media Center recording or not
             _videoFile = videoFile;
             _commercialScan = commercialScan;
-            if (CheckUnsupported(conversionOptions.profile, tool)) return;
 
+            if (CheckUnsupported(conversionOptions.profile, tool))
+                return;
 
             // Set the input params and get the standard settings
             _maxWidth = conversionOptions.maxWidth;
-            _quality = conversionOptions.qualityMultiplier;
+            _userQuality = conversionOptions.qualityMultiplier;
             _volume = conversionOptions.volumeMultiplier;
             _drc = conversionOptions.drc;
-            _startTrim = conversionOptions.startTrim;
-            _endTrim = conversionOptions.endTrim;
+            if (!_videoFile.TrimmingDone) // Check if we need to do trimming
+            {
+                _startTrim = conversionOptions.startTrim;
+                _endTrim = conversionOptions.endTrim;
+            }
+            else
+                _startTrim = _endTrim = 0;
+
+            _encoderChooseBestAudioTrack = conversionOptions.encoderSelectBestAudioTrack;
+            _fps = conversionOptions.FPS;
+            _preferHardwareEncoding = conversionOptions.preferHardwareEncoding;
 
             Ini ini = new Ini(GlobalDefs.ProfileFile);
-            if (ini.ReadBoolean(conversionOptions.profile, "2ChannelAudio", false))
-                _jobLog.WriteEntry("Profile override - fixing output to Stereo Audio", Log.LogEntryType.Debug);
 
-            _2ChannelAudio = conversionOptions.stereoAudio || ini.ReadBoolean(conversionOptions.profile, "2ChannelAudio", false); // Fix output to 2 channels (from profile)
+            // Profile override parameters - if default (i.e. does not exist then use conversion options else use profile parameters)
+            if (ini.ReadString(conversionOptions.profile, "2ChannelAudio", "default") == "default")
+                _2ChannelAudio = conversionOptions.stereoAudio;
+            else
+                _2ChannelAudio = ini.ReadBoolean(conversionOptions.profile, "2ChannelAudio", false); // Fix output to 2 channels (from profile)
+            
+            if (ini.ReadString(conversionOptions.profile, "SkipCropping", "default") == "default")
+                _skipCropping = conversionOptions.disableCropping;
+            else
+                _skipCropping = ini.ReadBoolean(conversionOptions.profile, "SkipCropping", false); // Cropping can be forced in the profile
+            
+            if (ini.ReadString(conversionOptions.profile, "AutoDeinterlace", "default") == "default")
+                _autoDeInterlacing = conversionOptions.autoDeInterlace;
+            else
+                _autoDeInterlacing = ini.ReadBoolean(conversionOptions.profile, "AutoDeinterlace", false);
+
+            if (conversionOptions.renameOnly)
+                _commercialSkipCut = true; //no cutting if we are renaming only
+            else if (ini.ReadString(conversionOptions.profile, "CommercialSkipCut", "default") == "default")
+                _commercialSkipCut = conversionOptions.commercialSkipCut;
+            else _commercialSkipCut = ini.ReadBoolean(conversionOptions.profile, "CommercialSkipCut", false);
+
+            // Profile only parameters
             _fixedResolution = ini.ReadBoolean(conversionOptions.profile, "FixedResolution", false);
-            _skipCropping = (conversionOptions.disableCropping || (ini.ReadBoolean(conversionOptions.profile, "SkipCropping", false))); // Cropping can be disabled in the profile or in the Conversion Task GUI settings
             _2Pass = ini.ReadBoolean(conversionOptions.profile, "2pass", false);
             _generalParams = ini.ReadString(conversionOptions.profile, tool + "-general", "");
             _videoParams = ini.ReadString(conversionOptions.profile, tool + "-video", "");
             _audioParams = ini.ReadString(conversionOptions.profile, tool + "-audio", "");
             _extension = _videoFile.Extension = ini.ReadString(conversionOptions.profile, tool + "-ext", "").ToLower().Trim();
-            if (MCEBuddy.Globals.GlobalDefs.IsNullOrWhiteSpace(_extension)) // Special case copy converter if there is no specified extension keep the original extension
-                _extension = Path.GetExtension(SourceVideo);
+            if (string.IsNullOrWhiteSpace(_extension)) // Special case copy converter if there is no specified extension, it will be using the source file extension
+                _extension = FilePaths.CleanExt(SourceVideo);
             _remuxTo = _videoFile.RemuxTo = ini.ReadString(conversionOptions.profile, tool + "-remuxto", "").ToLower().Trim();
             _audioDelay = ini.ReadString(conversionOptions.profile, tool + "-audiodelay", "skip").ToLower().Trim();
+            _videoOptimized = ini.ReadBoolean(conversionOptions.profile, tool + "-VideoOptimized", false);
+            _audioOptimized = ini.ReadBoolean(conversionOptions.profile, tool + "-AudioOptimized", false);
 
             if (_audioDelay == "auto") // Use the audio delay specified in the file
                 _toolAudioDelay = videoFile.AudioDelay;
@@ -102,26 +143,17 @@ namespace MCEBuddy.Transcode
                 _toolAudioDelay = conversionOptions.audioOffset; 
 
             // Audio select the AC3 audio option if the source video has AC3)
-            if (((videoFile.AudioCodec == "ac-3") || (videoFile.AudioCodec == "ac3")) && (ini.ReadString(conversionOptions.profile, tool + "-audioac3", "") != ""))
-            {
+            if (((videoFile.AudioCodec == "ac-3") || (videoFile.AudioCodec == "ac3") || (videoFile.AudioCodec != "e-ac-3") || (videoFile.AudioCodec != "eac3")) && (ini.ReadString(conversionOptions.profile, tool + "-audioac3", "") != ""))
                 _audioParams = ini.ReadString(conversionOptions.profile, tool + "-audioac3", _audioParams);
-            }
 
-            // E-AC3 test option if the source video has E-AC3
+            // E-AC3 test option if the source video has E-AC3 - Not required as mencoder can handle eac3 audio
+            /*
             if (videoFile.AudioCodec == "e-ac-3" || _videoFile.AudioCodec != "eac3")
             {
                 _audioParams = ini.ReadString(conversionOptions.profile, tool + "-audioeac3", _audioParams);
                 if ((_audioParams == "") && (tool == "mencoder"))
-                {
                     _audioParams = "-noaudio ";
-                }
-            }
-
-            //Set the destination paths
-            _workingPath = conversionOptions.workingPath;
-
-            //Check the work path
-            Util.FilePaths.CreateDir(_workingPath);
+            }*/
 
             // Important to use temp name while converting - sometimes the sources files are copied to the working directory and the converted files conflict with teh original filename, compensate. E.g. TS file input, TS file output with Copy converter
             _convertedFile = Path.Combine(_workingPath, Path.GetFileNameWithoutExtension(SourceVideo) + "-converted" + _extension);
@@ -130,200 +162,267 @@ namespace MCEBuddy.Transcode
 
         public bool Convert() // THE MAIN CONVERSION ROUTINE
         {
-            if (_unsupported) return false;
+            if (_unsupported)
+                return false;
 
             _jobLog.WriteEntry(this, "Main conversion routine DEBUG", Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Source Video File : " + _videoFile.SourceVideo, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Extension : " + _extension, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Remux To : " + _remuxTo, Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "2 Pass : " + _2Pass.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Fixed Resolution : " + _fixedResolution.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Skip Cropping : " + _skipCropping.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Video Audio Delay : " + _videoFile.AudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Manual Audio Delay : " + _toolAudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Auto Enable Hardware Encoding : " + _preferHardwareEncoding.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "2 Pass : " + _2Pass.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Fixed Resolution : " + _fixedResolution.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Video Audio Delay : " + _videoFile.AudioDelay.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Manual Audio Delay : " + _toolAudioDelay.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Skip Audio Delay : " + _audioDelay, Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Max Width : " + _maxWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Quality : " + _quality.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Audio Track : " + _videoFile.AudioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Start Trim : " + _startTrim.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, "Stop Trim : " + _endTrim.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Max Width : " + _maxWidth.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "User Quality : " + _userQuality.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Audio Track : " + _videoFile.AudioTrack.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Start Trim : " + _startTrim.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Stop Trim : " + _endTrim.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Output FPS : " + _fps, Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Audio profile optimized by user : " + _audioOptimized.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Video profile optimized by user : " + _videoOptimized.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Skip Cropping (profile (SkipCropping) + task) : " + _skipCropping.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Stereo force (profile (2ChannelAudio) + task) : " + _2ChannelAudio.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Auto DeInterlacing (profile (AutoDeinterlace) + task) : " + _autoDeInterlacing.ToString(), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "Skip Cutting Commercials (profile (CommercialSkipCut) + task) : " + _commercialSkipCut.ToString(), Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Working Path : " + _workingPath, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Temp Converted File : " + _convertedFile, Log.LogEntryType.Debug);
             _jobLog.WriteEntry(this, "Final Converted File : " + _renameConvertedFileWithOriginalName, Log.LogEntryType.Debug);
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Source video file, file size [KB]") + " " + (Util.FileIO.FileSize(SourceVideo) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, ("Source video file, file size [KB]") + " " + (FileIO.FileSize(SourceVideo) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
 
-            //WAY TO BUILD THE COMMAND LINE
+            // WAY TO BUILD THE COMMAND LINE
             // GeneralParameters + InputFile + VideoOptions + AudioOptions + OutputFile
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up General conversion parameters :") + " " + _generalParams, Log.LogEntryType.Information);
-            AddParameter(_generalParams); // General Parameters
+            if (_audioOptimized)
+                _jobLog.WriteEntry(this, ("Audio profile optimized by user, skipping audio adjustments"), Log.LogEntryType.Warning);
 
-            // Set the DRC before the input file for some encoders like ffmpeg
-            if (_drc)
+            if (_videoOptimized)
+                _jobLog.WriteEntry(this, ("Video profile optimized by user, skipping video adjustments"), Log.LogEntryType.Warning);
+
+            // GENERAL PARAMETERS
+            _jobLog.WriteEntry(this, ("Setting up General conversion parameters :") + " " + _generalParams, Log.LogEntryType.Information);
+            AppendParameters(_generalParams); // General Parameters
+
+            if (!_audioOptimized) // Don't process audio if the profile is optimized
             {
-                if (_videoFile.AudioCodec == "ac-3" || _videoFile.AudioCodec == "ac3") // DRC only applies to AC3 audio
+                // Set the DRC before the input file for some encoders like ffmpeg
+                if (_drc)
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up PreDRC"), Log.LogEntryType.Information);
+                    if ((_videoFile.AudioCodec == "ac-3") || (_videoFile.AudioCodec == "ac3") || (_videoFile.AudioCodec != "e-ac-3") || (_videoFile.AudioCodec != "eac3")) // DRC only applies to AC3 audio
+                    {
+                        _jobLog.WriteEntry(this, ("Setting up PreDRC"), Log.LogEntryType.Information);
 
-                    if (_audioParams.ToLower().Contains("copy"))
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Copy Audio stream detected, skipping DRC settings"), Log.LogEntryType.Warning);
+                        if (_audioParams.ToLower().Contains("copy"))
+                            _jobLog.WriteEntry(this, ("Copy Audio stream detected, skipping DRC settings"), Log.LogEntryType.Warning);
+                        else
+                            SetAudioPreDRC(); // do this before we BEFORE setting the input filename
+                    }
                     else
-                        SetPreDRC(); // do this before we BEFORE setting the input filename
+                        _jobLog.WriteEntry(this, ("Non AC3 Source Audio, DRC not applicable"), Log.LogEntryType.Information);
                 }
-                else
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Non AC3 Source Audio, DRC not applicable"), Log.LogEntryType.Information);
             }
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up input file name parameters"), Log.LogEntryType.Information);
+            // INPUT FILE
+            _jobLog.WriteEntry(this, ("Setting up input file name parameters"), Log.LogEntryType.Information);
             SetInputFileName(); // Input Filename
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up video conversion parameters :") + " " + _videoParams, Log.LogEntryType.Information);
-            AddParameter(_videoParams); // Video Parameters
+            // VIDEO PARAMETERS
+            _jobLog.WriteEntry(this, ("Setting up video conversion parameters :") + " " + _videoParams, Log.LogEntryType.Information);
+            AppendParameters(_videoParams); // Video Parameters
 
             // Get the value of the preset width before we start modifying
-            _isPresetVideoWidth = IsPresetWidth();
+            _isPresetVideoWidth = IsPresetVideoWidth();
+            _jobLog.WriteEntry(this, "Is preset video size -> " + _isPresetVideoWidth.ToString(), Log.LogEntryType.Information);
 
-            // TRIM for TS, WTV and DVRMS is now done before Commercial Scan in the main conversion job, we do the rest here
-            // Set the start and end trim parameters (after the video parameters)
-            if (Path.GetExtension(SourceVideo.ToLower()) != ".ts")
+            // Set the start and end trim parameters (after the video parameters) if trimming is not already done
+            if ((_startTrim != 0) || (_endTrim != 0))
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up trim parameters"), Log.LogEntryType.Information);
-                SetTrim(); // Set Trim Parameters
+                bool trimFile = false;
+                _jobLog.WriteEntry(this, "Setting up trim parameters", Log.LogEntryType.Information);
+                
+                //Sanity checking if we need to trim
+                if (_startTrim != 0)
+                {
+                    if (_startTrim < _videoFile.Duration)
+                        trimFile = true;
+                    else
+                    {
+                        _jobLog.WriteEntry(this, "Start trim (" + _startTrim.ToString() + ") greater than file duration (" + _videoFile.Duration.ToString(System.Globalization.CultureInfo.InvariantCulture) + "). Skipping start trimming.", Log.LogEntryType.Warning);
+                        _startTrim = 0;
+                    }
+                }
+
+                if (_endTrim != 0)
+                {
+                    int encDuration = (((int)_videoFile.Duration) - _endTrim) - (_startTrim); // by default _startTrim is 0
+                    if (encDuration > 0)
+                        trimFile = true;
+                    else
+                    {
+                        _jobLog.WriteEntry(this, "End trim (" + _endTrim.ToString() + ") + Start trim (" + _startTrim.ToString() + ") greater than file duration (" + _videoFile.Duration.ToString(System.Globalization.CultureInfo.InvariantCulture) + "). Skipping end trimming.", Log.LogEntryType.Warning);
+                        _endTrim = 0;
+                    }
+                }
+
+                if (trimFile)
+                    SetVideoTrim(); // Set Trim Parameters
+                else
+                    _jobLog.WriteEntry(this, "Start trim and end trim skipped. Skipping trimming.", Log.LogEntryType.Warning);
             }
 
-            // Set the pre cropping BEFORE scaling, filter chain rule
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up crop parameters"), Log.LogEntryType.Information);
-            SetCrop();
-
-            //Set the scaling
-            if (!_fixedResolution)
+            if (!_videoOptimized) // Don't process video if the profile is optimized
             {
-                int VideoWidth = _videoFile.Width;
+                // Set the interlacing filters as the first filter in the chain, before processing anything
+                SetVideoDeInterlacing();
 
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Checking if video resizing required"), Log.LogEntryType.Information);
-                if ((_videoFile.CropWidth > 0) && (_videoFile.CropWidth < _videoFile.Width))
+                // Set the pre cropping BEFORE scaling, filter chain rule
+                _jobLog.WriteEntry(this, "Setting up crop parameters", Log.LogEntryType.Information);
+                SetVideoCropping();
+
+                //Set the scaling
+                if (!_fixedResolution && !_isPresetVideoWidth)
                 {
-                    VideoWidth = _videoFile.CropWidth;
+                    int VideoWidth = _videoFile.Width;
+
+                    _jobLog.WriteEntry(this, ("Checking if video resizing required"), Log.LogEntryType.Information);
+                    if ((_videoFile.CropWidth > 0) && (_videoFile.CropWidth < _videoFile.Width))
+                    {
+                        VideoWidth = _videoFile.CropWidth;
+                    }
+                    // If we do not need to scale, don't
+                    if (VideoWidth > _maxWidth)
+                    {
+                        _jobLog.WriteEntry(this, ("Setting up video resize parameters"), Log.LogEntryType.Information);
+                        SetVideoResize(); // Set Resize parameters
+                    }
                 }
-                // If we do not need to scale, don't
-                if (VideoWidth > _maxWidth)
-                {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up video resize parameters"), Log.LogEntryType.Information);
-                    SetResize(); // Set Resize parameters
-                }
+                else
+                    _jobLog.WriteEntry(this, ("Fixed resolution video, no resizing"), Log.LogEntryType.Information);
+
+                // Sometimes we need to set the Aspect Ratio as the last parameter in the video filter chain (e.g. with libxvid)
+                _jobLog.WriteEntry(this, ("Setting up aspect ratio if required"), Log.LogEntryType.Information);
+                SetVideoAspectRatio();
+
+                // Adjust the bitrate to compensate for resizing and cropping
+                _jobLog.WriteEntry(this, ("Setting up bitrate and quality parameters"), Log.LogEntryType.Information);
+                AdjustResizeCropBitrateQuality();
+                if (_userQuality <= 0.1)
+                    _userQuality = 0.1;
+
+                // If we using quality instead of bitrate
+                if (ConstantVideoQuality && (_userQuality > 2))
+                    _userQuality = 2;
+
+                // Update the BitRate/Quality parameters
+                SetVideoBitrateAndQuality();
+
+                // Set the output framerate if required
+                SetVideoOutputFrameRate();
             }
-            else
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Fixed resolution video, no resizing"), Log.LogEntryType.Information);
 
-            // Sometimes we need to set the Aspect Ratio as the last parameter in the video filter chain (e.g. with libxvid)
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up aspect ratio if required"), Log.LogEntryType.Information);
-            SetAspectRatio();
+            // AUDIO PARAMETERS
+            _jobLog.WriteEntry(this, ("Setting up audio conversion parameters :") + " " + _audioParams, Log.LogEntryType.Information);
+            AppendParameters(_audioParams); // Audio Parameters
 
-            // Adjust the bitrate to compensate for resizing and cropping
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up bitrate and quality parameters"), Log.LogEntryType.Information);
-            AdjustResizeCropBitrateQuality();
-            if (_quality <= 0.1) _quality = 0.1;
-
-            // If we using quality instead of bitrate
-            if (ConstantQuality && (_quality > 2)) _quality = 2;
-            
-            SetBitrateAndQuality(); // Update the BitRate/Quality parameters
-
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up audio conversion parameters :") + " " + _audioParams, Log.LogEntryType.Information);
-            if (_videoFile.AudioCodec != "e-ac-3" || _videoFile.AudioCodec != "eac3")
+            if (!_audioOptimized) // Don't process audio if the profile is optimized
             {
-                AddParameter(_audioParams); // Audio Parameters
-
                 // Select the audio language specified by the user if multiple audio languages exist
-                if ((!String.IsNullOrEmpty(_videoFile.RequestedAudioLanguage)) && (_videoFile.FFMPEGStreamInfo.AudioTracks > 1)) // check if we were requested to isolate a language manually and if there is more than one audio track
+                if ((!String.IsNullOrEmpty(_videoFile.RequestedAudioLanguage) || _encoderChooseBestAudioTrack) && (_videoFile.FFMPEGStreamInfo.AudioTracks > 1)) // check if we were requested to isolate a language manually and if there is more than one audio track
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Selecting Audio Track :") + " " + _videoFile.AudioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Information);
+                    _jobLog.WriteEntry(this, ("Selecting Audio Track :") + " " + _videoFile.AudioTrack.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Information);
                     SetAudioLanguage(); // Select the right Audio Track if required, do this before we AFTER setting the audio parameters
                 }
                 else
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Skipping over Audio Track selection, no language request or only one Audio Track found"), Log.LogEntryType.Information);
+                    _jobLog.WriteEntry(this, ("Skipping over Audio Track selection, no language request or only one Audio Track found"), Log.LogEntryType.Information);
 
                 // Set the volume
                 if (_volume != 0) // volume is in dB (0dB is no change)
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up volume adjustment :") + " " + _volume.ToString("#0.0", System.Globalization.CultureInfo.InvariantCulture) + "dB", Log.LogEntryType.Information);
+                    _jobLog.WriteEntry(this, ("Setting up volume adjustment :") + " " + _volume.ToString("#0.0", System.Globalization.CultureInfo.InvariantCulture) + "dB", Log.LogEntryType.Information);
 
                     if (_audioParams.ToLower().Contains("copy"))
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Copy Audio stream detected, skipping volume settings"), Log.LogEntryType.Warning);
+                        _jobLog.WriteEntry(this, ("Copy Audio stream detected, skipping volume settings"), Log.LogEntryType.Warning);
                     else
-                        SetVolume(); // do this before we AFTER setting the audio parameters
+                        SetAudioVolume(); // do this before we AFTER setting the audio parameters
                 }
 
                 // Set the DRC with the remaining audio options for most encoders (except ffmpeg)
                 if (_drc)
                 {
-                    if (_videoFile.AudioCodec == "ac-3" || _videoFile.AudioCodec == "ac3") // DRC only applies to AC3 audio
+                    if ((_videoFile.AudioCodec == "ac-3") || (_videoFile.AudioCodec == "ac3") || (_videoFile.AudioCodec != "e-ac-3") || (_videoFile.AudioCodec != "eac3")) // DRC only applies to AC3 audio
                     {
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up PostDRC"), Log.LogEntryType.Information);
+                        _jobLog.WriteEntry(this, ("Setting up PostDRC"), Log.LogEntryType.Information);
 
                         if (_audioParams.ToLower().Contains("copy"))
-                            _jobLog.WriteEntry(this, Localise.GetPhrase("Copy Audio stream detected, skipping DRC settings"), Log.LogEntryType.Warning);
+                            _jobLog.WriteEntry(this, ("Copy Audio stream detected, skipping DRC settings"), Log.LogEntryType.Warning);
                         else
-                            SetPostDRC(); // do this before we BEFORE setting the input filename
+                            SetAudioPostDRC(); // do this before we BEFORE setting the input filename
                     }
                     else
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Non AC3 Source Audio, DRC not applicable"), Log.LogEntryType.Information);
+                        _jobLog.WriteEntry(this, ("Non AC3 Source Audio, DRC not applicable"), Log.LogEntryType.Information);
                 }
+
+                //Set audio channels
+                _jobLog.WriteEntry(this, ("Setting up Audio channels"), Log.LogEntryType.Information);
+                SetAudioChannels(); // Multi channel Audio
             }
-            else
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Skipping audio conversion paramters, E-AC3 detected"), Log.LogEntryType.Information);
 
-            //Set audio channels
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up Audio channels"), Log.LogEntryType.Information);
-            if (_videoFile.AudioCodec != "e-ac-3" || _videoFile.AudioCodec != "eac3") SetAudioChannels(); // Multi channel Audio
-            else _jobLog.WriteEntry(this, Localise.GetPhrase("Skipping Audio channels, E-AC3 detected"), Log.LogEntryType.Information);
-
+            // OUTPUT FILE
             //Set the output file names
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Setting up Output filename"), Log.LogEntryType.Information);
+            _jobLog.WriteEntry(this, ("Setting up Output filename"), Log.LogEntryType.Information);
             SetOutputFileName();
 
             // Replace user specific parameters in the final command line
             _jobLog.WriteEntry(this, "Replacing user specified parameters", Log.LogEntryType.Information);
             ReplaceUserParameters();
 
+            // One final santiy check on the parameters before calling the convert function
+            FinalSanityCheck();
+
             //Convert the video - MAIN ONE
             if (!_jobStatus.Cancelled)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Converting the video - Main conversion"), Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, ("Converting the video - Main conversion"), Log.LogEntryType.Information);
                 bool ret = ConvertWithTool();
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Conversion: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Conversion: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Original file size [KB]") + " " + (FileIO.FileSize(SourceVideo) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Finished video conversion, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
                 if (!ret) // with unsuccessful or incomplete
                 {
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Conversion of video failed");
+                    _jobStatus.ErrorMsg = ("Conversion of video failed");
                     _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
                     return false;
                 }
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Finished video conversion, file size [KB]") + " " + (Util.FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
             }
 
-            // EAC3 exception handling
+            // EAC3 exception handling - redundant, not required as encoders can handle eac3 audio and function is incorrectly written
+            /*
             if (!_jobStatus.Cancelled)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Checking EAC3 Audio conversion"), Log.LogEntryType.Information);
-                ConvertEAC3();
-                _jobLog.WriteEntry(this, Localise.GetPhrase("EAC3 conversion: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                if (_jobStatus.PercentageComplete == 0) // Check for total failure as some component like FFMPEG dont' return a correct %
+                _jobLog.WriteEntry(this, ("Checking EAC3 Audio conversion"), Log.LogEntryType.Information);
+                bool ret = ConvertEAC3();
+                _jobLog.WriteEntry(this, ("EAC3 conversion: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Finished EAC3 conversion, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                if (!ret || _jobStatus.PercentageComplete == 0 || (FileIO.FileSize(_convertedFile) <= 0)) // Check for total failure as some component like FFMPEG dont' return a correct %
                 {
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Conversion of EAC3 failed");
+                    _jobStatus.ErrorMsg = ("Conversion of EAC3 failed");
                     _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
                     return false;
                 }
-            }
+            }*/
 
             // Set the audio delay post conversion
             if (!_jobStatus.Cancelled)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Correcting Audio Delay if required"), Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, ("Correcting Audio Delay if required"), Log.LogEntryType.Information);
                 bool ret = FixAudioDelay();
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Fix Audio Delay: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                if (!ret)
+                _jobLog.WriteEntry(this, ("Fix Audio Delay: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Finished fixing audio delay, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                if (!ret || (FileIO.FileSize(_convertedFile) <= 0))
                 {
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Fix AudioSync failed");
+                    _jobStatus.ErrorMsg = ("Fix AudioSync failed");
                     _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
                     return false;
                 }
@@ -335,13 +434,13 @@ namespace MCEBuddy.Transcode
                 try
                 {
                     FileIO.TryFileDelete(_renameConvertedFileWithOriginalName); // Delete if the file with the replacement name exists (sometime with .TS file and TS profiles this happens)
-                    File.Move(_convertedFile, _renameConvertedFileWithOriginalName);
+                    FileIO.MoveAndInheritPermissions(_convertedFile, _renameConvertedFileWithOriginalName);
                     _convertedFile = _renameConvertedFileWithOriginalName;
                 }
                 catch (Exception e)
                 {
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Unable to rename file after conversion");
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to rename file after conversion"), Log.LogEntryType.Error);
+                    _jobStatus.ErrorMsg = ("Unable to rename file after conversion");
+                    _jobLog.WriteEntry(this, ("Unable to rename file after conversion"), Log.LogEntryType.Error);
                     _jobLog.WriteEntry(this, "Error -> " + e.ToString(), Log.LogEntryType.Error);
                     return false;
                 }
@@ -350,30 +449,36 @@ namespace MCEBuddy.Transcode
             // Remux to new Extension if required
             if (!_jobStatus.Cancelled)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Remuxing video if required"), Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, ("Remuxing video if required"), Log.LogEntryType.Information);
 
-                RemuxExt remuxVideo = new RemuxExt(_convertedFile, ref _videoFile, ref _jobStatus, _jobLog, _remuxTo);
+                double fps = 0;
+                double.TryParse(_fps, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out fps);
+                RemuxExt remuxVideo = new RemuxExt(_convertedFile, _workingPath, (fps <= 0 ? _videoFile.Fps : fps), _jobStatus, _jobLog, _remuxTo); // Use output FPS if it exists otherwise the source file FPS (since it has not changed)
                 bool ret = remuxVideo.RemuxFile();
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Conversion Remux: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-                if (!ret) // Check for total failure as some component like FFMPEG dont' return a correct %
+                _convertedFile = remuxVideo.RemuxedFile;
+                _jobLog.WriteEntry(this, ("Conversion Remux: Percentage Complete") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Finished conversion remuxing video, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                if (!ret || (FileIO.FileSize(_convertedFile) <= 0)) // Check for total failure as some component like FFMPEG dont' return a correct %
                 {
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Remux failed");
+                    _jobStatus.ErrorMsg = ("Remux failed");
                     _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
                     return false;
                 }
-                _convertedFile = remuxVideo.RemuxedFile;
             }
 
             if (!_jobStatus.Cancelled)
             {
+                if (!_videoFile.TrimmingDone)
+                    _videoFile.TrimmingDone = true; // We have done trimming if it wasn't done earlier
+
                 if (_removedAds) // We have successfully removed ad's
                     _videoFile.AdsRemoved = true;
                 return true;
             }
             else
             {
-                _jobStatus.ErrorMsg = Localise.GetPhrase("Job cancelled, Aborting conversion");
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Job cancelled, Aborting conversion"), Log.LogEntryType.Error);
+                _jobStatus.ErrorMsg = ("Job cancelled, Aborting conversion");
+                _jobLog.WriteEntry(this, ("Job cancelled, Aborting conversion"), Log.LogEntryType.Error);
                 return false;
             }
         }
@@ -409,7 +514,7 @@ namespace MCEBuddy.Transcode
 
         private bool CheckUnsupported(string profile, string tool)
         {
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Checking for Unsupported profile for container / codec combination"), Log.LogEntryType.Information);
+            _jobLog.WriteEntry(this, ("Checking for Unsupported profile for container / codec combination"), Log.LogEntryType.Information);
             Ini ini = new Ini(GlobalDefs.ProfileFile);
             string unsupportedCombinations = ini.ReadString(profile, tool + "-unsupported", "").ToLower().Trim();
 
@@ -434,7 +539,7 @@ namespace MCEBuddy.Transcode
                     if (videoItems.Contains(c))
                     {
                         _jobLog.WriteEntry(this, 
-                            Localise.GetPhrase("Unsupported profile for container / codec combination") + " " + c + " " + profile,
+                            ("Unsupported profile for container / codec combination") + " " + c + " " + profile,
                             Log.LogEntryType.Warning);
                         _unsupported = true;
                         return true;
@@ -444,154 +549,187 @@ namespace MCEBuddy.Transcode
             return false;
         }
 
-        private void ConvertEAC3()
+        /// <summary>
+        /// Handle eac3 conversions for mencoder
+        /// TODO: This function is redundant and incorrectly written, handbrake, ffmpeg and mencoder are able to handle eac3 audio why do we need this?
+        /// </summary>
+        private bool ConvertMencoderEAC3()
         {
+            string audioStream = "";
+
             _jobStatus.PercentageComplete = 100; //all good by default
             _jobStatus.ETA = "";
 
-            if (_videoFile.AudioCodec != "e-ac-3" || _videoFile.AudioCodec != "eac3") return;
+            if ((_videoFile.AudioCodec != "e-ac-3") && (_videoFile.AudioCodec != "eac3"))
+                return true;
+            
             // Only supports MP4, MKV and AVI
-            if ((_extension != ".mp4") && (_extension != ".mkv") && (_extension != ".avi")) return;
+            if ((_extension != ".mp4") && (_extension != ".mkv") && (_extension != ".avi"))
+                return true;
 
             _jobStatus.CurrentAction = Localise.GetPhrase("Converting E-AC3");
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Converting E-AC3"), Log.LogEntryType.Information);
+            _jobLog.WriteEntry(this, ("Converting E-AC3"), Log.LogEntryType.Information);
 
             // Convert EAC3 file
             string eac3toParams;
             string audiop = _audioParams.Trim();
-            if (audiop.Contains("faac") || audiop.Contains("libfaac") || audiop.Contains("aac") || audiop.Contains("libvo_aacenc"))
+            if (audiop.Contains("faac") || audiop.Contains("libfaac") || audiop.Contains("aac"))
             {
-                _audioStream = Util.FilePaths.GetFullPathWithoutExtension(SourceVideo) + "_AUDIO.mp4";
-                eac3toParams = Util.FilePaths.FixSpaces(SourceVideo) + " " + Util.FilePaths.FixSpaces(_audioStream) + " -384";
+                audioStream = Path.Combine(_workingPath, Path.GetFileNameWithoutExtension(SourceVideo) + "_AUDIO.mp4");
+                eac3toParams = Util.FilePaths.FixSpaces(SourceVideo) + " " + Util.FilePaths.FixSpaces(audioStream) + " -384";
             }
-            else
+            else // TODO: what about other audio formats?
             {
-                _audioStream = Util.FilePaths.GetFullPathWithoutExtension(SourceVideo) + "_AUDIO.ac3";
-                eac3toParams = Util.FilePaths.FixSpaces(SourceVideo) + " " + Util.FilePaths.FixSpaces(_audioStream) + " -384";
+                audioStream = Path.Combine(_workingPath, Path.GetFileNameWithoutExtension(SourceVideo) + "_AUDIO.ac3");
+                eac3toParams = Util.FilePaths.FixSpaces(SourceVideo) + " " + Util.FilePaths.FixSpaces(audioStream) + " -384";
             }
 
-            Util.FileIO.TryFileDelete(_audioStream);
-            
-            Eac3To eac3to = new AppWrapper.Eac3To(eac3toParams, ref _jobStatus, _jobLog);
+            FileIO.TryFileDelete(audioStream); // Clean before starting
+            Eac3To eac3to = new AppWrapper.Eac3To(eac3toParams, _jobStatus, _jobLog);
             eac3to.Run();
             if (!eac3to.Success)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("E-AC3 conversion unsuccessful"), Log.LogEntryType.Error);
+                FileIO.TryFileDelete(audioStream); // Clean
+                _jobLog.WriteEntry(this, ("E-AC3 conversion unsuccessful"), Log.LogEntryType.Error);
                 _jobStatus.ErrorMsg = "E-AC3 conversion unsuccessful";
                 _jobStatus.PercentageComplete = 0;
-                return; // something went wrong
+                return false; // something went wrong
             }
 
             // Mux into destination 
             if ((_extension == ".mp4") || (_extension == ".m4v"))
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Muxing E-AC3 using MP4Box"), Log.LogEntryType.Information);
-                string mp4boxParams = " -keep-sys -keep-all -add " + FilePaths.FixSpaces(_audioStream) + " " + FilePaths.FixSpaces(_convertedFile);
+                _jobLog.WriteEntry(this, ("Muxing E-AC3 using MP4Box"), Log.LogEntryType.Information);
+                string mp4boxParams = " -keep-sys -keep-all -add " + FilePaths.FixSpaces(audioStream) + " " + FilePaths.FixSpaces(_convertedFile);
                 _jobStatus.PercentageComplete = 0; //reset
                 _jobStatus.ETA = "";
-                MP4Box mp4box = new MP4Box(mp4boxParams, ref _jobStatus, _jobLog);
+                MP4Box mp4box = new MP4Box(mp4boxParams, _jobStatus, _jobLog);
                 mp4box.Run();
-
-                Util.FileIO.TryFileDelete(_audioStream);
                 if (!mp4box.Success || _jobStatus.PercentageComplete < GlobalDefs.ACCEPTABLE_COMPLETION) // check for incomplete output or process issues
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("E-AC3 muxing using MP4Box failed at") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Error);
+                    FileIO.TryFileDelete(audioStream);
+                    _jobLog.WriteEntry(this, ("E-AC3 muxing using MP4Box failed at") + " " + _jobStatus.PercentageComplete.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Error);
                     _jobStatus.ErrorMsg = "E-AC3 muxing using MP4Box failed";
                     _jobStatus.PercentageComplete = 0; // something went wrong with the process
-                    return;
+                    return false;
                 }
             }
             else if (_extension == ".mkv")
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Muxing E-AC3 using MKVMerge"), Log.LogEntryType.Information);
-                string remuxedFile = Util.FilePaths.GetFullPathWithoutExtension(_convertedFile) + "_REMUX.mkv";
-                Util.FileIO.TryFileDelete(remuxedFile);
-                string mkvmergeParams = FilePaths.FixSpaces(_convertedFile) + " " + FilePaths.FixSpaces(_audioStream) + " -o " + FilePaths.FixSpaces(remuxedFile);
+                _jobLog.WriteEntry(this, ("Muxing E-AC3 using MKVMerge"), Log.LogEntryType.Information);
+                string remuxedFile = Path.Combine(_workingPath, Path.GetFileNameWithoutExtension(_convertedFile) + "_REMUX.mkv");
+                FileIO.TryFileDelete(remuxedFile);
+                string mkvmergeParams = "--clusters-in-meta-seek --compression -1:none " + FilePaths.FixSpaces(_convertedFile) + " --compression -1:none " + FilePaths.FixSpaces(audioStream) + " -o " + FilePaths.FixSpaces(remuxedFile);
                 _jobStatus.PercentageComplete = 0; //reset
                 _jobStatus.ETA = "";
-                MKVMerge mkvmerge = new MKVMerge(mkvmergeParams, ref _jobStatus, _jobLog);
+                MKVMerge mkvmerge = new MKVMerge(mkvmergeParams, _jobStatus, _jobLog);
                 mkvmerge.Run();
-                Util.FileIO.TryFileDelete(_convertedFile);
                 if (!mkvmerge.Success)
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Muxing E-AC3 using MKVMerge failed"), Log.LogEntryType.Error);
+                    FileIO.TryFileDelete(audioStream);
+                    FileIO.TryFileDelete(remuxedFile);
+                    _jobLog.WriteEntry(this, ("Muxing E-AC3 using MKVMerge failed"), Log.LogEntryType.Error);
                     _jobStatus.ErrorMsg = "Muxing E-AC3 using MKVMerge failed";
                     _jobStatus.PercentageComplete = 0; // something went wrong with the process
-                    return;
+                    return false;
                 }
 
                 try
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Moving MKVMerge muxed E-AC3"), Log.LogEntryType.Information);
-                    File.Move(remuxedFile, _convertedFile);
+                    _jobLog.WriteEntry(this, ("Moving MKVMerge muxed E-AC3"), Log.LogEntryType.Information);
+                    FileIO.TryFileDelete(_convertedFile);
+                    FileIO.MoveAndInheritPermissions(remuxedFile, _convertedFile);
                     _jobStatus.PercentageComplete = 100; //proxy for job done since mkvmerge doesn't report
                     _jobStatus.ETA = "";
                 }
                 catch (Exception e)
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to move MKVMerge remuxed E-AC3 file") + " " + remuxedFile + "\r\nError : " + e.ToString(), Log.LogEntryType.Error);
+                    FileIO.TryFileDelete(audioStream);
+                    FileIO.TryFileDelete(remuxedFile);
+                    _jobLog.WriteEntry(this, ("Unable to move MKVMerge remuxed E-AC3 file") + " " + remuxedFile + "\r\nError : " + e.ToString(), Log.LogEntryType.Error);
                     _jobStatus.PercentageComplete = 0;
                     _jobStatus.ErrorMsg = "Unable to move MKVMerge remuxed E-AC3 file";
-                    return;
+                    return false;
                 }
-                Util.FileIO.TryFileDelete(_audioStream);
             }
             else
             {
                 _jobStatus.PercentageComplete = 0; //reset
                 _jobStatus.ETA = "";
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Muxing E-AC3 using FFMPEGRemux"), Log.LogEntryType.Information);
-                RemuxExt remuxFile = new RemuxExt(_convertedFile, ref _videoFile, ref _jobStatus, _jobLog, _remuxTo);
-                if (remuxFile.FfmpegRemux(_audioStream))
+                _jobLog.WriteEntry(this, ("Muxing E-AC3 using FFMPEGRemux"), Log.LogEntryType.Information);
+                double fps = 0;
+                double.TryParse(_fps, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out fps);
+                RemuxExt remuxFile = new RemuxExt(_convertedFile, _workingPath, (fps <= 0 ? _videoFile.Fps : fps), _jobStatus, _jobLog, _remuxTo); // Use output FPS if it exists otherwise the source file FPS (since it has not changed)
+                if (remuxFile.FfmpegRemux(audioStream))
                 {
                     _convertedFile = remuxFile.RemuxedFile;
                 }
                 else
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Error Muxing E-AC3 using FFMPEGRemux"), Log.LogEntryType.Error);
+                    FileIO.TryFileDelete(audioStream);
+                    _jobLog.WriteEntry(this, ("Error Muxing E-AC3 using FFMPEGRemux"), Log.LogEntryType.Error);
                     _jobStatus.PercentageComplete = 0;
                     _jobStatus.ErrorMsg = "Error Muxing E-AC3 using FFMPEGRemux";
-                    return;
+                    return false;
                 }
-                Util.FileIO.TryFileDelete(_audioStream);
             }
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Finished EAC3 conversion, file size [KB]") + " " + (Util.FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+
+            FileIO.TryFileDelete(audioStream); // Clean up
+            _jobLog.WriteEntry(this, ("Finished EAC3 conversion, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+
+            return true;
         }
 
         private bool FixAudioDelay()
         {
-            bool ret = true;
             string encoderParams;
 
             _jobStatus.PercentageComplete = 100; //all good to start with
             _jobStatus.ETA = "";
 
-            if (_videoFile.AudioDelaySet || _toolAudioDelay == 0) return ret; //It's already been done (probably by mencoder) or been requested to skip
+            if (_videoFile.AudioDelaySet || _toolAudioDelay == 0)
+                return true; //It's already been done (probably by mencoder) or been requested to skip
+
+            // Check if the converted file has Audio AND Video streams (if one is missing, then skip this step)
+            FFmpegMediaInfo ffmpegInfo = new FFmpegMediaInfo(_convertedFile, _jobStatus, _jobLog);
+            if (!ffmpegInfo.Success || ffmpegInfo.ParseError)
+            {
+                _jobStatus.PercentageComplete = 0; // if the file wasn't completely converted the percentage will be low so no worries
+                _jobStatus.ErrorMsg = "Fix AudioSync getting mediainfo Failed for " + _convertedFile;
+                _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
+                return false;
+            }
+
+            if ((ffmpegInfo.MediaInfo.VideoInfo.Stream == -1) || (ffmpegInfo.AudioTracks < 1))
+            {
+                _jobLog.WriteEntry(this, "Fix audiosync, No video or no audio track detected - skipping audio sync", Log.LogEntryType.Warning);
+                return true;
+            }
 
             double audioDelay = _toolAudioDelay;
 
             if (audioDelay != 0)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Fixing Audio Delay, Detected :") + " " + _videoFile.AudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", Manual Adj : " + _toolAudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Information);
-                
-                string ext = Path.GetExtension(_convertedFile).Trim().ToLower();
-                string fixedFile = Util.FilePaths.GetFullPathWithoutExtension(_convertedFile) + "_AVFIX" + Path.GetExtension(_convertedFile);
-                Util.FileIO.TryFileDelete(fixedFile);
+                _jobLog.WriteEntry(this, ("Fixing Audio Delay, Detected :") + " " + _videoFile.AudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", Manual Adj : " + _toolAudioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Information);
+
+                string ext = FilePaths.CleanExt(_convertedFile);
+                string fixedFile = Path.Combine(_workingPath, Path.GetFileNameWithoutExtension(_convertedFile) + "_AVFIX" + FilePaths.CleanExt(_convertedFile));
+                FileIO.TryFileDelete(fixedFile);
 
                 _jobStatus.CurrentAction = Localise.GetPhrase("Correcting audio delay");
 
                 switch (ext)
                 {
                     case ".wmv":
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Using ASFBin to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, ("Using ASFBin to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
 
                         encoderParams = " -i " + Util.FilePaths.FixSpaces(_convertedFile) + " -adelay " + audioDelay.ToString(System.Globalization.CultureInfo.InvariantCulture) + " -o " + Util.FilePaths.FixSpaces(fixedFile) + " -y";
-                        ASFBin asfBin = new ASFBin(encoderParams, ref _jobStatus, _jobLog);
+                        ASFBin asfBin = new ASFBin(encoderParams, _jobStatus, _jobLog);
                         asfBin.Run();
-                        if (!asfBin.Success || (Util.FileIO.FileSize(fixedFile) <= 0))
+                        if (!asfBin.Success || (FileIO.FileSize(fixedFile) <= 0))
                         {
                             _jobStatus.ErrorMsg = "Fixing Audio Delay for WMV failed";
-                            _jobLog.WriteEntry(this, Localise.GetPhrase("Fixing Audio Delay for WMV failed"), Log.LogEntryType.Error);
+                            _jobLog.WriteEntry(this, ("Fixing Audio Delay for WMV failed"), Log.LogEntryType.Error);
                             _jobStatus.PercentageComplete = 0;
                             return false;
                         }
@@ -599,17 +737,17 @@ namespace MCEBuddy.Transcode
                         break;
 
                     case ".avi":
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Using Mencoder to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, ("Using Mencoder to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
 
                         encoderParams = Util.FilePaths.FixSpaces(_convertedFile) + " -oac copy -ovc copy -ni -delay " + (-1 * audioDelay).ToString(System.Globalization.CultureInfo.InvariantCulture) + " -o " + Util.FilePaths.FixSpaces(fixedFile.ToString(System.Globalization.CultureInfo.InvariantCulture)); // avoid using threads since we are copying to increase stability
 
                         _jobLog.WriteEntry(this, "Fixing Audio Delay using MEncoder with Parameters: " + encoderParams, Log.LogEntryType.Debug);
-                        Mencoder mencoderAVI = new Mencoder(encoderParams, ref _jobStatus, _jobLog, false);
+                        Mencoder mencoderAVI = new Mencoder(encoderParams, _jobStatus, _jobLog, false);
                         mencoderAVI.Run();
                         if (!mencoderAVI.Success) // something failed or was incomplete, do not check for % completion as Mencoder looks fro success criteria
                         {
                             _jobStatus.PercentageComplete = 0;
-                            _jobStatus.ErrorMsg = Localise.GetPhrase("Fix AudioSync failed for") + " " + ext;
+                            _jobStatus.ErrorMsg = ("Fix AudioSync failed for") + " " + ext;
                             _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
                             return false;
                         }
@@ -617,7 +755,7 @@ namespace MCEBuddy.Transcode
                         break;
 
                     default:
-                        _jobLog.WriteEntry(this, Localise.GetPhrase("Using FFMPEG to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
+                        _jobLog.WriteEntry(this, ("Using FFMPEG to correct audio sync for extension ") + ext, Log.LogEntryType.Debug);
 
                         if (audioDelay > 0) // Map same file as 2 inputs, shift and take the audio in one and take the video from the other
                         {
@@ -639,48 +777,36 @@ namespace MCEBuddy.Transcode
 
                         encoderParams += " " + Util.FilePaths.FixSpaces(fixedFile);
 
-                        var ffmpeg = new FFmpeg(encoderParams, ref _jobStatus, _jobLog);
-                        ffmpeg.Run();
-                        if (!ffmpeg.Success || (FileIO.FileSize(fixedFile) <= 0)) // Do not check for % completion since FFMPEG doesn't always report a % for this routine for some reason
+                        if (!FFmpeg.FFMpegExecuteAndHandleErrors(encoderParams, _jobStatus, _jobLog, Util.FilePaths.FixSpaces(fixedFile))) // Do not check for % completion since FFMPEG doesn't always report a % for this routine for some reason
                         {
-                            _jobLog.WriteEntry("Fixing Audio Delay failed, retying using GenPts", Log.LogEntryType.Warning);
-
-                            // genpt is required sometimes when -ss is specified before the inputs file, see ffmpeg ticket #2054
-                            encoderParams = "-fflags +genpts " + encoderParams;
-                            ffmpeg = new FFmpeg(encoderParams, ref _jobStatus, _jobLog);
-                            ffmpeg.Run();
-
-                            if (!ffmpeg.Success || (FileIO.FileSize(fixedFile) <= 0)) //check of file is created, outputhandler reports success (Percentage not requires since Success is more accurate)
-                            {
-                                _jobStatus.PercentageComplete = 0; // if the file wasn't completely converted the percentage will be low so no worries
-                                _jobStatus.ErrorMsg = Localise.GetPhrase("Fix AudioSync Failed for") + " " + ext;
-                                _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
-                                return false;
-                            }
+                            _jobStatus.PercentageComplete = 0; // if the file wasn't completely converted the percentage will be low so no worries
+                            _jobStatus.ErrorMsg = "Fix AudioSync Failed for " + ext;
+                            _jobLog.WriteEntry(this, (_jobStatus.ErrorMsg), Log.LogEntryType.Error);
+                            return false;
                         }
 
                         break;
                 }
                 
-                Util.FileIO.TryFileDelete(_convertedFile);
                 try
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Fix Audio Delay trying to move fixed file"), Log.LogEntryType.Information);
-                    File.Move(fixedFile, _convertedFile);
+                    _jobLog.WriteEntry(this, ("Fix Audio Delay trying to move fixed file"), Log.LogEntryType.Information);
+                    FileIO.TryFileDelete(_convertedFile);
+                    FileIO.MoveAndInheritPermissions(fixedFile, _convertedFile);
                 }
                 catch (Exception e)
                 {
-                    _jobLog.WriteEntry(this, Localise.GetPhrase("Unable to move audio sync corrected file") + " " + fixedFile + "\r\nError : " + e.ToString(), Log.LogEntryType.Error);
+                    _jobLog.WriteEntry(this, ("Unable to move audio sync corrected file") + " " + fixedFile + "\r\nError : " + e.ToString(), Log.LogEntryType.Error);
                     _jobStatus.ErrorMsg = "Unable to move audio sync file";
                     _jobStatus.PercentageComplete = 0;
                     return false;
                 }
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Finished Audio Delay Correction, file size [KB]") + " " + (Util.FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+                _jobLog.WriteEntry(this, ("Finished Audio Delay Correction, file size [KB]") + " " + (FileIO.FileSize(_convertedFile) / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
             }
             else
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Fix Audio Delay, net correction 0, skipping correction"), Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, ("Fix Audio Delay, net correction 0, skipping correction"), Log.LogEntryType.Information);
 
-            return ret;
+            return true;
         }
 
         private void ReplaceUserParameters()
@@ -700,11 +826,14 @@ namespace MCEBuddy.Transcode
             _cmdParams = _cmdParams.Replace("<converted>", ConvertedFile);
         }
 
+        /// <summary>
+        /// Calculates adjustment to quality and bitrate due to changes in resolution and cropping
+        /// </summary>
         private void AdjustResizeCropBitrateQuality()
         {
-            if (ConstantQuality) return;
+            if (ConstantVideoQuality) return;
 
-            if (_fixedResolution && (_isPresetVideoWidth)) return; // The size has been hardcoded into the paramters and bitrate optimized, no need to recalculate here - if fixedresolution is not set, then the video may be resized if required and we need to recalculate the bitrate
+            if (_fixedResolution || _isPresetVideoWidth) return; // The size has been hardcoded into the paramters and bitrate optimized, no need to recalculate here - if fixedresolution is not set, then the video may be resized if required and we need to recalculate the bitrate
 
             // Set the quality multiplier if you are using fixed bitrate
             int VideoWidth = _videoFile.Width;
@@ -717,343 +846,38 @@ namespace MCEBuddy.Transcode
             // If we are scaling down, then reduce the quality multiplier
             if (VideoWidth > _maxWidth ) VideoWidth = _maxWidth;
 
-            _quality = _quality * (float)VideoWidth / (float)DEFAULT_VIDEO_WIDTH;
-        }
+            _bitrateResolutionQuality = _bitrateResolutionQuality * (float)VideoWidth / (float)DEFAULT_VIDEO_WIDTH; // Here we adjust the bitrate quality due to changes in resolutin (not user specified quality)
 
-
-        private bool ParameterValueStartEnd(string cmd, out int start, out int length)
-        {
-            start = -1;
-            length = -1;
-
-            cmd = cmd + " ";
-
-            int idx = -1;
-            if (!_caseSensitive)
-            {
-                idx = _cmdParams.ToLower().IndexOf(cmd.ToLower());
-            }
-            else
-            {
-                idx = _cmdParams.IndexOf(cmd);
-            }
-
-            // Find the start of the parameter
-            if (idx < 0) return false;
-            idx = idx + cmd.Length;
-            while (idx < _cmdParams.Length)
-            {
-                if (!char.IsWhiteSpace(_cmdParams[idx])) break;
-                idx++;
-            }
-            // Found the start of the parameter
-
-            // Find the end of the parameter
-            int endidx = -1;
-            bool inQuotes = false;
-            for (int i = idx; i < _cmdParams.Length; i++)
-            {
-                if ((char.IsWhiteSpace(_cmdParams[i])) && (!inQuotes))
-                {
-                    endidx = i;
-                    break;
-                }
-                else if (_cmdParams[i] == '\"')
-                {
-                    inQuotes = !inQuotes;
-                }
-            }
-            if (!inQuotes)
-            {
-                // Found a valid parameter
-                if (endidx == -1) endidx = _cmdParams.Length;
-                start = idx;
-                length = endidx - idx;
-                return (length > 0);
-            }
-            return false;
+            _jobLog.WriteEntry(this, "Adjusted bitrate quality due to changes in resolution (OriginalWidth " + _videoFile.Width.ToString() + ", CropWidth " + _videoFile.CropWidth.ToString() + ", MaxWidth " + _maxWidth.ToString() + ", FinalWidth " + VideoWidth.ToString() + ") by a factor of " +  _bitrateResolutionQuality.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
         }
 
         /// <summary>
-        /// Return the value of a parameter from the conversion command line
+        /// Adjust the constant quality scale based on % quality adjustment made by user
         /// </summary>
-        /// <param name="cmd"></param>
-        /// <returns>Paramter value if found else ""</returns>
-        protected string ParameterValue(string cmd)
+        /// <param name="lowQuality">Lowest quality value in scale</param>
+        /// <param name="highQuality">Highest quality value in scale</param>
+        /// <param name="qualCurrent">Current/profile quality value to adjust</param>
+        /// <returns>Adjusted quality value</returns>
+        protected int ConstantQualityValue(int lowQuality, int highQuality, int qualCurrent)
         {
-            int start, length;
-
-            if (ParameterValueStartEnd(cmd, out start, out length))
-            {
-                return _cmdParams.Substring(start, length);
-            }
-            else return "";
-
-        }
-
-        private void AddParameter(string parameter)
-        {
-            _cmdParams = (_cmdParams + " " + parameter).Trim();
-        }
-
-        /// <summary>
-        /// Replaces the value of a parameter in the conversion command line
-        /// </summary>
-        /// <param name="cmd">Parameter identifier</param>
-        /// <param name="newValue">Parameter value</param>
-        /// <returns>True if parameter is found and replaced</returns>
-        protected bool ParameterValueReplace(string cmd, string newValue)
-        {
-            int start, length;
-
-            if (ParameterValueStartEnd(cmd, out start, out length))
-            {
-                string newCmdLine = _cmdParams.Substring(0, start - 1).Trim();
-                newCmdLine += " " + newValue;
-                newCmdLine += " " + _cmdParams.Substring(start + length).Trim();
-                _cmdParams = newCmdLine;
-                return true;
-            }
-            else return false;
-        }
-
-        /// <summary>
-        /// Replaces a value of a parameter or inserts it if parameters is not found
-        /// </summary>
-        /// <param name="cmd">Parameter identifier</param>
-        /// <param name="newValue">Parameter value</param>
-        protected void ParameterValueReplaceOrInsert(string cmd, string newValue)
-        {
-            if (!ParameterValueReplace(cmd, newValue))
-            {
-                _cmdParams += " " + cmd + " " + newValue;
-            }
-        }
-
-        private bool ParameterSubValueStartEnd(string cmd, string subcmd, out int start, out int length)
-        {
-            start = -1;
-            length = -1;
-            int paramStart = -1;
-            int paramLength = -1;
-            string param = "";
-
-            // Get the parameter value and the start/length 
-            // TODO Regex this all once I get some time (hah!)
-
-            if (ParameterValueStartEnd(cmd, out paramStart, out paramLength))
-            {
-                param = _cmdParams.Substring(paramStart, paramLength);
-            }
-            else return false;
-
-            if (!_caseSensitive)
-            {
-                subcmd = subcmd.ToLower();
-            }
-
-            // Hack for mencoder -vf as it varies from everything else
-            string[] subParams;
-            if (cmd == "-vf")
-            {
-                subParams = param.Split(',');
-            }
-            else
-            {
-                subParams = param.Split(_separator);
-            }
-            string subStr = "";
-            foreach (string s in subParams)
-            {
-                string s2 = "";
-                if (_caseSensitive)
-                {
-                    s2 = s;
-                }
-                else
-                {
-                    s2 = s.ToLower();
-                }
-                if (s2.Contains("="))
-                {
-                    s2 = s2.Substring(0, s2.IndexOf("="));
-                }
-                if (s2 == subcmd)
-                {
-                    subStr = s;
-                    break;
-                }
-            }
-            if (subStr != "")
-            {
-                start = paramStart + param.IndexOf(subStr);
-                if (subStr.Contains("="))
-                {
-                    start += subStr.IndexOf("=") + 1;
-                    length = subStr.Length - subStr.IndexOf("=") - 1;
-                }
-                else
-                {
-                    length = subStr.Length;
-                }
-                if (start > _cmdParams.Length - 1) start = _cmdParams.Length - 1;
-                // TODo Start + length check
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns the value of a sub parameter within a parameter 
-        /// e.g. -vf scale=1024x768,crop=0:0:10:10 -> parameter is vf, sub parameters are scale and crop
-        /// </summary>
-        /// <param name="cmd">Parameter identifier</param>
-        /// <param name="subCmd">Sub-parameter identifier</param>
-        /// <returns>Value of sub parameter if found else ""</returns>
-        protected string ParameterSubValue(string cmd, string subCmd)
-        {
-            int start, length;
-
-            if (ParameterSubValueStartEnd(cmd, subCmd, out start, out length))
-            {
-                return _cmdParams.Substring(start, length);
-            }
-            else return "";
-        }
-
-        /// <summary>
-        /// Replaces the value of a sub parameter within a parameter 
-        /// e.g. -vf scale=1024x768,crop=0:0:10:10 -> parameter is vf, sub parameters are scale and crop
-        /// </summary>
-        /// <param name="cmd">Parameter identifier</param>
-        /// <param name="subCmd">Sub-parameter identifier</param>
-        /// <param name="newValue">Value of the sub parameter to replace</param>
-        /// <returns>True if sub parameter is found and replaced</returns>
-        protected bool ParameterSubValueReplace(string cmd, string subCmd, string newValue)
-        {
-            int start, length;
-
-            if (ParameterSubValueStartEnd(cmd, subCmd, out start, out length))
-            {
-                string newCmdLine = _cmdParams.Substring(0, start);
-                newCmdLine += newValue;
-                newCmdLine += _cmdParams.Substring(start + length);
-                _cmdParams = newCmdLine;
-                return true;
-            }
-            else return false;
-        }
-
-        /// <summary>
-        /// Replaces the value of a sub parameter within a parameter or inserts it if not found
-        /// e.g. -vf scale=1024x768,crop=0:0:10:10 -> parameter is vf, sub parameters are scale and crop
-        /// </summary>
-        /// <param name="cmd">Parameter identifier</param>
-        /// <param name="subCmd">Sub-parameter identifier</param>
-        /// <param name="newValue">Value of the sub parameter to replace</param>
-        protected void ParameterSubValueReplaceOrInsert(string cmd, string subCmd, string newValue)
-        {
-            if (!ParameterSubValueReplace(cmd, subCmd, newValue))
-            {
-                // Hack for mencoder -vf and -af as it varies from everything else
-                string paramValue;
-                string value = "=" + newValue;
-                if (newValue == "") value = "";
-                if (cmd == "-vf" || cmd == "-af")
-                {
-                    if (ParameterValue(cmd) != "") // avoid the last comma if this is a new key
-                        paramValue = ParameterValue(cmd) + "," + subCmd + value; // place at the end
-                    else
-                        paramValue = subCmd + value;
-                }
-                else
-                {
-                    paramValue = subCmd + value;
-                    if(ParameterValue(cmd) != "") // avoid the last separator if this is a new key
-                        paramValue = ParameterValue(cmd) + _separator + paramValue; // place at the end
-                }
-                ParameterValueReplaceOrInsert(cmd, paramValue);
-            }
-        }
-
-        protected int ConstantQualityValue(int lowQuality, int highQuality, int qualDefault)
-        {
-            if (_quality == 1) return qualDefault;
+            if (_userQuality == 1) return qualCurrent;
 
             int qualBoundary;
             double qualMult;
 
             // Chooose the boundary value to head to - remember highQuality  can be the LOWEST OR THE HIGHEST value 
-            if (_quality < 1)
+            if (_userQuality < 1)
             {
                 qualBoundary = lowQuality;
-                qualMult = _quality;
+                qualMult = _userQuality;
             }
             else
             {
                 qualBoundary = highQuality;
-                qualMult = _quality - 1;
+                qualMult = _userQuality - 1;
             }
 
-            return (int)((qualBoundary - qualDefault) * (qualMult)) + qualDefault;
-        }
-
-        /// <summary>
-        /// Adds a video filter to the conversion command parameters (within -vf)
-        /// e.g. -vf scale=1024x768,crop=0:0:10:10 -> video parameter is vf, sub parameters are scale and crop
-        /// </summary>
-        /// <param name="subCmd">Video sub parameter</param>
-        /// <param name="parameter">Sub parameter value</param>
-        protected void AddVideoFilter(string subCmd, string parameter)
-        {
-            // First try replacing an existing filter
-            if (ParameterSubValueReplace("-vf", subCmd, parameter)) return;
-
-            // OK, so the filter is not there, so work out where to insert it in the filter chain and then add it;
-            if (!_cmdParams.Contains("-vf"))
-            {
-                ParameterSubValueReplaceOrInsert("-vf", subCmd, parameter);
-            }
-            else
-            {
-                string newFilter = subCmd + "=" + parameter;
-                string vfParams = ParameterValue("-vf");
-
-                if ((subCmd == "crop") && vfParams.Contains("scale")) // crop always comes before scale
-                {
-                    vfParams = vfParams.Insert(vfParams.IndexOf("scale"), newFilter + ",");
-                    ParameterValueReplace("-vf", vfParams);
-                }
-                else
-                    ParameterSubValueReplaceOrInsert("-vf", subCmd, parameter);
-            }
-        }
-
-        /// <summary>
-        /// Adds a audio filter to the conversion command parameters (within -af)
-        /// e.g. -af volume=0.5,aresample=44100 -> audio parameter is af, sub parameters are volume and aresample
-        /// </summary>
-        /// <param name="subCmd">Audio sub parameter</param>
-        /// <param name="parameter">Sub parameter value</param>
-        protected void AddAudioFilter(string subCmd, string parameter)
-        {
-            // First try replacing an existing filter
-            if (ParameterSubValueReplace("-af", subCmd, parameter)) return;
-
-            // OK, so the filter is not there, so work out where to insert it in the filter chain and then add it;
-            if (!_cmdParams.Contains("-af"))
-            {
-                ParameterSubValueReplaceOrInsert("-af", subCmd, parameter);
-            }
-            else
-            {
-                // TODO: Any special filter rules/toolchain rules for audio filters?
-                string newFilter = subCmd + "=" + parameter;
-                ParameterSubValueReplaceOrInsert("-af", subCmd, parameter);
-            }
+            return (int)((qualBoundary - qualCurrent) * (qualMult)) + qualCurrent;
         }
 
         /// <summary>
@@ -1080,34 +904,32 @@ namespace MCEBuddy.Transcode
             get { return _convertedFile; }
         }
 
+        /// <summary>
+        /// Indicates if subtitles were burnt into the video while converting
+        /// </summary>
+        public bool SubtitleBurned
+        {
+            get { return _subtitleBurned; }
+        }
+
+        // Interfaces for converters
         protected abstract bool ConvertWithTool();
-
-        protected abstract void SetCrop();
-
-        protected abstract void SetBitrateAndQuality();
-
-        protected abstract void SetResize();
-
+        protected abstract void SetVideoCropping();
+        protected abstract void SetVideoBitrateAndQuality();
+        protected abstract void SetVideoResize();
         protected abstract void SetInputFileName();
-
         protected abstract void SetOutputFileName();
-
         protected abstract void SetAudioChannels();
-
         protected abstract void SetAudioLanguage();
-
-        protected abstract bool ConstantQuality { get; }
-
-        protected abstract void SetVolume();
-
-        protected abstract void SetPreDRC();
-
-        protected abstract void SetPostDRC();
-
-        protected abstract void SetAspectRatio();
-
-        protected abstract void SetTrim();
-
-        protected abstract bool IsPresetWidth();
+        protected abstract bool ConstantVideoQuality { get; }
+        protected abstract void SetAudioVolume();
+        protected abstract void SetAudioPreDRC();
+        protected abstract void SetAudioPostDRC();
+        protected abstract void SetVideoAspectRatio();
+        protected abstract void SetVideoTrim();
+        protected abstract bool IsPresetVideoWidth();
+        protected abstract void SetVideoDeInterlacing();
+        protected abstract void FinalSanityCheck();
+        protected abstract void SetVideoOutputFrameRate();
     }
 }

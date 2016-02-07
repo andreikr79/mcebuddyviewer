@@ -21,39 +21,63 @@ namespace MCEBuddy.Transcode
         private string commandParameters = "";
         private int hangPeriod = -1;
         private Base baseCommand;
+        private string _workingPath;
+        private string _destinationPath;
         private string _convertedFile;
         private string _sourceFile;
         private string _remuxFile;
         private bool customCommandCritical = false;
+        private bool customCommandUISession = false;
+        private bool customCommandShowWindow = false;
+        private bool customCommandExitCodeCheck = false;
         private VideoTags _metaData;
         private string _edlFile;
+        private string _srtFile;
+        private string _taskName;
+        private string _prefix;
 
         /// <summary>
         /// Used to execute custom commands after the conversion process is compelte just before the file is moved to the desination directory
         /// </summary>
+        /// <param name="prefix">Prefix for reading lines from profile</param>
         /// <param name="profile">Profile name</param>
+        /// <param name="taskName">Task Name</param>
+        /// <param name="workingPath">Temp working path</param>
+        /// <param name="destinationPath">Destination path for converted file</param>
         /// <param name="convertedFile">Full path to final converted file</param>
         /// <param name="sourceFile">Full path to original source file</param>
         /// <param name="remuxFile">Full path to intermediate remuxed file</param>
+        /// <param name="edlFile">Full path to EDL file</param>
+        /// <param name="srtFile">Full path to SRT file</param>
         /// <param name="metaData">Video metadata structure for source file</param>
         /// <param name="jobStatus">ref to JobStatus</param>
         /// <param name="jobLog">JobLog</param>
-        public CustomCommand(string profile, string convertedFile, string sourceFile, string remuxFile, string edlFile, VideoTags metaData, ref JobStatus jobStatus, Log jobLog)
+        public CustomCommand(string prefix, string profile, string taskName, string workingPath, string destinationPath, string convertedFile, string sourceFile, string remuxFile, string edlFile, string srtFile, VideoTags metaData, JobStatus jobStatus, Log jobLog)
         {
             _profile = profile;
+            _taskName = taskName;
             _jobLog = jobLog;
             _jobStatus = jobStatus;
+            _workingPath = workingPath;
+            _destinationPath = destinationPath;
             _convertedFile = convertedFile;
             _sourceFile = sourceFile;
             _remuxFile = remuxFile;
             _edlFile = edlFile;
+            _srtFile = srtFile;
             _metaData = metaData;
+            _prefix = prefix;
 
             Ini ini = new Ini(GlobalDefs.ProfileFile);
-            commandPath = ini.ReadString(profile, "CustomCommandPath", "").ToLower().Trim();
-            commandParameters = ini.ReadString(profile, "CustomCommandParameters", "");
-            hangPeriod = ini.ReadInteger(profile, "CustomCommandHangPeriod", -1);
-            customCommandCritical = ini.ReadBoolean(profile, "CustomCommandCritical", false); // NOTE: if customCommandCritical is TRUE will need to return false in case it's a failure
+            commandPath = ini.ReadString(profile, prefix + "Path", "").ToLower().Trim();
+            commandParameters = ini.ReadString(profile, prefix + "Parameters", "");
+            hangPeriod = ini.ReadInteger(profile, prefix + "HangPeriod", GlobalDefs.HANG_PERIOD_DETECT);
+            customCommandCritical = ini.ReadBoolean(profile, prefix + "Critical", false); // NOTE: if customCommandCritical is TRUE will need to return false in case it's a failure
+            customCommandUISession = ini.ReadBoolean(profile, prefix + "UISession", false); // Does the custom command need a UI Session (Session 1) with admin privileges
+            customCommandShowWindow = ini.ReadBoolean(profile, prefix + "ShowWindow", true); // Show the window or hide it
+            customCommandExitCodeCheck = ini.ReadBoolean(profile, prefix + "ExitCodeCheck", false); // Don't check for exit code
+
+            _jobLog.WriteEntry(this, "Custom command parameters read -> " + " \n" + _prefix + "Path = " + commandPath + " \n" + _prefix + "Parameters = " + commandParameters + " \n" + _prefix + "HangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \n" + _prefix + "Critical = " + customCommandCritical.ToString() + " \n" + _prefix + "UISession = " + customCommandUISession.ToString() + " \n" + _prefix + "ShowWindow = " + customCommandShowWindow.ToString() + " \n" + _prefix + "ExitCodeCheck = " + customCommandExitCodeCheck.ToString(), Log.LogEntryType.Debug);
         }
 
         public bool Run()
@@ -62,276 +86,58 @@ namespace MCEBuddy.Transcode
 
             if (commandPath == "")
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("No custom commands found"), Log.LogEntryType.Information);
+                _jobLog.WriteEntry(this, "No custom commands found", Log.LogEntryType.Information);
                 return true; // not a critical failure
             }
+
+            // Get the path if it is an absolute path, if it's relative we start in the MCEBuddy directory
+            if (!Path.IsPathRooted(commandPath))
+                commandPath = Path.Combine(GlobalDefs.AppPath, commandPath); // Relative path starts with MCEBuddy path
 
             if ((hangPeriod < 0) || (!File.Exists(commandPath)))
             {
                 if (hangPeriod < 0)
-                    _jobLog.WriteEntry(this, "CustomCommandHangPeriod NOT specified!", Log.LogEntryType.Error);
+                    _jobLog.WriteEntry(this, _prefix + "HangPeriod NOT specified!", Log.LogEntryType.Error);
                 else
-                    _jobLog.WriteEntry(this, "CustomCommandPath does NOT exist!", Log.LogEntryType.Error);
+                    _jobLog.WriteEntry(this, _prefix + "Path does NOT exist!", Log.LogEntryType.Error);
 
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Invalid custom command parameters") + " \nCustomCommandPath = " + commandPath + " \nCustomCommandParameters = " + commandParameters + " \nCustomCommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \nCustomCommandCritical = " + customCommandCritical.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Error);
+                _jobLog.WriteEntry(this, "Invalid custom command parameters" + " \n" + _prefix + "Path = " + commandPath + " \n" + _prefix + "Parameters = " + commandParameters + " \n" + _prefix + "HangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \n" + _prefix + "Critical = " + customCommandCritical.ToString() + " \n" + _prefix + "UISession = " + customCommandUISession.ToString() + " \n" + _prefix + "ShowWindow = " + customCommandShowWindow.ToString() + " \n" + _prefix + "ExitCodeCheck = " + customCommandExitCodeCheck.ToString(), Log.LogEntryType.Error);
                 
                 if (customCommandCritical)
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Invalid custom command parameters"); // Set an error message on if we are failing the conversion
+                    _jobStatus.ErrorMsg = "Invalid custom command parameters"; // Set an error message on if we are failing the conversion
                 
                 return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
             }
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("Read custom command parameters") + " \nCommandPath = " + commandPath + " \nCommandParameters = " + commandParameters + " \nCommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \nCommandCritical = " + customCommandCritical.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
-
-            // SRT and EDl files are substitued if they exist otherwise they are ""
-            string srtFile = Path.Combine(Path.GetDirectoryName(_convertedFile), (Path.GetFileNameWithoutExtension(_sourceFile) + ".srt")); // SRT file created by 3rd Party in temp working directory
-            if (!File.Exists(srtFile))
-                srtFile = "";
-            string edlFile = _edlFile;
-            if (!File.Exists(edlFile))
-                edlFile = "";
-
-            try
+            // Translate the user commands
+            if (!String.IsNullOrWhiteSpace(commandParameters)) // Check if there was a custom command parameter
             {
-                char[] commandBytes = commandParameters.ToCharArray();
-                for (int i = 0; i < commandBytes.Length; i++)
+                translatedCommand = UserCustomParams.CustomParamsReplace(commandParameters, _workingPath, _destinationPath, _convertedFile, _sourceFile, _remuxFile, _edlFile, _srtFile, _profile, _taskName, _metaData, _jobLog);
+                if (String.IsNullOrWhiteSpace(translatedCommand))
                 {
-                    switch (commandBytes[i])
-                    {
-                        case '%':
-                            string command = "";
-                            while (commandBytes[++i] != '%')
-                                command += commandBytes[i].ToString(System.Globalization.CultureInfo.InvariantCulture).ToLower();
-
-                            string format = "";
-                            switch (command)
-                            {
-                                case "convertedfile":
-                                    translatedCommand += (_convertedFile); // Preserve case for parameters
-                                    break;
-
-                                case "sourcefile":
-                                    translatedCommand += (_sourceFile); // Preserve case for parameters
-                                    break;
-
-                                case "remuxfile":
-                                    translatedCommand += (_remuxFile); // Preserve case for parameters
-                                    break;
-
-                                case "workingpath":
-                                    translatedCommand += (Path.GetDirectoryName(_convertedFile)); // Preserve case for parameters
-                                    break;
-
-                                case "srtfile":
-                                    translatedCommand += (srtFile); // Preserve case for parameters
-                                    break;
-
-                                case "edlfile":
-                                    translatedCommand += (edlFile); // Preserve case for parameters
-                                    break;
-
-                                case "originalfilepath":
-                                    translatedCommand += (Path.GetDirectoryName(_sourceFile)); // Preserve case for parameters
-                                    break;
-
-                                case "originalfilename":
-                                    translatedCommand += (Path.GetFileNameWithoutExtension(_sourceFile)); // Preserve case for parameters
-                                    break;
-
-                                case "showname":
-                                    translatedCommand += (_metaData.Title); // Preserve case for parameters
-                                    break;
-
-                                case "genre":
-                                    translatedCommand += (_metaData.Genres != null ? (_metaData.Genres.Length > 0 ? _metaData.Genres[0] : "") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "episodename":
-                                    translatedCommand += (_metaData.SubTitle); // Preserve case for parameters
-                                    break;
-
-                                case "episodedescription":
-                                    translatedCommand += (_metaData.Description); // Preserve case for parameters
-                                    break;
-
-                                case "network":
-                                    translatedCommand += (_metaData.Network); // Preserve case for parameters
-                                    break;
-
-                                case "bannerfile":
-                                    translatedCommand += (_metaData.BannerFile); // Preserve case for parameters
-                                    break;
-
-                                case "bannerurl":
-                                    translatedCommand += (_metaData.BannerURL); // Preserve case for parameters
-                                    break;
-
-                                case "movieid":
-                                    translatedCommand += (_metaData.movieDBMovieId); // Preserve case for parameters
-                                    break;
-
-                                case "imdbmovieid":
-                                    translatedCommand += (_metaData.imdbMovieId); // Preserve case for parameters
-                                    break;
-
-                                case "seriesid":
-                                    translatedCommand += (_metaData.tvdbSeriesId); // Preserve case for parameters
-                                    break;
-
-                                case "season":
-                                    format = "";
-                                    try
-                                    {
-                                        if (commandBytes[i + 1] == '#')
-                                        {
-                                            while (commandBytes[++i] == '#')
-                                                format += "0";
-
-                                            --i; // adjust for last increment
-                                        }
-                                    }
-                                    catch { } // this is normal incase it doesn't exist
-
-                                    translatedCommand += ((_metaData.Season == 0 ? "" : _metaData.Season.ToString(format))); // Preserve case for parameters
-                                    break;
-
-                                case "episode":
-                                    format = "";
-                                    try
-                                    {
-                                        if (commandBytes[i + 1] == '#')
-                                        {
-                                            while (commandBytes[++i] == '#')
-                                                format += "0";
-
-                                            --i; // adjust for last increment
-                                        }
-                                    }
-                                    catch { } // this is normal incase it doesn't exist
-
-                                    translatedCommand += ((_metaData.Episode == 0 ? "" : _metaData.Episode.ToString(format))); // Preserve case for parameters
-                                    break;
-
-                                case "ismovie":
-                                    translatedCommand += (_metaData.IsMovie.ToString(CultureInfo.InvariantCulture)); // Preserve case for parameters
-                                    break;
-
-                                case "airyear":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("yyyy") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "airmonth":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%M") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "airmonthshort":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMM") : ""); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "airmonthlong":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("MMMM") : ""); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "airday":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%d") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "airdayshort":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("ddd") : ""); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "airdaylong":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("dddd") : ""); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "airhour":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%h") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "airhourampm":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("tt") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "airminute":
-                                    translatedCommand += ((_metaData.OriginalBroadcastDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.OriginalBroadcastDateTime.ToLocalTime().ToString("%m") : ""); // Preserve case for parameters
-                                    break;
-
-                                case "recordyear":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("yyyy") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("yyyy")); // Preserve case for parameters
-                                    break;
-
-                                case "recordmonth":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%M") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%M")); // Preserve case for parameters
-                                    break;
-
-                                case "recordmonthshort":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMM")); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "recordmonthlong":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("MMMM") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("MMMM")); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "recordday":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%d") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%d")); // Preserve case for parameters
-                                    break;
-
-                                case "recorddayshort":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("ddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("ddd")); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "recorddaylong":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("dddd") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("dddd")); // Preserve case for parameters, culture sensitive
-                                    break;
-
-                                case "recordhour":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%h") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%h")); // Preserve case for parameters
-                                    break;
-
-                                case "recordhourampm":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("tt") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("tt")); // Preserve case for parameters
-                                    break;
-
-                                case "recordminute":
-                                    translatedCommand += ((_metaData.RecordedDateTime > GlobalDefs.NO_BROADCAST_TIME) ? _metaData.RecordedDateTime.ToLocalTime().ToString("%m") : Util.FileIO.GetFileCreationTime(_sourceFile).ToString("%m")); // Preserve case for parameters
-                                    break;
-
-                                default:
-                                    _jobLog.WriteEntry(Localise.GetPhrase("Invalid custom command format detected, skipping") + " : " + command, Log.LogEntryType.Warning); // We had an invalid format
-                                    break;
-                            }
-                            break;
-
-                        default:
-                            translatedCommand += commandBytes[i];
-                            break;
-                    }
+                    _jobLog.WriteEntry(this, "Invalid custom command. Error", (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                    if (customCommandCritical)
+                        _jobStatus.ErrorMsg = Localise.GetPhrase("Invalid custom command"); // Set an error message on if we are failing the conversion
+                    return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
                 }
             }
-            catch (Exception e)
-            {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Invalid custom command. Error " + e.ToString()), (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
-                if (customCommandCritical)
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Invalid custom command"); // Set an error message on if we are failing the conversion
-                return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
-            }
 
             try
             {
-                baseCommand = new Base(true, translatedCommand, commandPath, ref _jobStatus, _jobLog); // send the absolute command path and by default success is true until process is terminated and show Window
+                baseCommand = new Base(customCommandShowWindow, translatedCommand, commandPath, customCommandUISession, _jobStatus, _jobLog); // send the absolute command path and by default success is true until process is terminated and show Window
             }
             catch (FileNotFoundException)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Invalid custom command path") + " CommandPath = " + commandPath, (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                _jobLog.WriteEntry(this, "Invalid custom command path" + " " + _prefix + "Path = " + commandPath, (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
                 if (customCommandCritical)
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Invalid custom command path"); // Set an error message on if we are failing the conversion
+                    _jobStatus.ErrorMsg = "Invalid custom command path"; // Set an error message on if we are failing the conversion
                 return !customCommandCritical; // return the opposite of the critical (if it's true then return false)
             }
 
             // Set the hang detection period
             baseCommand.HangPeriod = hangPeriod;
 
-            _jobLog.WriteEntry(this, Localise.GetPhrase("About to run custom command with parameters") + " \nCommandPath = " + commandPath + " \nCommandParameters = " + translatedCommand + " \nCommandHangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            _jobLog.WriteEntry(this, "About to run custom command with parameters:" + " \n" + _prefix + "Path = " + commandPath + " \n" + _prefix + "Parameters = " + commandParameters + " \n" + _prefix + "HangPeriod = " + hangPeriod.ToString(System.Globalization.CultureInfo.InvariantCulture) + " \n" + _prefix + "Critical = " + customCommandCritical.ToString() + " \n" + _prefix + "UISession = " + customCommandUISession.ToString() + " \n" + _prefix + "ShowWindow = " + customCommandShowWindow.ToString() + " \n" + _prefix + "ExitCodeCheck = " + customCommandExitCodeCheck.ToString(), Log.LogEntryType.Debug);
 
             // Run the custom command
             baseCommand.Run();
@@ -339,10 +145,22 @@ namespace MCEBuddy.Transcode
             // Check for hang/termination
             if (!baseCommand.Success)
             {
-                _jobLog.WriteEntry(this, Localise.GetPhrase("Custom command hung, process was terminated"), (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                _jobLog.WriteEntry(this, "Custom command hung, process was terminated", (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                
                 if (customCommandCritical)
-                    _jobStatus.ErrorMsg = Localise.GetPhrase("Custom command hung, process was terminated");
+                    _jobStatus.ErrorMsg = "Custom command hung, process was terminated";
+                else
+                    _jobStatus.ErrorMsg = ""; // Clear any errors
+
                 return !customCommandCritical; // return the opposite, see above
+            }
+
+            // Check if exit code not equal to0 indicating failure, if required
+            if (customCommandExitCodeCheck && (baseCommand.ExitCode != 0))
+            {
+                _jobStatus.ErrorMsg = "Custom command failed with exit code " + baseCommand.ExitCode.ToString();
+                _jobLog.WriteEntry(this, "Custom command failed with Exit Code " + baseCommand.ExitCode.ToString(), (customCommandCritical ? Log.LogEntryType.Error : Log.LogEntryType.Warning));
+                return false; // failed
             }
 
             return true;

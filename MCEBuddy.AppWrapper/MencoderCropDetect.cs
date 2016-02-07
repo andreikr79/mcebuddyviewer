@@ -8,7 +8,7 @@ using MCEBuddy.Util;
 
 namespace MCEBuddy.AppWrapper
 {
-    public class MencoderCropDetect : AppWrapper.Base
+    public class MencoderCropDetect : Base
     {
         private const string APP_PATH = "mencoder\\mencoder.exe";
         protected SortedList<string, int> _CropResults = new SortedList<string, int>();
@@ -18,8 +18,13 @@ namespace MCEBuddy.AppWrapper
         private int _cropStartY = -1;
         private string _cropString = "";
 
-        public MencoderCropDetect(string sourceFile, string edlFile, ref JobStatus jobStatus, Log jobLog)
-            : base(sourceFile, APP_PATH, ref jobStatus, jobLog)
+        /// <summary>
+        /// Detects the cropping information of a video file using MEncoder. Runs automatically on initialization
+        /// </summary>
+        /// <param name="sourceFile">Video file to detect cropping</param>
+        /// <param name="edlFile">EDL file to skip video sections for crop</param>
+        public MencoderCropDetect(string sourceFile, string edlFile, JobStatus jobStatus, Log jobLog, bool ignoreSuspend = false)
+            : base(sourceFile, APP_PATH, jobStatus, jobLog, ignoreSuspend)
         {
             // Update the parameters to be passed to mEncoder for cropdetect (ladvopts supports a max of 8 threads)
             _Parameters = Util.FilePaths.FixSpaces(sourceFile) + " -lavdopts threads=" + Math.Min(8, Environment.ProcessorCount).ToString(System.Globalization.CultureInfo.InvariantCulture) + " -nosound -ovc raw -o nul -vf cropdetect"; // setup for multiple processors to speed it up
@@ -28,81 +33,90 @@ namespace MCEBuddy.AppWrapper
                 _Parameters += " -edl " + Util.FilePaths.FixSpaces(edlFile); // If there is an EDL file use it to speed things up
 
             _success = true; //by deafult everything here works unless the process hangs
+
+            Run(); // Run it now
         }
 
         protected override void OutputHandler(object sendingProcess, System.Diagnostics.DataReceivedEventArgs ConsoleOutput)
         {
-            string StdOut, CropRes;
-            int StartPos, EndPos;
-            float perc;
-
-            base.OutputHandler(sendingProcess, ConsoleOutput);
-            if (ConsoleOutput.Data == null) return;
-
-            if (!String.IsNullOrEmpty(ConsoleOutput.Data))
+            try
             {
-                StdOut = ConsoleOutput.Data;
-                if ((StdOut.Contains("-vf crop=")) && (StdOut.Contains(")")))
-                {
-                    StartPos = StdOut.IndexOf("-vf crop=") + 9;
-                    EndPos = StdOut.IndexOf(")", StartPos);
-                    if (EndPos > 0)
-                    {
-                        CropRes = StdOut.Substring(StartPos, EndPos - StartPos);
-                        if (_CropResults.ContainsKey(CropRes))
-                        {
-                            _CropResults[CropRes]++;
-                        }
-                        else
-                        {
-                            _CropResults.Add(CropRes, 1);
-                        }
-                    }
-                }
+                string StdOut, CropRes;
+                int StartPos, EndPos;
+                float perc;
 
-                //Update % complete
-                if ((StdOut.Contains("%)")) && (StdOut.Contains("(")))
+                base.OutputHandler(sendingProcess, ConsoleOutput);
+                if (ConsoleOutput.Data == null) return;
+
+                if (!String.IsNullOrEmpty(ConsoleOutput.Data))
                 {
-                    EndPos = StdOut.IndexOf("%)");
-                    for (StartPos = EndPos - 1; StartPos > -1; StartPos--)
+                    StdOut = ConsoleOutput.Data;
+                    if ((StdOut.Contains("-vf crop=")) && (StdOut.Contains(")")))
                     {
-                        if (StdOut[StartPos] == '(')
+                        StartPos = StdOut.IndexOf("-vf crop=") + 9;
+                        EndPos = StdOut.IndexOf(")", StartPos);
+                        if (EndPos > 0)
                         {
-                            StartPos++;
-                            break;
+                            CropRes = StdOut.Substring(StartPos, EndPos - StartPos);
+                            if (_CropResults.ContainsKey(CropRes))
+                            {
+                                _CropResults[CropRes]++;
+                            }
+                            else
+                            {
+                                _CropResults.Add(CropRes, 1);
+                            }
                         }
                     }
-                    if (float.TryParse(StdOut.Substring(StartPos, EndPos - StartPos).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out perc))
+
+                    //Update % complete
+                    if ((StdOut.Contains("%)")) && (StdOut.Contains("(")))
                     {
-                        _jobStatus.PercentageComplete = perc;
-                        UpdateETAByPercentageComplete();
+                        EndPos = StdOut.IndexOf("%)");
+                        for (StartPos = EndPos - 1; StartPos > -1; StartPos--)
+                        {
+                            if (StdOut[StartPos] == '(')
+                            {
+                                StartPos++;
+                                break;
+                            }
+                        }
+                        if (float.TryParse(StdOut.Substring(StartPos, EndPos - StartPos).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out perc))
+                        {
+                            _jobStatus.PercentageComplete = perc;
+                            UpdateETAByPercentageComplete();
+                        }
                     }
+
+                    //Update ETA -- always 0
+                    /*if ((StdOut.Contains("Trem:")) && (StdOut.Contains("min")))
+                    {
+                        string ETAStr = "";
+                        for (int idx = StdOut.IndexOf("Trem:") + "Trem".Length + 1; idx < StdOut.Length - 1; idx++)
+                        {
+                            if (char.IsNumber(StdOut[idx]))
+                            {
+                                ETAStr += StdOut[idx];
+                            }
+                            else if (char.IsWhiteSpace(StdOut[idx]))
+                            {
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        int ETAVal = 0;
+                        int.TryParse(ETAStr, out ETAVal);
+                        int Hours = ETAVal / 60;
+                        int Minutes = ETAVal - (Hours * 60);
+                        UpdateETA(Hours, Minutes, 0);
+                    }*/
                 }
-                
-                //Update ETA -- always 0
-                /*if ((StdOut.Contains("Trem:")) && (StdOut.Contains("min")))
-                {
-                    string ETAStr = "";
-                    for (int idx = StdOut.IndexOf("Trem:") + "Trem".Length + 1; idx < StdOut.Length - 1; idx++)
-                    {
-                        if (char.IsNumber(StdOut[idx]))
-                        {
-                            ETAStr += StdOut[idx];
-                        }
-                        else if (char.IsWhiteSpace(StdOut[idx]))
-                        {
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    int ETAVal = 0;
-                    int.TryParse(ETAStr, out ETAVal);
-                    int Hours = ETAVal / 60;
-                    int Minutes = ETAVal - (Hours * 60);
-                    UpdateETA(Hours, Minutes, 0);
-                }*/
+            }
+            catch (Exception e)
+            {
+                _jobLog.WriteEntry(this, "ERROR Processing Console Output.\n" + e.ToString(), Log.LogEntryType.Error);
             }
         }
 
@@ -149,26 +163,41 @@ namespace MCEBuddy.AppWrapper
             return ret;
         }
 
+        /// <summary>
+        /// Final height of the video (after cropping)
+        /// </summary>
         public int CropHeight
         {
             get { return _cropHeight; }
         }
 
+        /// <summary>
+        /// Final width of the video (after cropping)
+        /// </summary>
         public int CropWidth
         {
             get { return _cropWidth; }
         }
 
+        /// <summary>
+        /// Starting of the crop box X param from top left
+        /// </summary>
         public int CropStartX
         {
             get { return _cropStartX; }
         }
 
+        /// <summary>
+        /// Starting of the crop box Y param from top left
+        /// </summary>
         public int CropStartY
         {
             get { return _cropStartY; }
         }
 
+        /// <summary>
+        /// Raw crop string from cropdetect
+        /// </summary>
         public string CropString
         {
             get { return _cropString; }
