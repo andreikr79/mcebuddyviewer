@@ -42,6 +42,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.EMailEngine", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.ManagedUPnP", "ManagedUPnP\MCEBuddyMCE.ManagedUPnP.csproj", "{5956DABC-C1AB-498E-B8C8-F62ED6DCD30C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.TMDbLib", "TMDbLib\MCEBuddyMCE.TMDbLib.csproj", "{C0006F17-212A-474F-983E-7DA2F91E0233}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCEBuddyMCE.RestSharp", "RestSharp\MCEBuddyMCE.RestSharp.csproj", "{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -293,12 +297,44 @@ Global
 		{5956DABC-C1AB-498E-B8C8-F62ED6DCD30C}.Release|x64.Build.0 = Release|Any CPU
 		{5956DABC-C1AB-498E-B8C8-F62ED6DCD30C}.Release|x86.ActiveCfg = Release|Any CPU
 		{5956DABC-C1AB-498E-B8C8-F62ED6DCD30C}.Release|x86.Build.0 = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Debug|x86.Build.0 = Debug|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|x64.Build.0 = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|x86.ActiveCfg = Release|Any CPU
+		{C0006F17-212A-474F-983E-7DA2F91E0233}.Release|x86.Build.0 = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|x64.Build.0 = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Debug|x86.Build.0 = Debug|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x64.ActiveCfg = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x64.Build.0 = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x86.ActiveCfg = Release|Any CPU
+		{2ECECFBF-5F3E-40EE-A963-72336DC7ABE2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 16
+		SccNumberOfProjects = 18
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs12
 		SccLocalPath0 = .
@@ -347,5 +383,11 @@ Global
 		SccProjectUniqueName15 = ManagedUPnP\\MCEBuddyMCE.ManagedUPnP.csproj
 		SccProjectName15 = ManagedUPnP
 		SccLocalPath15 = ManagedUPnP
+		SccProjectUniqueName16 = TMDbLib\\MCEBuddyMCE.TMDbLib.csproj
+		SccProjectName16 = TMDbLib
+		SccLocalPath16 = TMDbLib
+		SccProjectUniqueName17 = RestSharp\\MCEBuddyMCE.RestSharp.csproj
+		SccProjectName17 = RestSharp
+		SccLocalPath17 = RestSharp
 	EndGlobalSection
 EndGlobal

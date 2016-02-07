@@ -91,6 +91,10 @@
       <Project>{0D324A60-A350-422E-B522-12B9EAEFDAEC}</Project>
       <Name>MCEBuddyMCE.Util</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MCEBuddy.VideoInfo\MCEBuddyMCE.VideoProperties.csproj">
+      <Project>{4e7dc789-3ae0-4e19-b1d0-d9186f9f9a98}</Project>
+      <Name>MCEBuddyMCE.VideoProperties</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="MCEBuddy2-HP.pfx" />

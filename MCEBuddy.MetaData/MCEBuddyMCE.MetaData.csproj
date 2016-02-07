@@ -131,9 +131,9 @@
       <Project>{6B143A39-C7B2-4743-9917-92262C60E9A6}</Project>
       <Name>MCEBuddyMCE.TagLibSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ThirdPartyUnmodifiedLibraries\TMDbLib\TMDbLib.csproj">
+    <ProjectReference Include="..\TMDbLib\MCEBuddyMCE.TMDbLib.csproj">
       <Project>{C0006F17-212A-474F-983E-7DA2F91E0233}</Project>
-      <Name>TMDbLib</Name>
+      <Name>MCEBuddyMCE.TMDbLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
