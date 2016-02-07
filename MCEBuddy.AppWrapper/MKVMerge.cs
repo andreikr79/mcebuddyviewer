@@ -8,40 +8,47 @@ using MCEBuddy.Util;
 
 namespace MCEBuddy.AppWrapper
 {
-    public class MKVMerge : AppWrapper.Base
+    public class MKVMerge : Base
     {
         private const string APP_PATH = "MKVMerge\\MKVMerge.exe";
 
-        public MKVMerge(string Parameters, ref JobStatus jobStatus, Log jobLog)
-            : base(Parameters, APP_PATH, ref jobStatus, jobLog)
+        public MKVMerge(string Parameters, JobStatus jobStatus, Log jobLog, bool ignoreSuspend = false)
+            : base(Parameters, APP_PATH, jobStatus, jobLog, ignoreSuspend)
         {
             _success = false;
         }
 
         protected override void OutputHandler(object sendingProcess, System.Diagnostics.DataReceivedEventArgs ConsoleOutput)
         {
-            string StdOut;
-            int StartPos, EndPos;
-            float perc;
-
-            base.OutputHandler(sendingProcess, ConsoleOutput);
-            if (ConsoleOutput.Data == null) return;
-
-            if (!String.IsNullOrEmpty(ConsoleOutput.Data))
+            try
             {
-                StdOut = ConsoleOutput.Data;
+                string StdOut;
+                int StartPos, EndPos;
+                float perc;
 
-                if (StdOut.Contains("Progress:") && StdOut.Contains("%")) // look for progress
+                base.OutputHandler(sendingProcess, ConsoleOutput);
+                if (ConsoleOutput.Data == null) return;
+
+                if (!String.IsNullOrEmpty(ConsoleOutput.Data))
                 {
-                    EndPos = StdOut.IndexOf("%");
-                    StartPos = StdOut.IndexOf("Progress:") + "Progress:".Length;
-                    float.TryParse(StdOut.Substring(StartPos, EndPos - StartPos).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out perc);
-                    _jobStatus.PercentageComplete = perc;
-                    UpdateETAByPercentageComplete();
-                }
+                    StdOut = ConsoleOutput.Data;
 
-                if (StdOut.Contains("Muxing took")) // look for  success criteria
-                    _success = true;
+                    if (StdOut.Contains("Progress:") && StdOut.Contains("%")) // look for progress
+                    {
+                        EndPos = StdOut.IndexOf("%");
+                        StartPos = StdOut.IndexOf("Progress:") + "Progress:".Length;
+                        float.TryParse(StdOut.Substring(StartPos, EndPos - StartPos).Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out perc);
+                        _jobStatus.PercentageComplete = perc;
+                        UpdateETAByPercentageComplete();
+                    }
+
+                    if (StdOut.Contains("Muxing took")) // look for  success criteria
+                        _success = true;
+                }
+            }
+            catch (Exception e)
+            {
+                _jobLog.WriteEntry(this, "ERROR Processing Console Output.\n" + e.ToString(), Log.LogEntryType.Error);
             }
         }
     }

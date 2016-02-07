@@ -15,18 +15,30 @@ namespace MCEBuddy.Transcode
     public class Convert
     {
         private string _convertedFile = "";
-        protected JobStatus _jobStatus;
-        protected Log _jobLog;
+        private JobStatus _jobStatus;
+        private Log _jobLog;
+        private bool _subtitleBurned = false;
 
-        public Convert(ref JobStatus jobStatus, Log jobLog)
+        public Convert(JobStatus jobStatus, Log jobLog)
         {
             _jobStatus = jobStatus;
             _jobLog = jobLog;
         }
 
+        /// <summary>
+        /// Return the converted file
+        /// </summary>
         public string ConvertedFile
         {
             get { return _convertedFile; }
+        }
+
+        /// <summary>
+        /// Indicates if subtitles were burnt into the video while converting
+        /// </summary>
+        public bool SubtitleBurned
+        {
+            get { return _subtitleBurned; }
         }
 
         /// <summary>
@@ -60,26 +72,50 @@ namespace MCEBuddy.Transcode
             }
         }
 
-        public bool Run(ConversionJobOptions conversionOptions, ref VideoInfo videoFile, ref Scanner commercialScan)
+        /// <summary>
+        /// Gets the order of the encoders in the specified profile
+        /// </summary>
+        /// <param name="profile">Profile to get encoders order</param>
+        /// <returns>String array containing the encoders in execution order</returns>
+        public static string[] GetProfileEncoderOrder(string profile)
         {
-            bool converted = false;
             Ini ini = new Ini(GlobalDefs.ProfileFile);
-            string orderSetting = ini.ReadString(conversionOptions.profile, "order", "").ToLower().Trim();
-            if (!orderSetting.Contains("mencoder")) orderSetting = orderSetting.Replace("me","mencoder");
+
+            string orderSetting = ini.ReadString(profile, "order", "").ToLower().Trim();
+            if (!orderSetting.Contains("mencoder")) orderSetting = orderSetting.Replace("me", "mencoder");
             if (!orderSetting.Contains("handbrake")) orderSetting = orderSetting.Replace("hb", "handbrake");
             if (!orderSetting.Contains("ffmpeg")) orderSetting = orderSetting.Replace("ff", "ffmpeg");
 
             string[] order = orderSetting.Split(',');
-            foreach (string tool in order)
+
+            return order;
+        }
+
+        public bool Run(ConversionJobOptions conversionOptions, VideoInfo videoFile, Scanner commercialScan, string srtFile)
+        {
+            bool converted = false;
+            Ini ini = new Ini(GlobalDefs.ProfileFile);
+
+            // Dump the entire profile for debugging purposes (incase users have customized it)
+            _jobLog.WriteEntry("Profile being used : " + conversionOptions.profile + ".\r\nProfile entries ->", Log.LogEntryType.Debug);
+            SortedList<string, string> profileEntries = ini.GetSectionKeyValuePairs(conversionOptions.profile);
+            foreach (string key in profileEntries.Keys)
             {
-                switch (tool)
+                _jobLog.WriteEntry(key + "=" + profileEntries[key], Log.LogEntryType.Debug);
+            }
+
+            string[] order = GetProfileEncoderOrder(conversionOptions.profile);
+
+            foreach (string encoder in order)
+            {
+                switch (encoder.Trim())
                 {
                     case "copy":
                         {
                             _jobLog.WriteEntry(this, Localise.GetPhrase("Using special case COPY for converter"), Log.LogEntryType.Information);
 
                             // Special case, no real encoder, just ignore any recoding and assume the output = input file
-                            ConvertWithCopy convertWithCopy = new ConvertWithCopy(conversionOptions, "copy", ref videoFile, ref _jobStatus, _jobLog, ref commercialScan);
+                            ConvertWithCopy convertWithCopy = new ConvertWithCopy(conversionOptions, "copy", videoFile, _jobStatus, _jobLog, commercialScan);
                             if (!convertWithCopy.Unsupported)
                             {
                                 _jobLog.WriteEntry(this, Localise.GetPhrase("Converting with COPY"), Log.LogEntryType.Information);
@@ -101,7 +137,7 @@ namespace MCEBuddy.Transcode
                         }
                     case "mencoder":
                         {
-                            ConvertWithMencoder convertWithMencoder = new ConvertWithMencoder(conversionOptions, "mencoder", ref videoFile, ref _jobStatus, _jobLog, ref commercialScan);
+                            ConvertWithMencoder convertWithMencoder = new ConvertWithMencoder(conversionOptions, "mencoder", videoFile, _jobStatus, _jobLog, commercialScan);
                             if (!convertWithMencoder.Unsupported)
                             {
                                 _jobLog.WriteEntry(this, Localise.GetPhrase("Converting with MEncoder"), Log.LogEntryType.Information);
@@ -125,7 +161,7 @@ namespace MCEBuddy.Transcode
                         }
                     case "handbrake":
                         {
-                            ConvertWithHandbrake convertWithHandbrake = new ConvertWithHandbrake(conversionOptions, "handbrake", ref videoFile, ref _jobStatus, _jobLog, ref commercialScan);
+                            ConvertWithHandbrake convertWithHandbrake = new ConvertWithHandbrake(conversionOptions, "handbrake", videoFile, _jobStatus, _jobLog, commercialScan);
                             if (!convertWithHandbrake.Unsupported)
                             {
                                 _jobLog.WriteEntry(this, Localise.GetPhrase("Converting with Handbrake"), Log.LogEntryType.Information); 
@@ -149,7 +185,7 @@ namespace MCEBuddy.Transcode
                         }
                     case "ffmpeg":
                         {
-                            ConvertWithFfmpeg convertWithFfmpeg = new ConvertWithFfmpeg(conversionOptions, "ffmpeg", ref videoFile, ref _jobStatus, _jobLog, ref commercialScan);
+                            ConvertWithFfmpeg convertWithFfmpeg = new ConvertWithFfmpeg(conversionOptions, "ffmpeg", videoFile, _jobStatus, _jobLog, commercialScan, srtFile);
                             if (!convertWithFfmpeg.Unsupported)
                             {
                                 _jobLog.WriteEntry(this, Localise.GetPhrase("Converting with FFMpeg"), Log.LogEntryType.Information); 
@@ -159,6 +195,7 @@ namespace MCEBuddy.Transcode
                                 {
                                     converted = true;
                                     _convertedFile = convertWithFfmpeg.ConvertedFile;
+                                    _subtitleBurned = convertWithFfmpeg.SubtitleBurned; // Right now only ffmpeg supports subtitle burning
                                     videoFile.ConversionTool = "ffmpeg";
                                 }
                                 else
@@ -177,7 +214,9 @@ namespace MCEBuddy.Transcode
                             break;
                         }
                 }
-                if (converted || _jobStatus.Cancelled) break;
+
+                if (converted || _jobStatus.Cancelled)
+                    break;
             }
 
             if (!converted)

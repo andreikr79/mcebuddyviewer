@@ -8,7 +8,6 @@ using System.Threading;
 using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Windows.Forms;
 using System.Globalization;
 
 using MCEBuddy.Engine;
@@ -16,13 +15,13 @@ using MCEBuddy.Util;
 using MCEBuddy.Globals;
 using MCEBuddy.Configuration;
 using MCEBuddy.AppWrapper;
-using MCEBuddy.VideoProperties;
 using MCEBuddy.CommercialScan;
+using MCEBuddy.EMailEngine;
 
 namespace MCEBuddy.Engine
 {
-    [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple,InstanceContextMode = InstanceContextMode.Single)]
-    public class Core: ICore 
+    [ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple, InstanceContextMode = InstanceContextMode.Single, MaxItemsInObjectGraph = Int32.MaxValue)] // Max objects allowed in serialized communication channel
+    public class Core : ICore 
     {
         private const int MAX_SHUTDOWN_WAIT = 2000;
 
@@ -42,17 +41,19 @@ namespace MCEBuddy.Engine
         private bool _deleteOriginal = false;
         private bool _useRecycleBin = false;
         private bool _archiveOriginal = false;
-        private bool _allowSleep = true;
-        private DateTime _lastUpdateCheck = DateTime.Now.AddDays(-1);
-        private Thread _updateCheckThread = null;
+        private bool _failedMoveOriginal = false;
+        private bool _userAllowSleep = true;
         private Thread _uPnPCheckThread = null;
         private UpdateCheck _updateCheck = null;
-        private string[] daysOfWeek;
+        private string[] _daysOfWeek;
         volatile private Thread _monitorThread;
         volatile private bool _engineCrashed = false; // check if engine crashed
         private bool _uPnPEnabled;
+        private bool _firewallExceptionEnabled;
         static private Object monitorLock = new Object(); // Object to lock for monitorThread sync
         private bool _serviceShutdownBySystem = false;
+        private bool _allowSleep = true; // Can we allow standby and suspend
+        private bool _autoPause = false; // Pause when outside conversion times
 
         public Core()
         {
@@ -61,9 +62,19 @@ namespace MCEBuddy.Engine
                 CreateExposedDirectory(GlobalDefs.ConfigPath); // Get admin access to the config directory so we can write to it
                 CreateExposedDirectory(GlobalDefs.LogPath); // Get admin access to the log directory so we can write to it
                 CreateExposedDirectory(GlobalDefs.CachePath); // Artwork Cache
-                Log.AppLog = new Log(Log.LogDestination.LogFile, GlobalDefs.AppLogFile);
+                try
+                {
+                    Log.AppLog = new Log(GlobalDefs.AppLogFile);
+                }
+                catch (Exception e) // Log file is not CRITICAL to engine operation, so log it in the System event
+                {
+                    Log.WriteSystemEventLog("Unable to create mcebuddy.log for MCEBuddy Engine Core.\r\nError: " + e.ToString(), EventLogEntryType.Error);
+                }
                 _updateCheck = new UpdateCheck(); // Create only instance of this and resuse, otherwise it fails due to embedded objects
                 MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(GlobalDefs.ConfigFile);
+
+                Process process = Process.GetCurrentProcess(); //Get an instance of current process 
+                process.PriorityClass = GlobalDefs.EnginePriority; // Core Engine thread ALWAYS runs at above normal to ensure that all it's monitoring and response functions are running responsive
 
                 ReadConfig();
 
@@ -75,19 +86,70 @@ namespace MCEBuddy.Engine
                     _uPnPCheckThread.CurrentCulture = _uPnPCheckThread.CurrentUICulture = Localise.MCEBuddyCulture;
                     _uPnPCheckThread.Start();
                 }
+
+                // Open the Firewall port to allow MCEBuddy to accept incoming connections from the network
+                if (_firewallExceptionEnabled)
+                {
+                    new Thread(() => FirewallException(true)).Start(); // Do it as a thead so it doesn't impact the engine incase of a thread
+                }
             }
             catch (Exception e)
             {
-                Log.AppLog.WriteEntry(this, "Unable to complete initialization of MCEBuddy Engine Core. Error: " + e.ToString(), Log.LogEntryType.Error, true); // This may or may not work depending upon whether the llog has been initialized otherwise it goes into NULL log
-                Log.WriteSystemEventLog("Unable to complete initialization of MCEBuddy Engine Core. Error: " + e.ToString(), EventLogEntryType.Error);
+                Log.AppLog.WriteEntry(this, "Unable to complete initialization of MCEBuddy Engine Core.\r\nError: " + e.ToString(), Log.LogEntryType.Error, true); // This may or may not work depending upon whether the llog has been initialized otherwise it goes into NULL log
+                Log.WriteSystemEventLog("Unable to complete initialization of MCEBuddy Engine Core.\r\nError: " + e.ToString(), EventLogEntryType.Error);
                 throw e; // Continue throwing the exception so that the engine stops
             }
         }
 
-        /// <summary>
-        /// Checks if the MCEBuddy CORE engine is running
-        /// </summary>
-        /// <returns>True is engine is running</returns>
+        public bool IsEngineRunningAsService()
+        {
+            return GlobalDefs.IsEngineRunningAsService;
+        }
+
+        public int GetProcessorCount()
+        {
+            return Environment.ProcessorCount;
+        }
+
+        public Dictionary<string, SortedList<string, string>> GetConversionHistory()
+        {
+            Ini historyIni = new Ini(GlobalDefs.HistoryFile);
+            Dictionary<string, SortedList<string, string>> retVal = new Dictionary<string,SortedList<string,string>>();
+
+            try
+            {
+                List<string> fileNames = historyIni.GetSectionNames();
+                foreach (string filePath in fileNames)
+                {
+                    try
+                    {
+                        SortedList<string, string> entries = historyIni.GetSectionKeyValuePairs(filePath);
+                        retVal.Add(filePath, entries); // Add the file and the entries for the file
+                    }
+                    catch (Exception e1)
+                    {
+                        Log.AppLog.WriteEntry(this, "Error processing history file section entry -> " + filePath + "\r\nError -> " + e1.ToString(), Log.LogEntryType.Error, true);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.AppLog.WriteEntry(this, "Unable to get History file entries.\r\nError -> " + e.ToString(), Log.LogEntryType.Error, true);
+            }
+
+            return retVal;
+        }
+
+        public void ClearHistory()
+        {
+            Util.FileIO.TryFileDelete(GlobalDefs.HistoryFile, true); // Delete the history file but send it to the recycle bin just incase
+        }
+
+        public bool AllowSuspend()
+        {
+            return _allowSleep;
+        }
+
         public bool EngineRunning()
         {
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
@@ -97,10 +159,6 @@ namespace MCEBuddy.Engine
             return ret;
         }
 
-        /// <summary>
-        /// Check if the cause of the engine stopping is if it has crashed. Should be called if the EngineRunning status is false.
-        /// </summary>
-        /// <returns>True is the engine stopped due to a crash</returns>
         public bool EngineCrashed()
         {
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
@@ -110,10 +168,6 @@ namespace MCEBuddy.Engine
             return ret;
         }
 
-        /// <summary>
-        /// Check if the engine is currently actively converting any jobs
-        /// </summary>
-        /// <returns>True if there are any active running conversions</returns>
         public bool Active()
         {
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
@@ -123,36 +177,21 @@ namespace MCEBuddy.Engine
             return ret;
         }
 
-        /// <summary>
-        /// Forces MCEBuddy to ReScan the monitor tasks locations for new files to convert
-        /// </summary>
         public void Rescan()
         {
             _rescan = true;
         }
 
-        /// <summary>
-        /// Checks if ShowAnalyzer is installed on the machine with the engine
-        /// </summary>
-        /// <returns>True if ShowAnalyzer is installed</returns>
         public bool ShowAnalyzerInstalled()
         {
             return Scanner.ShowAnalyzerInstalled();
         }
 
-        /// <summary>
-        /// Used to indicate whether the service has been shutdown by the system
-        /// </summary>
-        /// <returns>True is system initiated shutdown</returns>
         public bool ServiceShutdownBySystem()
         {
             return _serviceShutdownBySystem;
         }
 
-        /// <summary>
-        /// Returns the maximum number of simultaneous job queues
-        /// </summary>
-        /// <returns>Number of job queues</returns>
         public int NumConversionJobs()
         {
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
@@ -162,21 +201,39 @@ namespace MCEBuddy.Engine
             return ret;
         }
 
-        /// <summary>
-        /// Returns a List to that contains the Windows Event logs entries created by MCEBuddy
-        /// </summary>
+        public bool TestEmailSettings(EmailBasicSettings emailSettings)
+        {
+            if (emailSettings == null)
+            {
+                Log.AppLog.WriteEntry(this, "No eMail settings found to test.", Log.LogEntryType.Error, true);
+                return false;
+            }
+
+            string subject = Localise.GetPhrase("MCEBuddy Test eMail");
+            string message = Localise.GetPhrase("MCEBuddy - Have a great day!");
+
+            return eMail.SendEMail(emailSettings, subject, message, Log.AppLog);
+        }
+
+        public void DeleteHistoryItem(string sourceFileName)
+        {
+            if (String.IsNullOrWhiteSpace(sourceFileName))
+            {
+                Log.AppLog.WriteEntry(this, "No filename to delete from History", Log.LogEntryType.Error, true);
+                return;
+            }
+
+            Ini historyFile = new Ini(GlobalDefs.HistoryFile);
+            historyFile.DeleteSection(sourceFileName);
+        }
+
         public List<EventLogEntry> GetWindowsEventLogs()
         {
             List<EventLogEntry> retList = new List<EventLogEntry>();
 
             try
             {
-                EventLog eventLog = new EventLog("Application", ".", GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE);
-                foreach (EventLogEntry eventLogEntry in eventLog.Entries)
-                {
-                    if (eventLogEntry.Source == GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE)
-                        retList.Add(eventLogEntry);
-                }
+                retList = Log.GetWindowsEventLogs(GlobalDefs.MAX_EVENT_MESSAGES_TRANSFER);
             }
             catch (Exception e)
             {
@@ -187,10 +244,6 @@ namespace MCEBuddy.Engine
             return retList;
         }
 
-        /// <summary>
-        /// Returns an 2 array string List which contains the Name and Description of all the Profiles in profiles.conf
-        /// </summary>
-        /// <returns>2 array string List</returns>
         public List<string[]> GetProfilesSummary()
         {
             List<string[]> profileSummary = new List<string[]>();
@@ -203,47 +256,55 @@ namespace MCEBuddy.Engine
             return profileSummary;
         }
 
-        /// <summary>
-        /// Updates the MCEBuddyConf global configuration object and writes the settings to MCEBuddy.conf
-        /// Calling this assumes that the Engine is in a stopped state
-        /// </summary>
-        /// <param name="configOptions">MCEBuddyConf parameters object</param>
-        /// <returns>False if engine was not stopped when calling this function, true on a successful update</returns>
         public bool UpdateConfigParameters(ConfSettings configOptions)
         {
-            Monitor.Enter(monitorLock); // Only one action update the object at a time
-
             if (EngineRunning()) // Check if engine has been stopped
-            {
-                Monitor.Exit(monitorLock);
                 return false;
-            }
+
+            Monitor.Enter(monitorLock); // Only one action update the object at a time
 
             // Set the engine running flag to Stop, just in case wrong settings were passed
             configOptions.generalOptions.engineRunning = false;
 
             MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(configOptions, GlobalDefs.ConfigFile); // Create a new object and write the settings
+            ReadConfig(); // Load the new configuration
             
             Monitor.Exit(monitorLock);
 
             return true;
         }
 
-        /// <summary>
-        /// Returns a copy of the MCEBuddyConf global object configuration.
-        /// The return object cannot read or write to a config file and is only a static set of configuration parameters.
-        /// </summary>
-        /// <returns>MCEBuddyConf global object parameters</returns>
         public ConfSettings GetConfigParameters()
         {
-            return MCEBuddyConf.GlobalMCEConfig.ConfigSettings;
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+            ConfSettings retVal = MCEBuddyConf.GlobalMCEConfig.ConfigSettings;
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
+            return retVal;
         }
 
-        /// <summary>
-        /// Gets the JobStatus for a given job queue
-        /// </summary>
-        /// <param name="jobNumber">JobQueue Number</param>
-        /// <returns>JobStatus</returns>
+        public ConfSettings? ReloadAndGetConfigParameters()
+        {
+            if (EngineRunning()) // Check if engine has been stopped
+                return null;
+
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
+            // Reload the configuration settings
+            MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(GlobalDefs.ConfigFile);
+            
+            // Set the engine running flag to Stop, just in case
+            MCEBuddyConf.GlobalMCEConfig.GeneralOptions.engineRunning = false;
+
+            ReadConfig(); // Read the configuration
+
+            ConfSettings retVal = MCEBuddyConf.GlobalMCEConfig.ConfigSettings;
+            
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
+            return retVal;
+        }
+
         public JobStatus GetJobStatus(int jobNumber)
         {
             JobStatus retStatus = null;
@@ -253,15 +314,9 @@ namespace MCEBuddy.Engine
             try
             {
                 if (jobNumber < _maxConcurrentJobs)
-                {
                     if (_conversionJobs[jobNumber] != null)
-                    {
                         if (_conversionJobs[jobNumber].Status != null)
-                        {
                             retStatus = _conversionJobs[jobNumber].Status;
-                        }
-                    }
-                }
             }
             catch (Exception e)
             {
@@ -274,11 +329,30 @@ namespace MCEBuddy.Engine
             return retStatus;
         }
 
-        /// <summary>
-        /// Moves a job in the queue to a new location in the queue
-        /// </summary>
-        /// <param name="currentJobNo">Job no for the job to move</param>
-        /// <param name="newJobNo">New location to move to (0 based index)</param>
+        public List<JobStatus> GetAllJobsInQueueStatus()
+        {
+            List<JobStatus> retStatus = new List<JobStatus>();
+
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+            Monitor.Enter(_queueManager.Queue); //the lock is always on the jobQueue
+            try
+            {
+                foreach (ConversionJob cjo in _queueManager.Queue)
+                {
+                    retStatus.Add(cjo.Status);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.AppLog.WriteEntry(this, "Unable to get all Job Statuses. MaxJobs = " + _maxConcurrentJobs.ToString() + " Conversion Jobs Initialized = " + _conversionJobs.Length.ToString(), Log.LogEntryType.Error, true);
+                Log.AppLog.WriteEntry(this, "Error -> " + e.ToString(), Log.LogEntryType.Error, true);
+            }
+            Monitor.Exit(_queueManager.Queue); //the lock is always on the jobQueue
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
+            return retStatus;
+        }
+
         public bool UpdateFileQueue(int currentJobNo, int newJobNo)
         {
             bool ret = false;
@@ -314,51 +388,63 @@ namespace MCEBuddy.Engine
             return ret;
         }
 
-        /// <summary>
-        /// Returns a list of all the files in the conversion queue
-        /// </summary>
-        /// <returns>List of Jobs with Source video fileName and Conversion task name</returns>
+        [Obsolete("FileQueue is deprecated, please use GetAllJobsInQueueStatus instead.")]
         public List<string[]> FileQueue()
         {
             List<string[]> fileList = new List<string[]>();
 
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
             Monitor.Enter(_queueManager.Queue); // Important otherwise we get an exception that queue has changed
-            foreach (ConversionJob job in _queueManager.Queue)
+
+            try
             {
-                string[] item = new string[2];
-                item[0] = job.OriginalFileName;
-                item[1] = job.TaskName;
-                fileList.Add(item);
+                foreach (ConversionJob job in _queueManager.Queue)
+                {
+                    string[] item = new string[2];
+                    item[0] = job.OriginalFileName;
+                    item[1] = job.TaskName;
+                    fileList.Add(item);
+                }
             }
+            catch (Exception e)
+            {
+                Log.AppLog.WriteEntry(this, "Unable to get FileQueue Statuses. MaxJobs = " + _maxConcurrentJobs.ToString() + " Conversion Jobs Initialized = " + _conversionJobs.Length.ToString(), Log.LogEntryType.Error, true);
+                Log.AppLog.WriteEntry(this, "Error -> " + e.ToString(), Log.LogEntryType.Error, true);
+            }
+
             Monitor.Exit(_queueManager.Queue);
             Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
 
             return fileList;
         }
 
-        /// <summary>
-        /// Adds a manual job to the queue for conversion
-        /// </summary>
-        /// <param name="videoFilePath">Fully qualified path to video file</param>
         public void AddManualJob(string videoFilePath)
         {
-            // Add to the manual queue file to pick up
-            Ini manualQueueIni = new Ini(GlobalDefs.ManualQueueFile);
-            manualQueueIni.Write("ManualQueue", videoFilePath, "ManualSelect");
+            if (String.IsNullOrWhiteSpace(videoFilePath))
+            {
+                Log.AppLog.WriteEntry(this, "Empty filepath passed to AddManualJob", Log.LogEntryType.Error, true);
+                return;
+            }
+
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
 
             // Clear the status on the manually added file incase it was converted earlier or was an output of a conversion earlier, otherwise ReScan won't pick up
             Ini historyIni = new Ini(GlobalDefs.HistoryFile);
             historyIni.Write(videoFilePath, "Status", "");
+
+            // Add to the manual queue file to pick up
+            Ini manualQueueIni = new Ini(GlobalDefs.ManualQueueFile);
+            manualQueueIni.Write("ManualQueue", videoFilePath, videoFilePath); // Write to a common section as key AND value since due to INI restriction only the Value can hold special characters like ];= which maybe contained in the filename, hence the Value is used to capture the "TRUE" filename (Key and Section have restrictions)
+
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
+            _rescan = true; // Rescan the queue for new jobs
         }
 
-        /// <summary>
-        /// Called when the system shuts down MCEBuddy from Stop Service or Restart computer etc
-        /// </summary>
         public void StopBySystem() //called by MCEBuddy ServiceShutdown
         {
             _serviceShutdownBySystem = true; // Indicate to app to close to avoid uninstall issues
-            Thread.Sleep(300); // Give the GUI time to register the shutdown
+            Thread.Sleep((int) (GlobalDefs.LOCAL_ENGINE_POLL_PERIOD * GlobalDefs.GUI_MINIMIZED_ENGINE_POLL_SLOW_FACTOR * 1.1)); // Give the local GUI time to register the shutdown (GUI needs to shutdown incase we are say uninstalling the app)
 
             Log.AppLog.WriteEntry(this, "MCEBuddy Stop by system initiated", Log.LogEntryType.Information, true);
 
@@ -372,18 +458,17 @@ namespace MCEBuddy.Engine
                 _uPnPCheckThread.Abort(); // Abort the thread (it will disable UPnP also)
             }
 
+            if (_firewallExceptionEnabled)
+                FirewallException(false); // Remove the firewall exception
+
             Log.AppLog.Close(); // Service shutdown, now close the system log so we can cleanup
         }
 
-        /// <summary>
-        /// Stop the MCEBuddy Monitor CORE engine thread
-        /// </summary>
-        /// <param name="preserveState"></param>
         public void Stop(bool preserveState)
         {
             Monitor.Enter(monitorLock);
 
-            GlobalDefs.Suspend = false; // Reset suspension state
+            _autoPause = GlobalDefs.Pause = false; // Reset suspension state
             GlobalDefs.Shutdown = true;
 
             if (_wakeUp != null)
@@ -402,6 +487,8 @@ namespace MCEBuddy.Engine
             GeneralOptions go = MCEBuddyConf.GlobalMCEConfig.GeneralOptions;
             go.engineRunning = false;
             MCEBuddyConf.GlobalMCEConfig.UpdateGeneralOptions(go, preserveState); // Write the engine settings
+            if (preserveState)
+                MCEBuddyConf.GlobalMCEConfig.WriteSettings(); // Write all configuration settings to file (last used state)
 
             if (preserveState) // Check if we are asked to preserve the stop state
                 Log.AppLog.WriteEntry(this, Localise.GetPhrase("Setting engine last running state to stop"), Log.LogEntryType.Information, true);
@@ -409,9 +496,6 @@ namespace MCEBuddy.Engine
             Monitor.Exit(monitorLock);
         }
 
-        /// <summary>
-        /// Start the MCEBuddy Monitor CORE engine thread
-        /// </summary>
         public void Start()
         {
             Monitor.Enter(monitorLock);
@@ -426,6 +510,7 @@ namespace MCEBuddy.Engine
             MCEBuddyConf.GlobalMCEConfig = new MCEBuddyConf(GlobalDefs.ConfigFile);
 
             ReadConfig();
+            _autoPause = GlobalDefs.Pause = false; // Reset just in case it was set earlier
 
             _monitorThread = new Thread(MonitorThread);
             _monitorThread.CurrentCulture = _monitorThread.CurrentUICulture = Localise.MCEBuddyCulture;
@@ -446,50 +531,60 @@ namespace MCEBuddy.Engine
             Monitor.Exit(monitorLock);
         }
 
-        /// <summary>
-        /// Cancel a job currently in the conversion queue (not job queue)
-        /// </summary>
-        /// <param name="jobList">Job number from the conversion queue</param>
         public void CancelJob(int[] jobList)
         {
+            if (jobList == null)
+            {
+                Log.AppLog.WriteEntry(this, "Empty job list passed to cancel jobs", Log.LogEntryType.Error, true);
+                return;
+            }
+
             Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
             Monitor.Enter(_queueManager.Queue);
 
-            List<ConversionJob> convJob = new List<ConversionJob>();
-            for (int i = 0; i < jobList.Length; i++)
+            try
             {
-                //Build the list of conversion jobs to cancel, don't use job numbers since they will change once removed from the queue
-                if ((jobList[i] >= 0) && (jobList[i] < _queueManager.Queue.Count))
-                    convJob.Add(_queueManager.Queue[jobList[i]]);
-            }
-
-            foreach (ConversionJob cj in convJob)
-            {
-                if (cj != null)
+                List<ConversionJob> convJob = new List<ConversionJob>();
+                for (int i = 0; i < jobList.Length; i++)
                 {
-                    if (cj.Active) // if job is active, remove from manual queue and mark it cancelled for monitor thread to process
-                    {
-                        Log.AppLog.WriteEntry(this, Localise.GetPhrase("Active job signalled cancellation for") + " " + cj.OriginalFileName, Log.LogEntryType.Information, true);
-                        cj.Status.Cancelled = true;
-                    }
-                    else
-                    {
-                        Log.AppLog.WriteEntry(this, Localise.GetPhrase("Inactive job cancelled") + " " + cj.OriginalFileName, Log.LogEntryType.Information, true);
+                    //Build the list of conversion jobs to cancel, don't use job numbers since they will change once removed from the queue
+                    if ((jobList[i] >= 0) && (jobList[i] < _queueManager.Queue.Count))
+                        convJob.Add(_queueManager.Queue[jobList[i]]);
+                }
 
-                        cj.Status.Cancelled = true; // mark the job as cancelled (for write history and tracking)
-
-                        // First delete the job from the manual file entry while the ref is active, if this is the last task for the job
-                        if (_queueManager.JobCount(cj.OriginalFileName) <= 1)
+                foreach (ConversionJob cj in convJob)
+                {
+                    if (cj != null)
+                    {
+                        if (cj.Active) // if job is active, remove from manual queue and mark it cancelled for monitor thread to process
                         {
-                            Ini iniManualQueue = new Ini(GlobalDefs.ManualQueueFile);
-                            iniManualQueue.DeleteKey("ManualQueue", cj.Status.SourceFile);
+                            Log.AppLog.WriteEntry(this, Localise.GetPhrase("Active job signalled cancellation for") + " " + cj.OriginalFileName, Log.LogEntryType.Information, true);
+                            cj.Status.Cancelled = true;
                         }
+                        else
+                        {
+                            Log.AppLog.WriteEntry(this, Localise.GetPhrase("Inactive job cancelled") + " " + cj.OriginalFileName, Log.LogEntryType.Information, true);
 
-                        WriteHistory(cj); //  Write to history file (it will check for last task for job)
+                            cj.Status.Cancelled = true; // mark the job as cancelled (for write history and tracking)
 
-                        _queueManager.Queue.Remove(cj); // now remove the job from the queue
+                            // First delete the job from the manual file entry while the ref is active, if this is the last task for the job
+                            if (_queueManager.JobCount(cj.OriginalFileName) <= 1)
+                            {
+                                Ini iniManualQueue = new Ini(GlobalDefs.ManualQueueFile);
+                                iniManualQueue.DeleteKey("ManualQueue", cj.Status.SourceFile);
+                            }
+
+                            WriteHistory(cj); //  Write to history file (it will check for last task for job)
+
+                            _queueManager.Queue.Remove(cj); // now remove the job from the queue
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Log.AppLog.WriteEntry(this, "Unable to cancel jobs. JobList = " + string.Join(",", jobList.Select(x => x.ToString()).ToArray()) + " MaxJobs = " + _maxConcurrentJobs.ToString() + " Conversion Jobs Initialized = " + _conversionJobs.Length.ToString(), Log.LogEntryType.Error, true);
+                Log.AppLog.WriteEntry(this, "Error -> " + e.ToString(), Log.LogEntryType.Error, true);
             }
 
             Monitor.Exit(_queueManager.Queue);
@@ -497,57 +592,47 @@ namespace MCEBuddy.Engine
         }
 
 
-        /// <summary>
-        /// Suspend or Resume the conversion process
-        /// </summary>
-        /// <param name="suspend">True to suspend, false to resume</param>
         public void SuspendConversion(bool suspend)
         {
-            GlobalDefs.Suspend = suspend;
+            GlobalDefs.Pause = suspend;
         }
 
-        /// <summary>
-        /// Check if the conversions are suspended
-        /// </summary>
-        /// <returns>True if tasks are suspended</returns>
         public bool IsSuspended()
         {
-            return GlobalDefs.Suspend;
+            return GlobalDefs.Pause;
         }
 
-        /// <summary>
-        /// Change the priority of MCEBuddy and child tasks
-        /// </summary>
-        /// <param name="processPriority">High, Normal or Low</param>
         public void ChangePriority(string processPriority)
         {
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
             //Change the priority of the of Global Objects used to start conversion theads
-            //Process process = Process.GetCurrentProcess(); //Get an instance of current process // Do not change current process as it makes it unresponsive and faults the pipe timeout
+            // Do not change core engine process as it makes it unresponsive and faults the pipe timeout and also impacts threads reading console output - Core engine process always runs above normal to make it responsive
 
             switch (processPriority)
             {
                 case "High":
-                    //process.PriorityClass = ProcessPriorityClass.AboveNormal;
                     GlobalDefs.Priority = ProcessPriorityClass.AboveNormal;
-                    GlobalDefs.IOPriority = MCEBuddy.Globals.PriorityTypes.ABOVE_NORMAL_PRIORITY_CLASS;
+                    GlobalDefs.IOPriority = ProcessPriority.ABOVE_NORMAL_PRIORITY_CLASS;
+                    IOPriority.SetPriority(ProcessPriority.PROCESS_MODE_BACKGROUND_END); // Reset it
                     break;
 
                 case "Normal":
-                    //process.PriorityClass = ProcessPriorityClass.Normal;
                     GlobalDefs.Priority = ProcessPriorityClass.Normal;
-                    GlobalDefs.IOPriority = MCEBuddy.Globals.PriorityTypes.NORMAL_PRIORITY_CLASS;
+                    GlobalDefs.IOPriority = ProcessPriority.NORMAL_PRIORITY_CLASS;
+                    IOPriority.SetPriority(ProcessPriority.PROCESS_MODE_BACKGROUND_END); // Reset it
                     break;
 
                 case "Low":
-                    //process.PriorityClass = ProcessPriorityClass.Idle;
                     GlobalDefs.Priority = ProcessPriorityClass.Idle;
-                    GlobalDefs.IOPriority = MCEBuddy.Globals.PriorityTypes.IDLE_PRIORITY_CLASS;
+                    GlobalDefs.IOPriority = ProcessPriority.IDLE_PRIORITY_CLASS;
+                    IOPriority.SetPriority(ProcessPriority.PROCESS_MODE_BACKGROUND_BEGIN); // If we set to IDLE IO Priority we need to set the background mode begin (only valid on CURRENT process and all CHILD process inherit) - MCEBuddy has ONLY 1 process so we set it here, all children are threads
                     break;
 
                 default:
-                    //process.PriorityClass = ProcessPriorityClass.Normal;
                     GlobalDefs.Priority = ProcessPriorityClass.Normal;
-                    GlobalDefs.IOPriority = MCEBuddy.Globals.PriorityTypes.NORMAL_PRIORITY_CLASS;
+                    GlobalDefs.IOPriority = ProcessPriority.NORMAL_PRIORITY_CLASS;
+                    IOPriority.SetPriority(ProcessPriority.PROCESS_MODE_BACKGROUND_END); // Reset it
                     break;
             }
 
@@ -555,14 +640,14 @@ namespace MCEBuddy.Engine
             GeneralOptions go = MCEBuddyConf.GlobalMCEConfig.GeneralOptions;
             go.processPriority = processPriority;
             MCEBuddyConf.GlobalMCEConfig.UpdateGeneralOptions(go, true);
+            
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
         }
 
-        /// <summary>
-        /// Used to change the state of UPnP Mappings
-        /// </summary>
-        /// <param name="enable">True to enable UPnP, false to disable it</param>
         public void SetUPnPState(bool enable)
         {
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+
             if (enable)
             {
                 // Check if UPnP Monitor thread is running, if not then start it
@@ -585,78 +670,85 @@ namespace MCEBuddy.Engine
                     _uPnPCheckThread.Abort(); // Abort the thread (it will disable UPnP also)
                 }
             }
+
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
         }
 
-        /// <summary>
-        /// Gets the Audio, Video and other media info for a file
-        /// </summary>
-        /// <param name="videoFilePath">Path to the video file</param>
-        /// <returns>Media information</returns>
+        public void SetFirewallException(bool createException)
+        {
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+            if (FirewallException(createException)) // If we are successful in updating the firewall
+                _firewallExceptionEnabled = createException; // Update the status so it can be appropriately handled during shutdown
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+        }
+
         public MediaInfo GetFileInfo(string videoFilePath)
         {
+            if (String.IsNullOrWhiteSpace(videoFilePath))
+            {
+                Log.AppLog.WriteEntry(this, "Empty filepath passed to get file info", Log.LogEntryType.Error, true);
+                return null;
+            }
+
             // Get the properties of this source video
             JobStatus jobStatus = new JobStatus();
 
             // Get the FPS from MediaInfo, more reliable then FFMPEG but it doesn't always work
-            float FPS = 0;
+            float FPS = VideoParams.FPS(videoFilePath);
 
-            try
-            {
-                MediaInfoDll mi = new MediaInfoDll();
-                mi.Open(videoFilePath);
-                mi.Option("Inform", "Video; %FrameRate%");
-                float.TryParse(mi.Inform(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out FPS);
-            }
-            catch
-            {
-                FPS = 0; // reset it
-            }
-
-            FFmpegMediaInfo videoInfo = new FFmpegMediaInfo(videoFilePath, ref jobStatus, Log.AppLog, true); // cannot suspend during a UI request else it hangs
-            videoInfo.Run();
+            FFmpegMediaInfo videoInfo = new FFmpegMediaInfo(videoFilePath, jobStatus, Log.AppLog, true); // cannot suspend during a UI request else it hangs
             if (videoInfo.Success && !videoInfo.ParseError)
             {
-                if (FPS != 0) // MediaInfo worked
+                if ((FPS > 0) && (FPS <= videoInfo.MediaInfo.VideoInfo.FPS)) // Check _fps, sometimes MediaInfo get it below 0 or too high (most times it's reliable)
                     videoInfo.MediaInfo.VideoInfo.FPS = FPS; // update it
             }
             else
             {
-                Log.AppLog.WriteEntry(Localise.GetPhrase("Error trying to get Audio Video information"), Localise.GetPhrase("Unable to Read Media File"), Log.LogEntryType.Error, true);
+                Log.AppLog.WriteEntry("Error trying to get Audio Video information. Unable to Read Media File -> " + videoFilePath, Log.LogEntryType.Error, true);
             }
 
             return videoInfo.MediaInfo;
         }
 
-        /// <summary>
-        /// Generates a XML file for the source video containing XBMC style metadata for the file (taken from the internet) and named as per the original file along side the original file
-        /// </summary>
-        /// <param name="jobList">List of job numbers for which to generate the XML file</param>
-        public void GenerateXML(int[] jobList)
+        public bool WithinConversionTimes()
         {
-            Monitor.Enter(_queueManager.Queue); // Queue cannot be manipulated while we build the list of jobs
+            // We can take a lock here since this is not called from MonitorThread
+            Monitor.Enter(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
+            bool retVal = CheckIfWithinConversionTime();
+            Monitor.Exit(monitorLock); // Need to ensure when this function is called, the Engine is not in Starting or stopping mode
 
-            List<string> fileList = new List<string>();
-            for (int i = 0; i < jobList.Length; i++)
-            {
-                //Build the list of files, don't use job numbers since they will change once removed from the queue
-                if ((jobList[i] >= 0) && (jobList[i] < _queueManager.Queue.Count))
-                    fileList.Add(_queueManager.Queue[jobList[i]].OriginalFileName);
-            }
-
-            Monitor.Exit(_queueManager.Queue);
-
-            foreach (string file in fileList)
-            {
-                JobStatus jobStatus = new JobStatus();
-                MetaData.VideoMetaData metaData = new MetaData.VideoMetaData(file, true, ref jobStatus, Log.AppLog);
-                metaData.Extract(); // Extract and download show information
-                VideoInfo videoFile = new VideoInfo(file, ref jobStatus, Log.AppLog, true); // Get media properties, do not suspend since GUI will hang
-                metaData.WriteXBMCXMLTags(file, Path.GetDirectoryName(file), videoFile); // source and target file name/directory are the same here
-            }
-
-            return;
+            return retVal;
         }
 
+
+
+
+        /// <summary>
+        /// Checks if the current time is within the configured Conversion Start times
+        /// </summary>
+        /// <returns>True is it is within the configured conversion start time</returns>
+        private bool CheckIfWithinConversionTime()
+        {
+            // This functional CANNOT take a monitor lock directly - no function called from MonitorThread can take a Monitor Lock
+            if ((_startHour < 0) || (_startMinute < 0) || (_stopHour < 0) || (_stopMinute < 0))
+                return true;
+
+            bool retVal;
+            DateTime rn = DateTime.Now; // Get a the current reference DateTime and keep fixed to avoid midnight issues
+            DateTime startTime, endTime;
+
+            // Find the next day/date/time of the week (starting today) when we are scheduled to run
+            startTime = GetNextScheduledDateTime(_startHour, _startMinute, _daysOfWeek, rn.AddDays(-1)); // Get the next start time based on the allowed days of week, starting yesterday
+            endTime = new DateTime(startTime.Year, startTime.Month, startTime.Day, _stopHour, _stopMinute, 0); // End time is same day but with different hour and minute
+
+            // Fix for start time > end time (e.g. 11PM to 11AM), then we assumed the end time is the next day
+            if (startTime > endTime)
+                endTime = endTime.AddDays(1); // we jump the endTime forward to next day
+
+            retVal = ((rn >= startTime) && (rn <= endTime)); // If we are between Start and Stop time (StartTime and EndTime take care of Day of the week also
+
+            return retVal;
+        }
 
         /// <summary>
         /// Create administrative access to directory for reading, writing and modifying
@@ -703,6 +795,12 @@ namespace MCEBuddy.Engine
         {
             GeneralOptions go = MCEBuddyConf.GlobalMCEConfig.GeneralOptions;
 
+            // First check for custom profiles.conf
+            if (File.Exists(go.customProfilePath))
+                GlobalDefs.ProfileFile = go.customProfilePath;
+            else // reset it
+                GlobalDefs.ProfileFile = Path.Combine(GlobalDefs.ConfigPath, "profiles.conf");
+
             if ((!String.IsNullOrEmpty(go.tempWorkingPath)) && (!Directory.Exists(go.tempWorkingPath)))
             {
                 Log.AppLog.WriteEntry(this, "Temporary working directory " + go.tempWorkingPath + " does not exist! Trying to create it.", Log.LogEntryType.Information, true);
@@ -737,12 +835,13 @@ namespace MCEBuddy.Engine
             if ((_wakeHour < 0) || (_wakeHour > 23)) _wakeHour = -1;
             if ((_wakeMinute < 0) || (_wakeMinute > 59)) _wakeMinute = -1;
 
-            daysOfWeek = go.daysOfWeek.Split(',');
+            _daysOfWeek = go.daysOfWeek.Split(',');
 
             _deleteOriginal = go.deleteOriginal;
             _useRecycleBin = go.useRecycleBin;
             _archiveOriginal = go.archiveOriginal;
-            _allowSleep = go.allowSleep;
+            _failedMoveOriginal = !String.IsNullOrWhiteSpace(go.failedPath);
+            _userAllowSleep = go.allowSleep;
 
             ChangePriority(go.processPriority); // Set the default process priority on load
 
@@ -750,6 +849,7 @@ namespace MCEBuddy.Engine
             _queueManager = new QueueManager(); // update the search paths and UNC credentials
 
             _uPnPEnabled = go.uPnPEnable;
+            _firewallExceptionEnabled = go.firewallExceptionEnabled;
 
             string locale = go.locale;
             Localise.Init(locale);
@@ -757,12 +857,13 @@ namespace MCEBuddy.Engine
             Log.AppLog.WriteEntry(this, Localise.GetPhrase("Loaded MCEBuddy engine settings"), Log.LogEntryType.Debug, true);
             
             //Debug, dump all the settings to help with debugging
-            Log.AppLog.WriteEntry("Windows OS Version -> " + Environment.OSVersion.ToString(), Log.LogEntryType.Debug);
-            Log.AppLog.WriteEntry("Windows Platform -> " + (MCEBuddy.Globals.GlobalDefs.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Debug);
-            Log.AppLog.WriteEntry("MCEBuddy Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("Windows OS Version -> " + Util.OSVersion.TrueOSVersion.ToString() + " (" + Util.OSVersion.GetOSVersion().ToString() + ", " + Util.OSVersion.GetOSProductType() + ")", Log.LogEntryType.Information);
+            Log.AppLog.WriteEntry("Windows Platform -> " + (Environment.Is64BitOperatingSystem ? "64 Bit" : "32 Bit"), Log.LogEntryType.Information);
+            Log.AppLog.WriteEntry("MCEBuddy Build Platform -> " + ((IntPtr.Size == 4) ? "32 Bit" : "64 Bit"), Log.LogEntryType.Information);
             string currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            Log.AppLog.WriteEntry("MCEBuddy Current Version : " + currentVersion, Log.LogEntryType.Debug);
-            Log.AppLog.WriteEntry("MCEBuddy Build Date : " + File.GetLastWriteTime(System.Reflection.Assembly.GetExecutingAssembly().Location).ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Debug);
+            Log.AppLog.WriteEntry("MCEBuddy Build Version : " + currentVersion, Log.LogEntryType.Information);
+            Log.AppLog.WriteEntry("MCEBuddy Build Date : " + File.GetLastWriteTime(System.Reflection.Assembly.GetExecutingAssembly().Location).ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
+            Log.AppLog.WriteEntry("MCEBuddy Running as Service : " + GlobalDefs.IsEngineRunningAsService.ToString(CultureInfo.InvariantCulture), Log.LogEntryType.Information);
             Log.AppLog.WriteEntry("Locale Language -> " + Localise.ThreeLetterISO().ToUpper(), Log.LogEntryType.Debug);
             Log.AppLog.WriteEntry(this, "MCEBuddy engine settings -> " + MCEBuddyConf.GlobalMCEConfig.ToString(), Log.LogEntryType.Debug);
         }
@@ -793,6 +894,41 @@ namespace MCEBuddy.Engine
         }
 
         /// <summary>
+        /// Returns the next Scheduled Start Date and Time
+        /// </summary>
+        /// <param name="hour">Schedule start Hour</param>
+        /// <param name="minute">Schedule start Minute</param>
+        /// <param name="daysOfWeek">Days of the week when for the Schedule is enabled</param>
+        /// <param name="reference">Reference DateTime from when to calculate the next scheduled start</param>
+        /// <returns>DateTime of the next scheduled start</returns>
+        private DateTime GetNextScheduledDateTime(int hour, int minute, string[] daysOfWeek, DateTime reference)
+        {
+            //Calc the next start date and time based on the reference Year, Month and Day
+            DateTime nextStart = new DateTime(reference.Year, reference.Month, reference.Day, hour, minute, 0);
+            
+            // Check if the next Start is before the reference in which case it'll be the next day
+            if (nextStart < reference) nextStart = nextStart.AddDays(1);
+
+            // Now re-calculate the next day of the week to set the next start Date/Time based on what days are chosen
+            // First get the current scheduled start day of the week
+            DayOfWeek cd = nextStart.DayOfWeek;
+
+            // Find the next day of the week enabled for a start, loop through all the days of a the week (0-> Sunday, 6->Saturday)
+            while (true)
+            {
+                if (daysOfWeek.Contains(cd.ToString()))
+                {
+                    nextStart = nextStart.AddDays(DaysToAdd(nextStart.DayOfWeek, cd));
+                    break;
+                }
+
+                cd = (DayOfWeek)(((int)cd + 1) % 7); // Check the next day, loop around EOW
+            }
+
+            return nextStart;
+        }
+        
+        /// <summary>
         /// Sets the next wake timer after the system wakesup from sleep
         /// </summary>
         private void SetNextWake()
@@ -801,25 +937,7 @@ namespace MCEBuddy.Engine
                 return;
 
             //Calc the next wake time
-            DateTime now = DateTime.Now;
-            DateTime wakeTime = new DateTime(now.Year, now.Month, now.Day, _wakeHour, _wakeMinute, 0);
-            if (wakeTime < now) wakeTime = wakeTime.AddDays(1);
-
-            // Now re-calculate the next day of the week to set the wakeup based on what days are chosen
-            // First get the current scheduled wakeup day of the week
-            DayOfWeek cd = wakeTime.DayOfWeek;
-
-            // Find the next day of the week enabled for a wakeup, loop through all the days of a the week (0-> Sunday, 6->Saturday)
-            while (true)
-            {
-                if (daysOfWeek.Contains(cd.ToString()))
-                {
-                    wakeTime = wakeTime.AddDays(DaysToAdd(wakeTime.DayOfWeek, cd));
-                    break;
-                }
-
-                cd = (DayOfWeek)((int)++cd % 7); // Check the next day, loop around EOW
-            }
+            DateTime wakeTime = GetNextScheduledDateTime(_wakeHour, _wakeMinute, _daysOfWeek, DateTime.Now);
 
             //Set the wake timer
             if (_wakeUp != null) // if it null then MCEBuddy has been stopped or shutdown, no timer - will be reset when the engine starts
@@ -839,7 +957,19 @@ namespace MCEBuddy.Engine
             SetNextWake();
         }
 
-        private void WriteHistory( ConversionJob job)
+        /// <summary>
+        /// List of valid statuses for Recorded Source files
+        /// </summary>
+        public static string[] SourceFileStatuses
+        { get { return new string[] { "Converted", "Error", "Cancelled" }; } }
+
+        /// <summary>
+        /// List of valid statuses for Converted files
+        /// </summary>
+        public static string[] ConvertedFileStatuses
+        { get { return new string[] { "OutputFromConversion" }; } }
+
+        private void WriteHistory(ConversionJob job)
         {
             Ini historyIni = new Ini(GlobalDefs.HistoryFile);
             GeneralOptions go = MCEBuddyConf.GlobalMCEConfig.GeneralOptions;
@@ -848,9 +978,12 @@ namespace MCEBuddy.Engine
             bool sendSuccess = go.eMailSettings.successEvent;
             bool sendFailed = go.eMailSettings.failedEvent;
             bool sendCancelled = go.eMailSettings.cancelledEvent;
+            bool skipBody = go.eMailSettings.skipBody;
+            string sendSuccessSubject = go.eMailSettings.successSubject;
+            string sendFailedSubject = go.eMailSettings.failedSubject;
+            string sendCancelledSubject = go.eMailSettings.cancelledSubject;
 
             string result = "Converted";
-            if (String.IsNullOrEmpty(job.ConvertedFile)) result = "NoMetaMatch";
             if (job.Status.Error) result = "Error";
             if (job.Status.Cancelled) result = "Cancelled"; // Cancelled should be the last status to set because an error can be set if is cancelled
 
@@ -859,61 +992,102 @@ namespace MCEBuddy.Engine
                 convCount++;
             historyIni.Write(job.OriginalFileName, result + "At" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture));
 
-            if (result == "Converted")
+            switch (result)
             {
-                historyIni.Write(job.OriginalFileName, "ConvertedTo" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.ConvertedFile);
-                
-                //Ensure converted files are not then re-converted during a scan
-                historyIni.Write(job.ConvertedFile, "Status", "OutputFromConversion"); // Status indicates destination file is output of an conversion, if the same file is added back for reconversion then it would log as converted
-                historyIni.Write(job.ConvertedFile, "ConvertedToOutputAt" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture));
+                case "Converted":
+                    {
+                        if (job.Status.SuccessfulSkipConversion)
+                            Log.AppLog.WriteEntry(this, "Job for " + job.OriginalFileName + " skipped ReConverting successfully using Conversion Task " + job.TaskName + " and Profile " + job.Profile, Log.LogEntryType.Information, true);
+                        else
+                            Log.AppLog.WriteEntry(this, "Job for " + job.OriginalFileName + " converted successfully to " + job.ConvertedFile + " using Conversion Task " + job.TaskName + " and Profile " + job.Profile, Log.LogEntryType.Information, true);
 
-                // Send an eMail if required
-                if (sendEMail && sendSuccess)
-                {
-                    string subject = Localise.GetPhrase("MCEBuddy successfully converted a video");
-                    string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
-                    message += Localise.GetPhrase("Converted Video") + " -> " + job.ConvertedFile + "\r\n";
-                    message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
-                    message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
-                    message += Localise.GetPhrase("Converted At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                        historyIni.Write(job.OriginalFileName, "ConvertedTo" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.ConvertedFile);
+                        historyIni.Write(job.OriginalFileName, "ConvertedUsingProfile" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Profile);
+                        historyIni.Write(job.OriginalFileName, "ConvertedUsingTask" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.TaskName);
+                        historyIni.Write(job.OriginalFileName, "ConvertedStart" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.ConversionStartTime.ToString("s", System.Globalization.CultureInfo.InvariantCulture));
 
-                    new Thread(() => eMail.SendEMail(go.eMailSettings, subject, message, ref Log.AppLog, this)).Start(); // Send the eMail through a thead
-                }
-            }
+                        //Ensure converted files are not then re-converted during a scan
+                        historyIni.Write(job.ConvertedFile, "Status", "OutputFromConversion"); // Status indicates destination file is output of an conversion, if the same file is added back for reconversion then it would log as converted
+                        if (job.Status.SuccessfulSkipConversion)
+                            historyIni.Write(job.ConvertedFile, "SkipConvertedToOutputAt" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.ConversionEndTime.ToString("s", System.Globalization.CultureInfo.InvariantCulture));
+                        else
+                            historyIni.Write(job.ConvertedFile, "ConvertedToOutputAt" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.ConversionEndTime.ToString("s", System.Globalization.CultureInfo.InvariantCulture));
 
-            if (result == "Error")
-            {
-                historyIni.Write(job.OriginalFileName, "ErrorMessage" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Status.ErrorMsg);
-                historyIni.Write(job.OriginalFileName, "ErrorUsingProfile" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Profile);
-                historyIni.Write(job.OriginalFileName, "ErrorUsingTask" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.TaskName);
+                        // Send an eMail if required
+                        if (sendEMail && sendSuccess)
+                        {
+                            string subject = Localise.GetPhrase("MCEBuddy successfully converted a video");
+                            string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
+                            message += Localise.GetPhrase("Converted Video") + " -> " + job.ConvertedFile + "\r\n";
+                            message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
+                            message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
+                            message += Localise.GetPhrase("Converted At") + " -> " + job.ConversionEndTime.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\r\n";
+                            message += Localise.GetPhrase("Time taken to convert") + " (hh:mm) -> " + (job.ConversionEndTime - job.ConversionStartTime).Hours.ToString("00") + ":" + (job.ConversionEndTime - job.ConversionStartTime).Minutes.ToString("00") + "\r\n";
 
-                // Send an eMail if required
-                if (sendEMail && sendFailed)
-                {
-                    string subject = Localise.GetPhrase("MCEBuddy failed to converted a video");
-                    string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
-                    message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
-                    message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
-                    message += Localise.GetPhrase("Error") + " -> " + job.Status.ErrorMsg + "\r\n";
-                    message += Localise.GetPhrase("Failed At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                            // Check for custom subject and process
+                            if (!String.IsNullOrWhiteSpace(sendSuccessSubject))
+                                subject = UserCustomParams.CustomParamsReplace(sendSuccessSubject, job.WorkingPath, Path.GetDirectoryName(job.ConvertedFile), job.ConvertedFile, job.OriginalFileName, "", "", "", job.Profile, job.TaskName, job.ConversionJobOptions.relativeSourcePath, job.MetaData, Log.AppLog);
 
-                    new Thread(() => eMail.SendEMail(go.eMailSettings, subject, message, ref Log.AppLog, this)).Start(); // Send the eMail through a thead
-                }
-            }
+                            eMailSendEngine.AddEmailToSendQueue(subject, (skipBody ? "" : message)); // Send the eMail through the email engine
+                        }
+                    }
+                    break;
 
-            if (result == "Cancelled")
-            {
-                // Send an eMail if required
-                if (sendEMail && sendCancelled)
-                {
-                    string subject = Localise.GetPhrase("MCEBuddy cancelled a video conversion");
-                    string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
-                    message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
-                    message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
-                    message += Localise.GetPhrase("Cancelled At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                case "Error":
+                    {
+                        Log.AppLog.WriteEntry(this, "Job for " + job.OriginalFileName + " has Error " + job.Status.ErrorMsg + " using Conversion Task " + job.TaskName + " and Profile " + job.Profile, Log.LogEntryType.Information, true);
 
-                    new Thread(() => eMail.SendEMail(go.eMailSettings, subject, message, ref Log.AppLog, this)).Start(); // Send the eMail through a thead
-                }
+                        historyIni.Write(job.OriginalFileName, "ErrorMessage" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Status.ErrorMsg);
+                        historyIni.Write(job.OriginalFileName, "ErrorUsingProfile" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Profile);
+                        historyIni.Write(job.OriginalFileName, "ErrorUsingTask" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.TaskName);
+
+                        // Send an eMail if required
+                        if (sendEMail && sendFailed)
+                        {
+                            string subject = Localise.GetPhrase("MCEBuddy failed to converted a video");
+                            string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
+                            message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
+                            message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
+                            message += Localise.GetPhrase("Error") + " -> " + job.Status.ErrorMsg + "\r\n";
+                            message += Localise.GetPhrase("Failed At") + " -> " + job.ConversionEndTime.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\r\n";
+
+                            // Check for custom subject and process
+                            if (!String.IsNullOrWhiteSpace(sendFailedSubject))
+                                subject = UserCustomParams.CustomParamsReplace(sendFailedSubject, job.WorkingPath, "", job.ConvertedFile, job.OriginalFileName, "", "", "", job.Profile, job.TaskName, job.ConversionJobOptions.relativeSourcePath, job.MetaData, Log.AppLog);
+
+                            eMailSendEngine.AddEmailToSendQueue(subject, (skipBody ? "" : message)); // Send the eMail through the eMail engine
+                        }
+                    }
+                    break;
+
+                case "Cancelled":
+                    {
+                        Log.AppLog.WriteEntry(this, "Job for " + job.OriginalFileName + " Cancelled using Conversion Task " + job.TaskName + " and Profile " + job.Profile, Log.LogEntryType.Information, true);
+                        historyIni.Write(job.OriginalFileName, "CancelledUsingProfile" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.Profile);
+                        historyIni.Write(job.OriginalFileName, "CancelledUsingTask" + convCount.ToString(System.Globalization.CultureInfo.InvariantCulture), job.TaskName);
+
+                        // Send an eMail if required
+                        if (sendEMail && sendCancelled)
+                        {
+                            string subject = Localise.GetPhrase("MCEBuddy cancelled a video conversion");
+                            string message = Localise.GetPhrase("Source Video") + " -> " + job.OriginalFileName + "\r\n";
+                            message += Localise.GetPhrase("Profile") + " -> " + job.Profile + "\r\n";
+                            message += Localise.GetPhrase("Conversion Task") + " -> " + job.TaskName + "\r\n";
+                            message += Localise.GetPhrase("Cancelled At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\r\n"; // It can be cancelled before it starts so end time is not a good indicator
+
+                            // Check for custom subject and process
+                            if (!String.IsNullOrWhiteSpace(sendCancelledSubject))
+                                subject = UserCustomParams.CustomParamsReplace(sendCancelledSubject, job.WorkingPath, "", job.ConvertedFile, job.OriginalFileName, "", "", "", job.Profile, job.TaskName, job.ConversionJobOptions.relativeSourcePath, job.MetaData, Log.AppLog);
+
+                            eMailSendEngine.AddEmailToSendQueue(subject, (skipBody ? "" : message)); // Send the eMail through the eMail engine
+                        }
+                    }
+                    break;
+
+                default:
+                    Log.AppLog.WriteEntry(this, "INVALID STATE (" + result + ") -> Job for " + job.OriginalFileName + " Converted using Conversion Task " + job.TaskName + " and Profile " + job.Profile, Log.LogEntryType.Error, true);
+
+                    break;
             }
 
             if ( _queueManager.JobCount(job.OriginalFileName) <= 1)
@@ -935,28 +1109,70 @@ namespace MCEBuddy.Engine
             IEnumerable<string> foundFiles;
             try
             {
-                //foundFiles = Directory.EnumerateFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
-                foundFiles = Directory.GetFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
+                // Check if the MCEBuddy.log (global log) is too large, if so clear it first
+                if (Util.FileIO.FileSize(GlobalDefs.AppLogFile) > GlobalDefs.GLOBAL_LOGFILE_SIZE_THRESHOLD)
+                {
+                    Log.AppLog.Clear();
+                    Log.AppLog.WriteEntry("MCEBuddy Log file cleared since it was larger than " + ((GlobalDefs.GLOBAL_LOGFILE_SIZE_THRESHOLD) / 1024 / 1024).ToString("N", System.Globalization.CultureInfo.InvariantCulture) + " MB, starting afresh.", Log.LogEntryType.Warning, true);
+                }
+
+                foundFiles = FilePaths.GetDirectoryFiles(GlobalDefs.LogPath, "*.log", SearchOption.TopDirectoryOnly).OrderBy(File.GetLastWriteTime); // We sort the files by last modified time
+
+                if (foundFiles != null)
+                {
+                    foreach (string foundFile in foundFiles)
+                    {
+                        // Found a file
+                        if (File.GetLastWriteTime(foundFile).AddDays(logKeepDays) < DateTime.Now) // check if the log file is older than requested
+                        {
+                            Log.AppLog.WriteEntry("Deleting log file" + " " + foundFile + "\r\n", Log.LogEntryType.Debug, true);
+                            Util.FileIO.TryFileDelete(foundFile); // Delete the log file
+                        }
+                    }
+                }
+
             }
             catch (Exception ex)
             {
-                Log.AppLog.WriteEntry(Localise.GetPhrase("Unable to search for files in location") + " " + GlobalDefs.LogPath + "\r\n" + ex.Message, Log.LogEntryType.Warning);
+                Log.AppLog.WriteEntry(Localise.GetPhrase("Unable to search for log files in location") + " " + GlobalDefs.LogPath + "\r\n" + ex.Message, Log.LogEntryType.Warning);
                 foundFiles = new List<string>();
-            }
-            if (foundFiles != null)
-            {
-                foreach (string foundFile in foundFiles)
-                {
-                    // Found a file
-                    if (File.GetLastWriteTime(foundFile).AddDays(logKeepDays) < DateTime.Now) // check if the log file is older than requested
-                    {
-                        Log.AppLog.WriteEntry(Localise.GetPhrase("Deleting log file") + " " + foundFile + "\r\n", Log.LogEntryType.Debug);
-                        Util.FileIO.TryFileDelete(foundFile); // Delete the log file
-                    }
-                }
             }
 
             return;
+        }
+
+        /// <summary>
+        /// Create an exception in the firewall for MCEBuddy (port and application)
+        /// </summary>
+        /// <param name="createException">True to create, false to remove</param>
+        /// <returns>True if successful</returns>
+        private bool FirewallException(bool createException)
+        {
+            try
+            {
+                if (createException)
+                {
+                    Firewall.AuthorizeApplication("MCEBuddy2x", Path.Combine(GlobalDefs.AppPath, @"MCEBuddy.Service.exe"), Firewall.NET_FW_SCOPE.NET_FW_SCOPE_ALL, Firewall.NET_FW_ACTION.NET_FW_ACTION_ALLOW, Firewall.NET_FW_IP_VERSION.NET_FW_IP_VERSION_ANY); // Open the firewall
+                    Firewall.AuthorizePort("MCEBuddy2x Port", MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, Firewall.NET_FW_SCOPE.NET_FW_SCOPE_ALL, Firewall.NET_FW_IP_PROTOCOL.NET_FW_IP_PROTOCOL_TCP, Firewall.NET_FW_IP_VERSION.NET_FW_IP_VERSION_ANY); // Authorize port
+                    Log.WriteSystemEventLog("MCEBuddy creating firewall exception complete", EventLogEntryType.Information);
+                }
+                else
+                {
+                    Firewall.CleanUpFirewall("MCEBuddy2x", Path.Combine(GlobalDefs.AppPath, @"MCEBuddy.Service.exe"), "MCEBuddy2x Port", MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, Firewall.NET_FW_IP_PROTOCOL.NET_FW_IP_PROTOCOL_TCP); // Clean up firewall etries
+                    Log.WriteSystemEventLog("MCEBuddy removing firewall exception complete", EventLogEntryType.Information);
+                }
+            }
+            catch (Exception e)
+            {
+                if (createException)
+                    Log.WriteSystemEventLog("MCEBuddy error enabling firewall exception. Error -> \r\n" + e.ToString(), EventLogEntryType.Error);
+                else
+                    Log.WriteSystemEventLog("MCEBuddy error disabling firewall exception. Error -> \r\n" + e.ToString(), EventLogEntryType.Error);
+
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -967,7 +1183,7 @@ namespace MCEBuddy.Engine
             Log.WriteSystemEventLog("MCEBuddy starting UPnP Monitor Thread", EventLogEntryType.Information);
 
             // Check/Enable UPnP - verbose
-            //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             try
             {
@@ -976,13 +1192,13 @@ namespace MCEBuddy.Engine
                     Thread.Sleep(GlobalDefs.UPNP_POLL_PERIOD); // Wait for a while to repoll
 
                     // Check/Enable UPnP - non verbose
-                    //UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
+                    UPnP.EnableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, false);
                 }
             }
             catch // Catch an Abort or Join
             {
                 // Disable UPnP Port Forwarding - verbose
-                //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+                UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
                 _uPnPCheckThread = null; // This thread is dead
                 Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort successful", EventLogEntryType.Information);
@@ -991,7 +1207,7 @@ namespace MCEBuddy.Engine
 
             // Just incase the Abort or Join exception was not caught
             // Disable UPnP Port Forwarding - verbose
-            //UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
+            UPnP.DisableUPnP(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.localServerPort, true);
 
             _uPnPCheckThread = null; // This thread is dead
             Log.WriteSystemEventLog("MCEBuddy exiting UPnP Monitor Thread - abort Failed", EventLogEntryType.Information);
@@ -999,63 +1215,75 @@ namespace MCEBuddy.Engine
         }
 
         /// <summary>
-        /// Checks if the current time is within the configured Conversion Start times
-        /// </summary>
-        /// <returns>True is it is within the configured conversion start time</returns>
-        private bool WithinConversionTimes()
-        {
-            if ((_startHour < 0) || (_startMinute < 0) || (_stopHour < 0) || (_stopMinute < 0)) return true;
-
-            DateTime rn = DateTime.Now;
-            DateTime startTime = new DateTime(rn.Year, rn.Month, rn.Day, _startHour, _startMinute, 0);
-            DateTime endTime = new DateTime(rn.Year, rn.Month, rn.Day, _stopHour, _stopMinute, 0);
-
-            // Fix for start time > end time (e.g. 11PM to 11AM)
-            if ((startTime > endTime) && (rn.Hour >= 0) && (rn.Hour < 12))
-                startTime = startTime.AddDays(-1); // If we are past midnight and before noon, we reduce the start to the day before
-            else if (startTime > endTime)
-                endTime = endTime.AddDays(1); // else we jump the endTime forward
-
-            return ((rn >= startTime) && (rn <= endTime) && daysOfWeek.Contains(rn.DayOfWeek.ToString())); // If we are between Start and Stop time and also on the right day of the week
-        }
-
-        /// <summary>
         /// Main CORE engine thread of MCEBuddy which runs in the background to check for new jobs, scans for new files, checks for updates to MCEBuddy etc
         /// </summary>
         private void MonitorThread() // Background thread that check for job starting, additions and completion
         {
+            Thread updateCheckThread = null, scanThread = null, syncThread = null;
+
             try
             {
-                DateTime LastCheck = DateTime.Now.AddSeconds(_pollPeriod * -1);
+                DateTime lastUpdateCheck = DateTime.Now.AddDays(-1);
+                DateTime lastPollCheck = DateTime.Now.AddSeconds(-_pollPeriod);
                 GlobalDefs.Shutdown = false;
                 while (!GlobalDefs.Shutdown)
                 {
                     // Check for updated version and messages
-                    if (DateTime.Now > _lastUpdateCheck.AddHours(GlobalDefs.random.Next(12, 25)))
+                    if (DateTime.Now > lastUpdateCheck.AddHours(GlobalDefs.random.Next(12, 25)))
                     {
                         Log.AppLog.WriteEntry(this, Localise.GetPhrase("Checking for new version of MCEBuddy"), Log.LogEntryType.Information);
-                        _lastUpdateCheck = DateTime.Now;
-                        _updateCheckThread = new Thread(new ThreadStart(_updateCheck.Check));
-                        _updateCheckThread.SetApartmentState(ApartmentState.STA);
-                        _updateCheckThread.CurrentCulture = _updateCheckThread.CurrentUICulture = Localise.MCEBuddyCulture;
-                        _updateCheckThread.Start();
+                        lastUpdateCheck = DateTime.Now;
+
+                        if ((updateCheckThread != null) && updateCheckThread.IsAlive)
+                            continue; // Don't start another one yet
+                        updateCheckThread = new Thread(new ThreadStart(_updateCheck.Check));
+                        updateCheckThread.SetApartmentState(ApartmentState.STA);
+                        updateCheckThread.CurrentCulture = updateCheckThread.CurrentUICulture = Localise.MCEBuddyCulture;
+                        updateCheckThread.IsBackground = true; // Kill the thread if the process exits
+                        updateCheckThread.Start();
                     }
 
                     //Check for new files and clean up log files
-                    if ((DateTime.Now > LastCheck.AddSeconds(_pollPeriod)) || (_rescan))
+                    if ((DateTime.Now > lastPollCheck.AddSeconds(_pollPeriod)) || (_rescan))
                     {
-                        // check for new files
                         _rescan = false;
-                        LastCheck = DateTime.Now;
+                        lastPollCheck = DateTime.Now;
 
-                        Monitor.Enter(_queueManager.Queue); //the lock is always on the jobQueue
-                        _queueManager.ScanForFiles(); // Check for new files in the monitor folders
-                        if (MCEBuddyConf.GlobalMCEConfig.GeneralOptions.deleteConverted) // check if converted files need to kept in sync with source files (deleted)
-                            _queueManager.SyncConvertedFiles(_useRecycleBin);
-                        Monitor.Exit(_queueManager.Queue);
+                        // Check for new files in the monitor folders - run as thread to keep it responsive
+                        if ((scanThread != null) && scanThread.IsAlive)
+                            continue; // Don't start another one yet
+                        scanThread = new Thread(() => _queueManager.ScanForFiles());
+                        scanThread.CurrentCulture = scanThread.CurrentUICulture = Localise.MCEBuddyCulture;
+                        scanThread.IsBackground = true; // Kill the thread if the process exits
+                        scanThread.Start();
+
+                        // check if converted files need to kept in sync with source files (deleted) - run as thread to keep it responsive
+                        if (MCEBuddyConf.GlobalMCEConfig.GeneralOptions.deleteConverted)
+                        {
+                            if ((syncThread != null) && syncThread.IsAlive)
+                                continue; // Don't start another one yet
+                            syncThread = new Thread(() => _queueManager.SyncConvertedFiles(_useRecycleBin)); // Check for new files in the monitor folders
+                            syncThread.CurrentCulture = syncThread.CurrentUICulture = Localise.MCEBuddyCulture;
+                            syncThread.IsBackground = true; // Kill the thread if the process exits
+                            syncThread.Start();
+                        }
 
                         // check for log files clean up
                         CleanLogFiles();                        
+                    }
+
+                    // Resume jobs if we are within the conversion time
+                    if (CheckIfWithinConversionTime()) // Call the internal function, cannot take a lock
+                    {
+                        // We are within the conversion time, if the engine has not auto resumed, then resume it
+                        if (_autoPause) // If we are auto paused, then resume it since we are within the conversion time
+                            _autoPause = GlobalDefs.Pause = false; // Resume it
+                    }
+                    else
+                    {
+                        // We are outside the conversion time, if the engine has not auto paused, then pause it
+                        if (!_autoPause) // If we are not paused, then pause it since we are outside the conversion time
+                            _autoPause = GlobalDefs.Pause = true; // Pause it
                     }
 
                     //Check the status of the jobs and start new ones 
@@ -1078,28 +1306,40 @@ namespace MCEBuddy.Engine
                                     iniManualQueue.DeleteKey("ManualQueue", _conversionJobs[i].OriginalFileName);
                                 }
 
-                                // Delete/archive only if the conversion was successful and original marked for deletion and it is the last task for the job and the original file and converted file don't have the same name+path (since it's been replaced already)
-                                if ((_deleteOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (_conversionJobs[i].OriginalFileName != _conversionJobs[i].ConvertedFile))
+                                bool archiveOriginal = false;
+                                bool deleteOriginal = false;
+
+                                // Monitor task specific options take priority first for archiving and deleting originals
+                                if ((_conversionJobs[i].MonitorJobOptions != null) && (_conversionJobs[i].MonitorJobOptions.archiveMonitorOriginal || _conversionJobs[i].MonitorJobOptions.deleteMonitorOriginal))
                                 {
-                                    // Delete the EDL, SRT, XML, NFO etc files also along with the original file if present
-                                    foreach (string supportFileExt in GlobalDefs.supportFilesExt)
-                                    {
-                                        string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // support file
-
-                                        Util.FileIO.TryFileDelete(extFile, _useRecycleBin); // Delete support file
-                                    }
-
-                                    Util.FileIO.TryFileDelete(_conversionJobs[i].OriginalFileName, _useRecycleBin); // delete original file
-                                    Log.AppLog.WriteEntry(this, "Deleting original file " + _conversionJobs[i].OriginalFileName, Log.LogEntryType.Debug, true);
+                                    if (_conversionJobs[i].MonitorJobOptions.archiveMonitorOriginal)
+                                        archiveOriginal = true;
+                                    else if (_conversionJobs[i].MonitorJobOptions.deleteMonitorOriginal)
+                                        deleteOriginal = true;
                                 }
-                                else if ((_archiveOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (_conversionJobs[i].OriginalFileName != _conversionJobs[i].ConvertedFile))
+                                // Check General Options for Archive or Delete original
+                                else if (_archiveOriginal)
+                                    archiveOriginal = true;
+                                else if (_deleteOriginal)
+                                    deleteOriginal = true;
+
+                                // Archive only if the conversion was successful and original marked for archiving and it is the last task for the job and the original file and converted file don't have the same name+path (since it's been replaced already)
+                                if ((archiveOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (String.Compare(_conversionJobs[i].OriginalFileName, _conversionJobs[i].ConvertedFile, true) != 0))
                                 {
                                     string pathName = Path.GetDirectoryName(_conversionJobs[i].OriginalFileName); //get the directory name
-                                    if (!pathName.ToLower().Contains((string.IsNullOrEmpty(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath) ? GlobalDefs.MCEBUDDY_ARCHIVE.ToLower() : MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath.ToLower()))) //check if we are currently operating from the archive folder (manual queue), in which case don't archive
+                                    if (!pathName.ToLower().Contains((string.IsNullOrEmpty(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath) ? GlobalDefs.MCEBUDDY_ARCHIVE.ToLower() : MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath.ToLower())) // Global Archive Path
+                                        && (_conversionJobs[i].MonitorJobOptions == null ? true : !pathName.ToLower().Contains((string.IsNullOrEmpty(_conversionJobs[i].MonitorJobOptions.archiveMonitorPath) ? GlobalDefs.MCEBUDDY_ARCHIVE.ToLower() : _conversionJobs[i].MonitorJobOptions.archiveMonitorPath.ToLower()))) // Monitor task Archive path
+                                        ) //check if we are currently operating from the archive folder, in which case don't archive
                                     {
-                                        string archivePath = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath; // use the specified archive path
+                                        string archivePath;
 
-                                        if (archivePath == "") // Default archive location to be used
+                                        // First check and use the monitor archive path
+                                        if ((_conversionJobs[i].MonitorJobOptions != null) && !String.IsNullOrWhiteSpace(_conversionJobs[i].MonitorJobOptions.archiveMonitorPath))
+                                            archivePath = _conversionJobs[i].MonitorJobOptions.archiveMonitorPath;
+                                        else
+                                            archivePath = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.archivePath; // use the global archive path
+
+                                        if (String.IsNullOrWhiteSpace(archivePath)) // Default archive location to be used
                                             archivePath = Path.Combine(pathName, GlobalDefs.MCEBUDDY_ARCHIVE); //update the path name for a new sub-directory called Archive
 
                                         Util.FilePaths.CreateDir(archivePath); //create the sub-directory if required
@@ -1109,23 +1349,75 @@ namespace MCEBuddy.Engine
 
                                         try
                                         {
-                                            // Archive the EDL, SRT, XML, NFO etc files also along with the original file if present
-                                            foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                            // If the converted file path and original file path are the same, then don't archive the support file (since they may be created by the converted file)
+                                            if (String.Compare(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetDirectoryName(_conversionJobs[i].ConvertedFile), true) != 0)
                                             {
-                                                string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // Saved support file
-
-                                                if (File.Exists(extFile))
-                                                    File.Move(extFile, Path.Combine(archivePath, Path.GetFileName(extFile)));
+                                                    // Archive the EDL, SRT, XML, NFO etc files also along with the original file if present
+                                                    foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                                    {
+                                                        string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // Saved support file
+                                                        if (File.Exists(extFile))
+                                                            FileIO.MoveAndInheritPermissions(extFile, Path.Combine(archivePath, Path.GetFileName(extFile)));
+                                                    }
                                             }
 
                                             // Last file to move
-                                            File.Move(_conversionJobs[i].OriginalFileName, newFilePath); //move the file into the archive folder
+                                            FileIO.MoveAndInheritPermissions(_conversionJobs[i].OriginalFileName, newFilePath); //move the file into the archive folder
                                         }
                                         catch (Exception e)
                                         {
-                                            Log.AppLog.WriteEntry(this, "Unable to move converted file " + _conversionJobs[i].OriginalFileName + " to Archive folder " + archivePath, Log.LogEntryType.Error);
+                                            Log.AppLog.WriteEntry(this, "Unable to move original file " + _conversionJobs[i].OriginalFileName + " to Archive folder " + archivePath, Log.LogEntryType.Error);
                                             Log.AppLog.WriteEntry(this, "Error : " + e.ToString(), Log.LogEntryType.Error);
                                         }
+                                    }
+                                }
+                                // Delete only if the conversion was successful and original marked for deletion and it is the last task for the job and the original file and converted file don't have the same name+path (since it's been replaced already)
+                                else if ((deleteOriginal) && (_conversionJobs[i].Status.SuccessfulConversion) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1) && (String.Compare(_conversionJobs[i].OriginalFileName, _conversionJobs[i].ConvertedFile, true) != 0))
+                                {
+                                    Log.AppLog.WriteEntry(this, "Deleting original file " + _conversionJobs[i].OriginalFileName, Log.LogEntryType.Debug, true);
+
+                                    // If the converted file path and original file path are the same, then don't delete the support file (since they may be created by the converted file)
+                                    if (String.Compare(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetDirectoryName(_conversionJobs[i].ConvertedFile), true) != 0)
+                                    {
+                                        // Delete the EDL, SRT, XML, NFO etc files also along with the original file if present
+                                        foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                        {
+                                            string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // support file
+                                            Util.FileIO.TryFileDelete(extFile, _useRecycleBin); // Delete support file
+                                        }
+                                    }
+
+                                    Util.FileIO.TryFileDelete(_conversionJobs[i].OriginalFileName, _useRecycleBin); // delete original file
+                                }
+
+                                // Check of it's a failure and the original file needs to be moved
+                                if ((_failedMoveOriginal) && (_conversionJobs[i].Status.Error) && (_queueManager.JobCount(_conversionJobs[i].OriginalFileName) <= 1))
+                                {
+                                    string pathName = Path.GetDirectoryName(_conversionJobs[i].OriginalFileName); //get the directory name
+                                    string failedPath = MCEBuddyConf.GlobalMCEConfig.GeneralOptions.failedPath; // use the specified path to move the file conversion original file
+
+                                    Util.FilePaths.CreateDir(failedPath); //create the sub-directory if required
+                                    string newFilePath = Path.Combine(failedPath, Path.GetFileName(_conversionJobs[i].OriginalFileName));
+
+                                    Log.AppLog.WriteEntry(this, "Moving original file " + _conversionJobs[i].OriginalFileName + " to Failed conversion folder " + failedPath, Log.LogEntryType.Debug);
+
+                                    try
+                                    {
+                                        // Move the EDL, SRT, XML, NFO etc files also along with the original file if present
+                                        foreach (string supportFileExt in GlobalDefs.supportFilesExt)
+                                        {
+                                            string extFile = Path.Combine(Path.GetDirectoryName(_conversionJobs[i].OriginalFileName), Path.GetFileNameWithoutExtension(_conversionJobs[i].OriginalFileName) + supportFileExt); // Saved support file
+                                            if (File.Exists(extFile))
+                                                FileIO.MoveAndInheritPermissions(extFile, Path.Combine(failedPath, Path.GetFileName(extFile)));
+                                        }
+
+                                        // Last file to move
+                                        FileIO.MoveAndInheritPermissions(_conversionJobs[i].OriginalFileName, newFilePath); //move the file into the archive folder
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Log.AppLog.WriteEntry(this, "Unable to move original file " + _conversionJobs[i].OriginalFileName + " to Failed conversion folder " + failedPath, Log.LogEntryType.Error);
+                                        Log.AppLog.WriteEntry(this, "Error : " + e.ToString(), Log.LogEntryType.Error);
                                     }
                                 }
 
@@ -1144,8 +1436,8 @@ namespace MCEBuddy.Engine
                         }
                         else
                         {
-                            // Start new jobs
-                            if (WithinConversionTimes())
+                            // Start new jobs if conversions are not paused
+                            if (!GlobalDefs.Pause)
                             {
                                 Monitor.Enter(_queueManager.Queue);
                                 for (int j = 0; j < _queueManager.Queue.Count; j++)
@@ -1153,8 +1445,13 @@ namespace MCEBuddy.Engine
                                     if ((!_queueManager.Queue[j].Completed) && (!_queueManager.Queue[j].Active))
                                     {
                                         _conversionJobs[i] = _queueManager.Queue[j];
-                                        // Checking for a custom temp working path for conversion (other drives/locations) 
-                                        _conversionJobs[i].WorkingPath = Path.Combine((String.IsNullOrEmpty(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.tempWorkingPath) ? GlobalDefs.AppPath : MCEBuddyConf.GlobalMCEConfig.GeneralOptions.tempWorkingPath), "working" + i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                                        
+                                        // Checking for a custom temp working path for conversion (other drives/locations)
+                                        _conversionJobs[i].WorkingPath = Path.Combine((!String.IsNullOrEmpty(_conversionJobs[i].WorkingPath) ? _conversionJobs[i].WorkingPath // Local temp folder takes precedence
+                                                                                            : (!String.IsNullOrEmpty(MCEBuddyConf.GlobalMCEConfig.GeneralOptions.tempWorkingPath) ? MCEBuddyConf.GlobalMCEConfig.GeneralOptions.tempWorkingPath  // Check global temp path
+                                                                                                : GlobalDefs.AppPath)) // Nothing specified, use default temp path
+                                                                                        , "working" + i.ToString()); // create sub working directories for each simultaneous task otherwise they conflict
+                                        
                                         // Start the conversion
                                         _conversionJobs[i].StartConversionThread();
 
@@ -1164,18 +1461,24 @@ namespace MCEBuddy.Engine
                                         GeneralOptions go = MCEBuddyConf.GlobalMCEConfig.GeneralOptions;
                                         bool sendEMail = go.sendEmail; // do we need to send an eMail after each job
                                         bool sendStart = go.eMailSettings.startEvent;
+                                        string sendStartSubject = go.eMailSettings.startSubject;
+                                        bool skipBody = go.eMailSettings.skipBody;
                                         if (sendEMail && sendStart)
                                         {
                                             string subject = Localise.GetPhrase("MCEBuddy started a video conversion");
                                             string message = Localise.GetPhrase("Source Video") + " -> " + _conversionJobs[i].OriginalFileName + "\r\n";
                                             message += Localise.GetPhrase("Profile") + " -> " + _conversionJobs[i].Profile + "\r\n";
                                             message += Localise.GetPhrase("Conversion Task") + " -> " + _conversionJobs[i].TaskName + "\r\n";
-                                            message += Localise.GetPhrase("Conversion Started At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+                                            message += Localise.GetPhrase("Conversion Started At") + " -> " + DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + "\r\n";
 
-                                            new Thread(() => eMail.SendEMail(go.eMailSettings, subject, message, ref Log.AppLog, this)).Start(); // Send the eMail through a thead
+                                            // Check for custom subject and process
+                                            if (!String.IsNullOrWhiteSpace(sendStartSubject))
+                                                subject = UserCustomParams.CustomParamsReplace(sendStartSubject, _conversionJobs[i].WorkingPath, "", _conversionJobs[i].ConvertedFile, _conversionJobs[i].OriginalFileName, "", "", "", _conversionJobs[i].Profile, _conversionJobs[i].TaskName, _conversionJobs[i].ConversionJobOptions.relativeSourcePath, _conversionJobs[i].MetaData, Log.AppLog);
+
+                                            eMailSendEngine.AddEmailToSendQueue(subject, (skipBody ? "" : message)); // Send the eMail through the eMail engine
                                         }
 
-                                        Log.AppLog.WriteEntry(this, "Job for " + _conversionJobs[i].OriginalFileName + " started", Log.LogEntryType.Information, true);
+                                        Log.AppLog.WriteEntry(this, "Job for " + _conversionJobs[i].OriginalFileName + " started using Conversion Task " + _conversionJobs[i].TaskName + " and Profile " + _conversionJobs[i].Profile, Log.LogEntryType.Information, true);
                                         Log.AppLog.WriteEntry(this, "Temp working path is " + _conversionJobs[i].WorkingPath, Log.LogEntryType.Debug, true);
                                         break;
                                     }
@@ -1185,32 +1488,58 @@ namespace MCEBuddy.Engine
                         }
                     }
 
-                    if ((GlobalDefs.Active) && !SomeRunning)
+                    if ((GlobalDefs.Active) && !SomeRunning) // Was running jobs earlier, no active jobs now
                     {
                         Log.AppLog.WriteEntry(this, Localise.GetPhrase("No conversions running , allowing system sleep"), Log.LogEntryType.Debug, true);
                         Util.PowerManagement.AllowSleep();
+                        _allowSleep = true;
                     }
-                    else if ((!GlobalDefs.Active) && SomeRunning)
+                    else if ((!GlobalDefs.Active) && SomeRunning) // Wasn't running jobs earlier, has new active jobs now
                     {
-                        if (_allowSleep)
+                        if (_userAllowSleep) // User allows sleep while converting
                         {
                             Log.AppLog.WriteEntry(this, Localise.GetPhrase("Starting new conversions, allowing system sleep"), Log.LogEntryType.Debug, true);
                             Util.PowerManagement.AllowSleep();
+                            _allowSleep = true;
                         }
                         else
                         {
                             Log.AppLog.WriteEntry(this, Localise.GetPhrase("Starting new conversions, preventing system sleep"), Log.LogEntryType.Debug, true);
                             Util.PowerManagement.PreventSleep();
+                            _allowSleep = false;
                         }
                     }
+
+                    // Check if the conversion is paused while the job is active, if so allow sleep
+                    if (GlobalDefs.Pause && SomeRunning && !_allowSleep)
+                    {
+                        Log.AppLog.WriteEntry(this, Localise.GetPhrase("Active jobs paused, allowing system sleep"), Log.LogEntryType.Debug, true);
+                        Util.PowerManagement.AllowSleep();
+                        _allowSleep = true;
+                    }
+                    else if (!GlobalDefs.Pause && SomeRunning && !_userAllowSleep && _allowSleep) // disable sleep once the job has been resumed and user does not allow sleeping while converting
+                    {
+                        Log.AppLog.WriteEntry(this, Localise.GetPhrase("Active jobs resumed, user does not allow sleep while converting, preventing system sleep"), Log.LogEntryType.Debug, true);
+                        Util.PowerManagement.PreventSleep();
+                        _allowSleep = false;
+                    }
+
                     GlobalDefs.Active = SomeRunning;
                     _engineCrashed = false; // we've reached here so, reset it
 
                     // Sleep then shutdown check
-                    Thread.Sleep(100);
+                    Thread.Sleep(GlobalDefs.ENGINE_CORE_SLEEP_PERIOD);
                 }
 
-                // Shut down the threads
+                // Shutdown support threads
+                if ((syncThread != null) && syncThread.IsAlive)
+                    syncThread.Abort();
+                if ((scanThread != null) && scanThread.IsAlive)
+                    scanThread.Abort();
+                if ((updateCheckThread != null) && updateCheckThread.IsAlive)
+                    updateCheckThread.Abort();
+
+                // Shut down the conversion threads
                 Monitor.Enter(_queueManager.Queue);
                 for (int i = 0; i < _conversionJobs.Length; i++)
                 {
@@ -1224,12 +1553,29 @@ namespace MCEBuddy.Engine
                 Monitor.Exit(_queueManager.Queue);
 
                 Util.PowerManagement.AllowSleep(); //reset to default
+                _allowSleep = true;
                 GlobalDefs.Active = false;
                 _monitorThread = null; // this thread is done
             }
             catch (Exception e)
             {
+                _autoPause = GlobalDefs.Pause = false; // Reset suspension state
+                GlobalDefs.Shutdown = true; // Terminate everything since we had a major crash
+
+                // Shutdown support threads
+                if ((syncThread != null) && syncThread.IsAlive)
+                    syncThread.Abort();
+                if ((scanThread != null) && scanThread.IsAlive)
+                    scanThread.Abort();
+                if ((updateCheckThread != null) && updateCheckThread.IsAlive)
+                    updateCheckThread.Abort();
+
+                // Release the queue lock if taken
+                try { Monitor.Exit(_queueManager.Queue); } // Incase it's taken release it, if not taken it will throw an exception
+                catch { }
+
                 Util.PowerManagement.AllowSleep(); //reset to default
+                _allowSleep = true;
                 GlobalDefs.Active = false;
                 _engineCrashed = true;
 
@@ -1243,84 +1589,5 @@ namespace MCEBuddy.Engine
                 _monitorThread = null; // this thread is done
             }
         }
-    }
-
-    [ServiceContract]
-    public interface ICore
-    {
-        [OperationContract]
-        void CancelJob(int[] jobList);
-
-        [OperationContract]
-        void Start();
-
-        [OperationContract]
-        void Stop(bool preserveState);
-
-        [OperationContract]
-        void StopBySystem();
-
-        [OperationContract]
-        void Rescan();
-
-        [OperationContract]
-        int NumConversionJobs();
-
-        [OperationContract]
-        JobStatus GetJobStatus(int jobNumber);
-
-        [OperationContract]
-        bool Active();
-
-        [OperationContract]
-        bool ServiceShutdownBySystem();
-        
-        [OperationContract]
-        List<string[]> FileQueue();
-
-        [OperationContract]
-        bool UpdateFileQueue(int currentJobNo, int newJobNo);
-
-        [OperationContract]
-        bool EngineRunning();
-
-        [OperationContract]
-        bool EngineCrashed();
-
-        [OperationContract]
-        void SuspendConversion(bool suspend);
-
-        [OperationContract]
-        bool IsSuspended();
-
-        [OperationContract]
-        void ChangePriority(string processPriority);
-
-        [OperationContract]
-        void SetUPnPState(bool enable);
-
-        [OperationContract]
-        bool UpdateConfigParameters(ConfSettings configOptions);
-
-        [OperationContract]
-        ConfSettings GetConfigParameters();
-
-        [OperationContract]
-        List<string[]> GetProfilesSummary();
-
-        [OperationContract]
-        void AddManualJob(string videoFilePath);
-
-        [OperationContract]
-        MediaInfo GetFileInfo(string videoFilePath);
-
-        [OperationContract]
-        void GenerateXML(int[] jobList);
-
-        [OperationContract]
-        bool ShowAnalyzerInstalled();
-
-        [OperationContract]
-        List<EventLogEntry> GetWindowsEventLogs();
     }
 }

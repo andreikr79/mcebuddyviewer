@@ -8,12 +8,12 @@ using MCEBuddy.Util;
 
 namespace MCEBuddy.AppWrapper
 {
-    public class TiVOMetaExtract : AppWrapper.Base
+    public class TiVOMetaExtract : Base
     {
         private const string APP_PATH = "tivo\\tdcat.exe";
 
-        public TiVOMetaExtract(string Parameters, ref JobStatus jobStatus, Log jobLog)
-            : base(Parameters, APP_PATH, ref jobStatus, jobLog)
+        public TiVOMetaExtract(string Parameters, JobStatus jobStatus, Log jobLog, bool ignoreSuspend = false)
+            : base(Parameters, APP_PATH, jobStatus, jobLog, ignoreSuspend)
         {
             _success = true;
         }

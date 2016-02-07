@@ -12,6 +12,7 @@ namespace MCEBuddy.Util
 {
     public class Log : IDisposable
     {
+        private string _logFile = "";
         /// <summary>
         /// Default global Log level for all log files
         /// </summary>
@@ -41,32 +42,29 @@ namespace MCEBuddy.Util
 
         private StreamWriter _logStream = null;
 
-        public Log(LogDestination logDestination, string LogFile)
+        /// <summary>
+        /// Create a log file
+        /// </summary>
+        /// <param name="LogFile">Path to log file</param>
+        public Log(string LogFile)
         {
-            if (logDestination != LogDestination.LogFile)
-            {
-                throw new ArgumentException("Log file must be specified only for log destination");
-            }
             if (String.IsNullOrEmpty(LogFile))
             {
                 throw new ArgumentException("Log file name must be specified");
             }
+
             _logDestination = LogDestination.LogFile;
 
             // Log to a file
-            try
-            {
-                _logStream = new StreamWriter(LogFile, false, Encoding.Unicode);
-                _logStream.AutoFlush = true;
-                _logDestination = LogDestination.LogFile;
-            }
-            catch (Exception)
-            {
-                // Logging is not app critical, so do exception thrown
-                // Can't dump to file so it goes to the bit bucket
-            }
+            _logStream = new StreamWriter(LogFile, true, Encoding.Unicode);
+            _logStream.AutoFlush = true;
+            _logFile = LogFile;
         }
 
+        /// <summary>
+        /// Create a console or Null log
+        /// </summary>
+        /// <param name="logDestination"></param>
         public Log(LogDestination logDestination)
         {
             if (logDestination == LogDestination.LogFile)
@@ -82,73 +80,67 @@ namespace MCEBuddy.Util
             get { return _logDestination; }
         }
 
-
+        /// <summary>
+        /// Create an empty log
+        /// </summary>
         public Log()
         {
-            // Log to the console
-            _logDestination = LogDestination.Console;
+            // Log to null
+            _logDestination = LogDestination.Null;
         }
 
-        public void WriteEntry(object obj, string entryText, LogEntryType entryType, bool timeStamp)
+        public void WriteEntry(string entryText, LogEntryType entryType, bool timeStamp = false)
+        {
+            WriteEntry(null, entryText, entryType, timeStamp);
+        }
+
+        public void WriteEntry(object obj, string entryText, LogEntryType entryType, bool timeStamp = true)
         {
             WriteEntry(obj.GetType().ToString(), entryText, entryType, timeStamp);
         }
 
-        public void WriteEntry(object obj, string entryText, LogEntryType entryType)
+        public void WriteEntry(string entryHeader, string entryText, LogEntryType entryType, bool timeStamp = false)
         {
-            WriteEntry(obj.GetType().ToString(), entryText, entryType, true );
-        }
-
-        public void WriteEntry(string entryHeader, string entryText, LogEntryType entryType)
-        {
-            WriteEntry(entryHeader, entryText, entryType, false);
-        }
-
-        public void WriteEntry(string entryHeader, string entryText, LogEntryType entryType, bool timeStamp)
-        {
-            if (_logDestination == LogDestination.Null) return;
+            if (_logDestination == LogDestination.Null)
+                return;
 
             if (entryType <= Log.LogLevel)
             {
-                string logLines = "";
+                string logLines = "", timeLog = "";
                 if (entryType < LogEntryType.Debug)
                 {
                     // do it the hard way so I can refactor for internationalisation later
                     switch (entryType)
                     {
                         case LogEntryType.Error:
-                            {
-                                logLines += Localise.GetPhrase("ERROR") + "> ";
+                                logLines += "ERROR" + "> ";
                                 break;
-                            }
                         case LogEntryType.Warning:
-                            {
-                                logLines += Localise.GetPhrase("WARNING") + "> ";
+                                logLines += "WARNING" + "> ";
                                 break;
-                            }
                         case LogEntryType.Information:
-                            {
-                                logLines += Localise.GetPhrase("INFORMATION") + "> ";
+                                logLines += "INFORMATION" + "> ";
                                 break;
-                            }
                     }
-
                 }
+                
                 if (timeStamp)
-                {
-                    entryHeader = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + " " + entryHeader;
-                }
-                if (!String.IsNullOrEmpty(entryHeader))
-                {
-                    logLines += entryHeader + " --> " + entryText;
-                }
+                    timeLog = DateTime.Now.ToString("s", System.Globalization.CultureInfo.InvariantCulture) + " ";
+
+                if (entryHeader != null)
+                    logLines += timeLog + (String.IsNullOrWhiteSpace(entryHeader) ? entryHeader : entryHeader + " --> ") + entryText;
                 else
-                {
-                    logLines = "--> " + entryText;
-                }
+                    logLines += timeLog + "--> " + entryText;
+
+                // Logging is not app critical, so do exception thrown
+                // Can't dump to file so it goes to the bit bucket
                 if (_logDestination == LogDestination.Console)
                 {
-                    Console.WriteLine(logLines);
+                    try
+                    {
+                        Console.WriteLine(logLines);
+                    }
+                    catch { }
                 }
                 else if (_logDestination == LogDestination.LogFile)
                 {
@@ -156,22 +148,14 @@ namespace MCEBuddy.Util
                     {
                         _logStream.WriteLine(logLines);
                     }
-                    catch (Exception)
-                    {
-                        // Logging is not app critical, so do exception thrown
-                        // Can't dump to file so it goes to the bit bucket
-                    }
-
+                    catch { }
                 }
-
             }
         }
 
-        public void WriteEntry(string entryText, LogEntryType entryType)
-        {
-            WriteEntry("", entryText, entryType);
-        }
-
+        /// <summary>
+        /// Flush the log file and write all pending entries
+        /// </summary>
         public void Flush()
         {
             if (_logStream != null)
@@ -185,6 +169,9 @@ namespace MCEBuddy.Util
             }
         }
 
+        /// <summary>
+        /// Close the log file and flush all pending entries
+        /// </summary>
         public void Close()
         {
             if (_logDestination == LogDestination.LogFile)
@@ -203,9 +190,34 @@ namespace MCEBuddy.Util
             }
         }
 
+        /// <summary>
+        /// Clear the log file and start afresh
+        /// </summary>
+        public void Clear()
+        {
+            if (_logDestination == LogDestination.LogFile)
+            {
+                if (_logStream != null)
+                {
+                    try
+                    {
+                        _logStream.Flush();
+                        _logStream.Close();
+                        _logStream = null; //mark it out
+
+                        // Now reopen the log file NOT in append mode so it overwrites the existing log afresh
+                        _logStream = new StreamWriter(_logFile, false, Encoding.Unicode);
+                        _logStream.AutoFlush = true;
+                    }
+                    catch (Exception)
+                    { }
+                }
+            }
+        }
+
         public void Dispose()
         {
-            WriteEntry(this, Localise.GetPhrase("Log Dispose function called..."), Log.LogEntryType.Warning);
+            WriteEntry(this, "Log Dispose function called...", Log.LogEntryType.Warning);
             Close();
         }
 
@@ -218,7 +230,7 @@ namespace MCEBuddy.Util
         {
             try
             {
-                EventLog.WriteEntry(GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE, message, type);
+                EventLog.WriteEntry(GlobalDefs.MCEBUDDY_EVENT_LOG_SOURCE, message, type, GlobalDefs.MCEBUDDY_EVENT_LOG_ID);
             }
             catch { }
         }

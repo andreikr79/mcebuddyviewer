@@ -13,59 +13,52 @@ namespace MCEBuddy.Transcode
 {
     public class ConvertWithCopy : ConvertBase
     {
-        public ConvertWithCopy(ConversionJobOptions conversionOptions, string tool, ref VideoInfo videoFile, ref JobStatus jobStatus, Log jobLog, ref Scanner commercialScan)
-            : base(conversionOptions, tool, ref videoFile, ref jobStatus, jobLog, ref commercialScan)
+        public ConvertWithCopy(ConversionJobOptions conversionOptions, string tool, VideoInfo videoFile, JobStatus jobStatus, Log jobLog, Scanner commercialScan)
+            : base(conversionOptions, tool, videoFile, jobStatus, jobLog, commercialScan)
         {
 
         }
 
-        protected override bool IsPresetWidth()
+        protected override void FinalSanityCheck()
+        {
+
+        }
+
+        protected override bool IsPresetVideoWidth()
         {
             return false;
         }
 
-        protected override void SetTrim()
-        {
-        }
-
-        protected override void SetPostDRC()
-        {
-        }
-
-        protected override void SetPreDRC() // ffmpeg needs to setup this parameter before the inputs file because it applies to decoding the input
-        {
-        }
-
-        protected override void SetVolume()
-        {
-        }
-
-        protected override void SetBitrateAndQuality()
-        {
-        }
-
-        protected override void SetResize()
-        {
-        }
-
-        protected override void SetCrop()
-        {
-        }
-
-        protected override void SetAspectRatio()
-        {
-        }
-
-        protected override bool ConstantQuality
+        protected override bool ConstantVideoQuality
         {
             get { return false; }
         }
 
-        protected override void SetInputFileName() // general parameters already setup, now add the input filename details
+        protected override void SetVideoOutputFrameRate()
         {
         }
 
-        protected override void SetOutputFileName() // general + input + video + audio setup, now add the output filename
+        protected override void SetVideoTrim()
+        {
+        }
+
+        protected override void SetVideoBitrateAndQuality()
+        {
+        }
+
+        protected override void SetVideoResize()
+        {
+        }
+
+        protected override void SetVideoDeInterlacing()
+        {
+        }
+
+        protected override void SetVideoCropping()
+        {
+        }
+
+        protected override void SetVideoAspectRatio()
         {
         }
 
@@ -74,6 +67,26 @@ namespace MCEBuddy.Transcode
         }
 
         protected override void SetAudioChannels()
+        {
+        }
+
+        protected override void SetAudioPostDRC()
+        {
+        }
+
+        protected override void SetAudioPreDRC() // ffmpeg needs to setup this parameter before the inputs file because it applies to decoding the input
+        {
+        }
+
+        protected override void SetAudioVolume()
+        {
+        }
+
+        protected override void SetInputFileName() // general parameters already setup, now add the input filename details
+        {
+        }
+
+        protected override void SetOutputFileName() // general + input + video + audio setup, now add the output filename
         {
         }
 

@@ -5,6 +5,7 @@ using System.Text;
 
 namespace MCEBuddy.Globals
 {
+    [Serializable]
     public class JobStatus
     {
         volatile private string _currentAction = "";
@@ -14,6 +15,34 @@ namespace MCEBuddy.Globals
         volatile private string _errorMsg = "";
         volatile private string _sourceFile = "";
         volatile private bool _successfulConversion = false;
+        volatile private bool _successfulSkipConversion = false;
+        volatile private string _taskName = "";
+        volatile private bool _completed = false; // these are accessed by multiple threads and can potentially cause a race condition
+        volatile private bool _active = false; // these are accessed by multiple threads and can potentially cause a race condition
+
+        public bool Completed
+        {
+            get { return _completed; }
+            set { _completed = value; }
+        }
+
+        public bool Active
+        {
+            get { return _active; }
+            set { _active = value; }
+        }
+
+        public string TaskName
+        {
+            get { return _taskName; }
+            set { _taskName = value; }
+        }
+
+        public bool SuccessfulSkipConversion
+        {
+            get { return _successfulSkipConversion; }
+            set { _successfulSkipConversion = value; }
+        }
 
         public bool SuccessfulConversion
         {

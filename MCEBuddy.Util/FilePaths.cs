@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 using MCEBuddy.Globals;
 
@@ -11,26 +12,123 @@ namespace MCEBuddy.Util
 {
     public static class FilePaths
     {
-        public static string GetFullPathWithoutExtension( string FileName )
+        /// <summary>
+        /// A safe way to get all the files in a directory and sub directory without crashing on UnauthorizedException
+        /// </summary>
+        /// <param name="rootPath">Starting directory</param>
+        /// <param name="patternMatch">Filename pattern match</param>
+        /// <param name="searchOption">Search subdirectories or only top level directory for files</param>
+        /// <returns>List of files</returns>
+        public static IEnumerable<string> GetDirectoryFiles(string rootPath, string patternMatch, SearchOption searchOption)
+        {
+            IEnumerable<string> foundFiles = Enumerable.Empty<string>(); // Start with an empty container
+
+            if (searchOption == SearchOption.AllDirectories)
+            {
+                try
+                {
+                    IEnumerable<string> subDirs = Directory.EnumerateDirectories(rootPath);
+                    foreach (string dir in subDirs)
+                    {
+                        try
+                        {
+                            foundFiles = foundFiles.Concat(GetDirectoryFiles(dir, patternMatch, searchOption)); // Add files in subdirectories recursively to the list
+                        }
+                        catch (UnauthorizedAccessException) { } // Incase we have an access error - we don't want to mask the rest
+                    }
+                }
+                catch (UnauthorizedAccessException) { } // Incase we have an access error - we don't want to mask the rest
+            }
+
+            try
+            {
+                foundFiles = foundFiles.Concat(Directory.EnumerateFiles(rootPath, patternMatch)); // Add files from the current directory to the list
+            }
+            catch (UnauthorizedAccessException) { } // Incase we have an access error - we don't want to mask the rest
+
+            return foundFiles; // This is it finally
+        }
+
+        public static string GetFullPathWithoutExtension(string FileName)
         {
             if ("" == FileName) return "";
             return Path.Combine(Path.GetDirectoryName(FileName), Path.GetFileNameWithoutExtension(FileName));
         }
 
-        public static bool IsIllegalFilePathChar(char filePathChar)
+        /// <summary>
+        /// Checks if the characters is an illegal characters from filename AND filepath (different sets) (also [ and ] are not allowed by MCEBuddy)
+        /// </summary>
+        /// <param name="filePathChar">Character to check</param>
+        /// <returns>True if not allowed by file path or file name</returns>
+        public static bool IsIllegalFilePathAndNameChar(char filePathChar)
         {
-            foreach (char lDisallowed in System.IO.Path.GetInvalidFileNameChars())
+            // /:*? are missing are GetInvalidPathChars
+            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars()) + "/:*?" + "[]"; // [ ] are used in INI section names and cannot be allowed in filenames
+
+            foreach (char lDisallowed in invalid)
             {
-                if ((filePathChar == lDisallowed) || (filePathChar == '[') || (filePathChar == ']')) // [ ] are used in INI section names and cannot be allowed in filenames
+                if (filePathChar == lDisallowed)
                     return true;
             }
 
             return false;
         }
 
+        /// <summary>
+        /// Removes illegal characters from filename AND filepath (different sets) (also [ and ] are not allowed by MCEBuddy)
+        /// </summary>
+        /// <param name="filePathAndName">Filepath and filename</param>
+        /// <returns>Cleaned filepath and filename</returns>
+        public static string RemoveIllegalFilePathAndNameChars(string filePathAndName)
+        {
+            if (String.IsNullOrWhiteSpace(filePathAndName))
+                return "";
+
+            // /:*? are missing from GetInvalidPathChars
+            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars()) + "/:*?" + "[]"; // [ ] are used in INI section names and cannot be allowed in filenames
+
+            foreach (char lDisallowed in invalid)
+            {
+                filePathAndName = filePathAndName.Replace(lDisallowed.ToString(System.Globalization.CultureInfo.InvariantCulture), "");
+            }
+
+            return filePathAndName.Trim();
+        }
+
+        /// <summary>
+        /// Removes illegal characters from filename (also [ and ] are not allowed by MCEBuddy)
+        /// </summary>
+        /// <param name="fileName">Filename</param>
+        /// <returns>Cleaned filename</returns>
+        public static string RemoveIllegalFileNameChars(string fileName)
+        {
+            if (String.IsNullOrWhiteSpace(fileName))
+                return "";
+
+            string invalid = new string(Path.GetInvalidFileNameChars()) + "[]"; // [ ] are used in INI section names and cannot be allowed in filenames
+
+            foreach (char lDisallowed in invalid)
+            {
+                fileName = fileName.Replace(lDisallowed.ToString(System.Globalization.CultureInfo.InvariantCulture), "");
+            }
+
+            return fileName.Trim();
+        }
+
+        /// <summary>
+        /// Removes illegal characters from filepaths (also [ and ] are not allowed by MCEBuddy)
+        /// </summary>
+        /// <param name="filePath">Filename</param>
+        /// <returns>Cleaned filepath</returns>
         public static string RemoveIllegalFilePathChars(string filePath)
         {
-            foreach (char lDisallowed in System.IO.Path.GetInvalidFileNameChars())
+            if (String.IsNullOrWhiteSpace(filePath))
+                return "";
+
+            // /:*? are missing from GetInvalidPathChars
+            string invalid = new string(Path.GetInvalidPathChars()) + "/:*?" + "[]"; // [ ] are used in INI section names and cannot be allowed in filenames
+
+            foreach (char lDisallowed in invalid)
             {
                 filePath = filePath.Replace(lDisallowed.ToString(System.Globalization.CultureInfo.InvariantCulture), "");
             }
@@ -38,14 +136,22 @@ namespace MCEBuddy.Util
             return filePath.Trim();
         }
 
-        public static string CleanExt( string filePath )
+        public static string CleanExt(string filePath)
         {
-            return Path.GetExtension(filePath).ToLower().Trim();
+            if (String.IsNullOrWhiteSpace(filePath))
+                return "";
+            else
+                return Path.GetExtension(filePath).ToLower().Trim();
         }
 
-        public static string FixSpaces( string path )
+        /// <summary>
+        /// Adds a quote around the filepath so commandline programs can properly process the filePath.
+        /// </summary>
+        /// <param name="path">filepath</param>
+        /// <returns>Quotes filepath</returns>
+        public static string FixSpaces(string path)
         {
-            // Code below is not required as command prompt takes care of these somehow
+            // Code below is not required as command prompt takes care of these somehow - we don't escape the special characters
             /*if (path == "")
                 return @"""";
 
@@ -82,126 +188,6 @@ namespace MCEBuddy.Util
                 catch (Exception)
                 { }
             }
-        }
-
-        /// <summary>
-        /// Converts a string wildcard expression to a regex expression including spaces
-        /// </summary>
-        /// <param name="wildcard">Wilcard string</param>
-        /// <returns>Regex expression</returns>
-        public static string WildcardToRegex(string wildcard)
-        {
-            StringBuilder sb = new StringBuilder(wildcard.Length + 8);
-
-            sb.Append("^");
-
-            for (int i = 0; i < wildcard.Length; i++)
-            {
-                char c = wildcard[i];
-                switch (c)
-                {
-                    case '*':
-                        sb.Append(".*");
-                        break;
-                    case '?':
-                        sb.Append(".");
-                        break;
-                    case '\\':
-                        if (i < wildcard.Length - 1)
-                            sb.Append(Regex.Escape(wildcard[++i].ToString(System.Globalization.CultureInfo.InvariantCulture)));
-                        break;
-                    case ';':
-                        sb.Append("$|^");
-                        break;
-                    default:
-                        sb.Append(Regex.Escape(wildcard[i].ToString(System.Globalization.CultureInfo.InvariantCulture)));
-                        break;
-                }
-            }
-
-            sb.Append("$");
-
-            return sb.ToString();
-        }
-
-        public static bool WildcardVideoMatch(string fileName, string pattern)
-        {
-            bool returnMatch = false;
-
-            // Check against wildcard -> file path regex
-            string wildcardRegex = pattern;
-            wildcardRegex = wildcardRegex.Replace("[video]", GlobalDefs.DEFAULT_VIDEO_FILE_TYPES);
-            
-            if (wildcardRegex.Contains("regex:")) // check if it's a RegEx pattern, then handle directly
-            {
-                wildcardRegex = wildcardRegex.Replace("regex:", "");
-                Regex rxFileMatch = new Regex(wildcardRegex, RegexOptions.IgnoreCase);
-                returnMatch = rxFileMatch.IsMatch(Path.GetFileName(fileName).ToLower());
-            }
-            else foreach (string wildcardPattern in wildcardRegex.Split(';')) // check each pattern individually, allows us to have a not (~) match for each pattern
-            {
-                bool avoidList = false; // a NOT pattern
-                string wildcard = wildcardPattern;
-
-                if (String.IsNullOrEmpty(wildcard)) // incase a smart person ended the pattern with a ;
-                    continue;
-
-                // Check if this is a NOT list, i.e. select all files except... (starts with a ~)
-                if (wildcardPattern.Contains("~"))
-                {   
-                    wildcard = wildcardPattern.Replace("~", ""); // remove the ~ character from the expression
-                    avoidList = true;
-                }
-
-                wildcard = Util.FilePaths.WildcardToRegex(wildcard); // convert to RegEx for matching
-                Regex rxFileMatch = new Regex(wildcard, RegexOptions.IgnoreCase); // Create a Regex for matching
-
-                if (avoidList) // Check if it's a NOT pattern
-                {
-                    if (rxFileMatch.IsMatch(Path.GetFileName(fileName).ToLower())) // If even one NOT pattern matches, we return false (no need to continue)
-                        return false;
-                }
-                else
-                    returnMatch = returnMatch || rxFileMatch.IsMatch(Path.GetFileName(fileName).ToLower()); // Keep looking for atleast one match or incase we find a NOT match else where in the pattern loop
-            }
-
-            return returnMatch;
-        }
-    }
-
-    public class Wildcard : Regex
-    {
-        /// <summary>
-        /// Initializes a wildcard with the given search pattern.
-        /// </summary>
-        /// <param name="pattern">The wildcard pattern to match.</param>
-        public Wildcard(string pattern)
-            : base(WildcardToRegex(pattern))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a wildcard with the given search pattern and options.
-        /// </summary>
-        /// <param name="pattern">The wildcard pattern to match.</param>
-        /// <param name="options">A combination of one or more
-        /// <see cref="System.Text.RegexOptions"/>.</param>
-        public Wildcard(string pattern, RegexOptions options)
-            : base(WildcardToRegex(pattern), options)
-        {
-        }
-
-        /// <summary>
-        /// Converts a wildcard to a regex.
-        /// </summary>
-        /// <param name="pattern">The wildcard pattern to convert.</param>
-        /// <returns>A regex equivalent of the given wildcard.</returns>
-        public static string WildcardToRegex(string pattern)
-        {
-            return "^" + Regex.Escape(pattern).
-            Replace(";", "$|^").
-            Replace("\\*", ".*").
-            Replace("\\?", ".") + "$";
         }
     }
 

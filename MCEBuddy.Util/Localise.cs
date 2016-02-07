@@ -22,6 +22,8 @@ namespace MCEBuddy.Util
         {
             _initialised = true;
 
+            _phrases.Clear(); // Reset the list since we are building it again
+
             if (cultureStr != "")
             {
                 try
@@ -35,51 +37,93 @@ namespace MCEBuddy.Util
                 {
                 }
             }
+            
             if (_localCulture == "en")
-            {
-                _phrases.Clear(); // Clear it
-                return;
-            }
+                return; // Nothing to do
 
             string phraseFileName = Path.Combine(GlobalDefs.LocalisationPath, _localCulture + ".txt");
+            string fixedPhraseFileName = Path.Combine(GlobalDefs.LocalisationPath, _localCulture + "-fixed.txt"); // User override language corrections
+
             Monitor.Enter(_phrases); // Get a lock before updating the list
+
+            // Get the manually corrected translations if they exist
+            if (File.Exists(fixedPhraseFileName))
+            {
+                try
+                {
+                    using (CsvFileReader reader = new CsvFileReader(fixedPhraseFileName))
+                    {
+                        CsvRow row = new CsvRow();
+                        while (reader.ReadRow(row))
+                        {
+                            if (row.Count > 1)
+                            {
+                                string key = row[0].ToLower().Trim();
+
+                                // Take care of special characters
+                                key = key.Replace("\\\\", "\\"); //Order matters first check for \\
+                                key = key.Replace("\\r", "\r");
+                                key = key.Replace("\\n", "\n");
+                                key = key.Replace("\\\'", "\'");
+
+                                if (!_phrases.ContainsKey(key)) // no duplicates
+                                {
+                                    _phrases.Add(key, row[1]); // Create a sorted list of values with manual updates
+                                }
+                            }
+                        }
+                        reader.Close();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.AppLog.WriteEntry("Unable to read localisation file " + fixedPhraseFileName + "\n" + e.Message, Log.LogEntryType.Error);
+                }
+            }
+
+            // Get the automatic translations
             if (File.Exists(phraseFileName))
             {
                 try
                 {
                     using (CsvFileReader reader = new CsvFileReader(phraseFileName))
                     {
-                        _phrases.Clear(); // Reset the list since we are building it again
-
                         CsvRow row = new CsvRow();
                         while (reader.ReadRow(row))
                         {
-                            string key = row[0].ToLower().Trim();
-
-                            // Take care of special characters
-                            key = key.Replace("\\\\", "\\"); //Order matters first check for \\
-                            key = key.Replace("\\r", "\r");
-                            key = key.Replace("\\n", "\n");
-                            key = key.Replace("\\\'", "\'");
-
-                            if (!_phrases.ContainsKey(key))
+                            if (row.Count > 1)
                             {
-                                _phrases.Add(key, row[1]);                                   
+                                string key = row[0].ToLower().Trim();
+
+                                // Take care of special characters
+                                key = key.Replace("\\\\", "\\"); //Order matters first check for \\
+                                key = key.Replace("\\r", "\r");
+                                key = key.Replace("\\n", "\n");
+                                key = key.Replace("\\\'", "\'");
+
+                                if (!_phrases.ContainsKey(key)) // Check if there is a user provided translation if so, skip it
+                                {
+                                    _phrases.Add(key, row[1]);
+                                }
                             }
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Log.AppLog.WriteEntry(null, "Unable to read localisation file " + phraseFileName + "\n" + e.Message, Log.LogEntryType.Error);
+                    Log.AppLog.WriteEntry("Unable to read localisation file " + phraseFileName + "\n" + e.Message, Log.LogEntryType.Error);
                 }
             }
             Monitor.Exit(_phrases);
         }
 
-        public static string GetPhrase( string englishPhrase)
+        public static string GetPhrase(string englishPhrase)
         {
-            if (!_initialised) Init(""); // This will get the lock
+            if (!_initialised) 
+                Init(""); // This will get the lock
+
+            if (String.IsNullOrWhiteSpace(englishPhrase))
+                return englishPhrase;
             
             string cleanPhrase = englishPhrase.ToLower().Trim();
             string returnPhrase = englishPhrase;
