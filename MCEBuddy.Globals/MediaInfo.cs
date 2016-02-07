@@ -18,11 +18,13 @@ namespace MCEBuddy.Globals
         /// <summary>
         /// List of Audio information, 1 per audio track
         /// </summary>
-        public List<Audio> AudioInfo = new List<Audio>(); // can have multiple audio tracks per file
+        //public List<Audio> AudioInfo = new List<Audio>(); // can have multiple audio tracks per file
+        public Audio[] AudioInfo;
         /// <summary>
         /// List of Subtitle information, 1 per subtitle track
         /// </summary>
-        public List<Subtitle> SubtitleInfo = new List<Subtitle>(); // can have multiple subtitles per file
+        //public List<Subtitle> SubtitleInfo = new List<Subtitle>(); // can have multiple subtitles per file
+        public Subtitle[] SubtitleInfo;
         /// <summary>
         /// List of Chapter information
         /// </summary>

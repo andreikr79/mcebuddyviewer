@@ -649,14 +649,16 @@ namespace MCEBuddy.AppWrapper
                         stream = int.Parse(parseChunk[1].Substring(0)); // Audio Stream
 
                     // To handle only independent streams and ignore programs and  embedded streams, independent streams show up at the end, so if the streams id is repeated we overwrite the existing stream id and typically indepedent streams outnumber the embedded streams
+                    //if ((audioTracks > 0) && (mediaInfo.AudioInfo.FindIndex(s => s.Stream == stream) > -1))
                     if ((audioTracks > 0) && (Array.FindIndex(mediaInfo.AudioInfo, s => s.Stream == stream) > -1)) // If we already have a audio stream with the same stream Id then overwrite what we have (indepdendent audio stream come at the end) otherwise create a new audio track
                     {
                         _jobLog.WriteEntry(this, "Found existing audio track with Stream ID " + stream.ToString() + ". Overwriting with new stream.", Log.LogEntryType.Warning);
-                        index = Array.FindIndex(mediaInfo.AudioInfo, s => s.Stream == stream); // Overwrite an existing audio track with same stream id
+                        index = Array.FindIndex(mediaInfo.AudioInfo, s => s.Stream == stream); // Overwrite an existing audio track with same stream id                        
+                        //index = mediaInfo.AudioInfo.FindIndex(s => s.Stream == stream);
                     }
                     else // It's a new track, allocate an audio track
                     {
-                        Array.Resize(ref mediaInfo.AudioInfo, audioTracks + 1); // Increase the array size
+                        Array.Resize(ref mediaInfo.AudioInfo, audioTracks + 1); // Increase the array size                        
                         index = audioTracks;
                         newAudioStream = true;
                     }
